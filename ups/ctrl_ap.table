@@ -1,0 +1,4 @@
+setupRequired(ctrl_events 8.0.0.0 [>= 8.0.0.0])
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
+envPrepend(PATH, ${PRODUCT_DIR}/bin)
