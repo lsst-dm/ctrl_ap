@@ -1,0 +1,5 @@
+To map a submit file into a ClassAd, run:
+
+condor_submit -dump /dev/null test.submit >test.submit.ad
+
+and look at the changes;  you don't have to submit the whole ad.
