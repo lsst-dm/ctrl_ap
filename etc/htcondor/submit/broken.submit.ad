@@ -1,0 +1,8 @@
+[
+    Cmd = "/bin/echo";
+    Arguments = "Hello World";
+    Out = "hello.out";
+    Err = "hello.err";
+    ShouldTransferFiles = "NO";
+    FileSystemDomain = "ncsa.illinois.edu2";
+]
