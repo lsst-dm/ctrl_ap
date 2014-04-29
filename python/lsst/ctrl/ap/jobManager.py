@@ -38,10 +38,25 @@ class JobManager(object):
         cluster = self.schedd.submit(ad,1)
         return cluster
 
+    def removeJob(self, cluster):
+        """
+        Remove a job from the queue.
+        @param cluster the ClusterId to remove
+        """
+        # HTCondor expects the name with the ".0" at the end, otherwise
+        # it will not be recognized.
+        name = "%s.0" % cluster
+        values = self.schedd.act(htcondor.JobAction.Remove, [name])
+        return values
+        
+
 if __name__ == "__main__":
     m = JobManager()
     ap_dir = os.environ["CTRL_AP_DIR"]
-    path = os.path.join(ap_dir,"etc/htcondor/submit/hello.submit.ad")
+    path = os.path.join(ap_dir,"etc/htcondor/submit/broken.submit.ad")
     cluster = m.submitClassAdFile(path)
+
     print cluster
+    values = m.removeJob(cluster)
+    print values
     
