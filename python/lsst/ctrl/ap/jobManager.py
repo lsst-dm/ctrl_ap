@@ -56,7 +56,7 @@ class JobManager(object):
 
     def submitReplicatorJob(self, x):
         ad = self.getClassAd(self.replicatorJobPath)
-        ad.__setitem__("Arguments", str(x))
+        ad["Arguments"] = str(x)
         cluster = self.schedd.submit(ad,1)
         return cluster
 
