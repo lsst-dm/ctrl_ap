@@ -25,7 +25,7 @@
 
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
-import lsst.ctrl.ap as ap
+from lsst.ctrl.ap import jobManager
 
 class BaseDMCS(object):
 
@@ -33,15 +33,21 @@ class BaseDMCS(object):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
         self.brokerName = "lsst8.ncsa.illinois.edu"
-        self.commandTopic = "ocs_event"
+        self.eventTopic = "ocs_event"
 
     def handleEvents(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
-        eventSystem.createReceiver(self.brokerName, self.commandTopic)
+        eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
-            ocsEvent = eventSystem.receiveEvent(self.commandTopic)
-            ps = event.getPropertySet()
+            print "listening on %s " % self.eventTopic
+            ocsEvent = eventSystem.receiveEvent(self.eventTopic)
+            ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
+            print ocsEventType
             if ocsEventType == "startIntegration":
-                jm = ap.JobManager()
+                jm = jobManager.JobManager()
                 jm.submitAllReplicatorJobs()
+
+if __name__ == "__main__":
+    base = BaseDMCS()
+    base.handleEvents()

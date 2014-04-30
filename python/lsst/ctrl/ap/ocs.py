@@ -39,12 +39,12 @@ class OCS(object):
         originatorId = eventSystem.createOriginatorId()
 
         props = PropertySet()
-        props.set("type", "startIntegration")
+        props.set("ocs_event", "startIntegration")
         props.set("sequenceTag", sequenceTag)
         props.set("integrationIndex", integrationIndex)
 
         runId = "ocs"
         event = events.Event(runId, props)
 
-        trans = events.EventTransmitter(self.brokerName, self.commandTopic)
+        trans = events.EventTransmitter(self.brokerName, self.eventTopic)
         trans.publishEvent(event)
