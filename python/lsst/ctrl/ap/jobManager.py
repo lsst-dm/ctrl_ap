@@ -32,9 +32,14 @@ class JobManager(object):
         self.temp = None
         self.ads = []
         self.schedd = htcondor.Schedd() # local schedd
+        ap_dir = os.environ["CTRL_AP_DIR"]
+        self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/broken.submit.ad")
 
-    def submitClassAdFile(self, fileName):
-        ad = classad.parse(open(fileName))
+    def getClassAd(self, fileName):
+        return classad.parse(open(fileName))
+        
+
+    def submitClassAd(self, ad):
         cluster = self.schedd.submit(ad,1)
         return cluster
 
@@ -48,15 +53,19 @@ class JobManager(object):
         name = "%s.0" % cluster
         values = self.schedd.act(htcondor.JobAction.Remove, [name])
         return values
-        
+
+    def submitReplicatorJob(self, x):
+        ad = self.getClassAd(self.replicatorJobPath)
+        ad.__setitem__("Arguments", str(x))
+        cluster = self.schedd.submit(ad,1)
+        return cluster
+
+    def submitAllReplicatorJobs(self):
+        ad = self.getClassAd(self.replicatorJobPath)
+        for x in range(1,190):
+            ad.__setitem__("Arguments", str(x))
+            cluster = self.schedd.submit(ad,1)
 
 if __name__ == "__main__":
     m = JobManager()
-    ap_dir = os.environ["CTRL_AP_DIR"]
-    path = os.path.join(ap_dir,"etc/htcondor/submit/broken.submit.ad")
-    cluster = m.submitClassAdFile(path)
-
-    print cluster
-    values = m.removeJob(cluster)
-    print values
-    
+    m.submitAllReplicatorJobs()
