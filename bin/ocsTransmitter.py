@@ -48,14 +48,17 @@ class OCSTransmitter(object):
         
         subparsers = parser.add_subparsers(dest="cmd", help="send command from simulated OCS")
         parser_a = subparsers.add_parser("startIntegration")
+        parser_a.add_argument("-s", "--sequenceTag", type=str, action="store", help="sequence tag", required=True)
+        parser_a.add_argument("-x", "--integrationIndex", type=int, action="store", help="integration index", required=True)
+
         parser_b = subparsers.add_parser("startReadout")
-        parser_b = parser_b.add_argument("-v", "--visitId", type=int, action="store", help="startReadout", required=True)
+        parser_b.add_argument("-v", "--visitId", type=int, action="store", help="startReadout", required=True)
 
 
         return  parser.parse_args()
 
-    def sendStartIntegration(self):
-        self.ocs.sendStartIntegration()
+    def sendStartIntegration(self, sequenceTag, integrationIndex):
+        self.ocs.sendStartIntegration(sequenceTag, integrationIndex)
 
 
 
@@ -67,6 +70,6 @@ if __name__ == "__main__":
     args = ocsT.parseArgs(basename)
 
     if args.cmd == "startIntegration":
-        ocsT.sendStartIntegration()
+        ocsT.sendStartIntegration(args.sequenceTag, args.integrationIndex)
     elif args.cmd == "startReadout":
         print "placeholder for readout call"

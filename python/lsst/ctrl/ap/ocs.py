@@ -33,13 +33,15 @@ class OCS(object):
         self.eventTopic = eventTopic
         self.brokerName = "lsst8.ncsa.illinois.edu"
 
-    def sendStartIntegration(self):
+    def sendStartIntegration(self, sequenceTag, integrationIndex):
         eventSystem = events.EventSystem().getDefaultEventSystem()
 
         originatorId = eventSystem.createOriginatorId()
 
         props = PropertySet()
         props.set("type", "startIntegration")
+        props.set("sequenceTag", sequenceTag)
+        props.set("integrationIndex", integrationIndex)
 
         runId = "ocs"
         event = events.Event(runId, props)
