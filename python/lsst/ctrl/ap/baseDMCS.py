@@ -25,6 +25,7 @@
 
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+import lsst.ctrl.ap as ap
 
 class BaseDMCS(object):
 
@@ -34,7 +35,6 @@ class BaseDMCS(object):
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.commandTopic = "ocs_event"
 
-
     def handleEvents(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.commandTopic)
@@ -43,21 +43,5 @@ class BaseDMCS(object):
             ps = event.getPropertySet()
             ocsEventType = ps.get("ocs_event")
             if ocsEventType == "startIntegration":
-                job
-            
-
-    def sendStartIntegration(self, sequenceTag, integrationIndex):
-        eventSystem = events.EventSystem().getDefaultEventSystem()
-
-        originatorId = eventSystem.createOriginatorId()
-
-        props = PropertySet()
-        props.set("ocs_event", "startIntegration")
-        props.set("sequenceTag", sequenceTag)
-        props.set("integrationIndex", integrationIndex)
-
-        runId = "ocs"
-        event = events.Event(runId, props)
-
-        trans = events.EventTransmitter(self.brokerName, self.commandTopic)
-        trans.publishEvent(event)
+                jm = ap.JobManager()
+                jm.submitAllReplicatorJobs()
