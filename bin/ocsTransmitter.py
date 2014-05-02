@@ -52,7 +52,9 @@ class OCSTransmitter(object):
         parser_a.add_argument("-x", "--integrationIndex", type=int, action="store", help="integration index", required=True)
 
         parser_b = subparsers.add_parser("startReadout")
-        parser_b.add_argument("-i", "--visitID", type=int, action="store", help="startReadout", required=True)
+        parser_b.add_argument("-i", "--imageID", type=int, action="store", help="image id", required=True)
+        parser_b.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag", required=True)
+        parser_b.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
 
         return  parser.parse_args()
@@ -60,8 +62,8 @@ class OCSTransmitter(object):
     def sendStartIntegration(self, sequenceTag, integrationIndex):
         self.ocs.sendStartIntegration(sequenceTag, integrationIndex)
 
-    def sendStartReadout(self, visitID):
-        self.ocs.sendStartReadout(visitID)
+    def sendStartReadout(self, imageID, sequenceTag, exposureSequenceID):
+        self.ocs.sendStartReadout(imageID, sequenceTag, exposureSequenceID)
 
 
 if __name__ == "__main__":
@@ -74,4 +76,4 @@ if __name__ == "__main__":
     if args.cmd == "startIntegration":
         ocsT.sendStartIntegration(args.sequenceTag, args.integrationIndex)
     elif args.cmd == "startReadout":
-        ocsT.sendStartReadout(args.visitID)
+        ocsT.sendStartReadout(args.imageID, args.sequenceTag, args.exposureSequenceID)

@@ -49,13 +49,15 @@ class OCS(object):
         trans = events.EventTransmitter(self.brokerName, self.eventTopic)
         trans.publishEvent(event)
 
-    def sendStartReadout(self, visitID):
+    def sendStartReadout(self, imageID, sequenceTag, exposureSequenceID):
         eventSystem = events.EventSystem().getDefaultEventSystem()
 
         originatorId = eventSystem.createOriginatorId()
 
         props = PropertySet()
-        props.set("visitID", visitID)
+        props.set("imageID", imageID)
+        props.set("sequenceTag", sequenceTag)
+        props.set("exposureSequenceID", exposureSequenceID)
 
         runId = "ocs"
         event = events.Event(runId, props)
