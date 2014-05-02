@@ -52,7 +52,7 @@ class OCSTransmitter(object):
         parser_a.add_argument("-x", "--integrationIndex", type=int, action="store", help="integration index", required=True)
 
         parser_b = subparsers.add_parser("startReadout")
-        parser_b.add_argument("-v", "--visitID", type=int, action="store", help="startReadout", required=True)
+        parser_b.add_argument("-i", "--visitID", type=int, action="store", help="startReadout", required=True)
 
 
         return  parser.parse_args()
