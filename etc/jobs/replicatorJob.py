@@ -62,6 +62,7 @@ class ReplicatorJob(object):
             if sequenceTag == self.expectedSequenceTag and exposureSequenceID == self.expectedExpSeqID:
                 print "got expected info.  Getting image"
                 self.getCameraImage(imageID, sequenceTag, exposureSequenceID)
+                sys.exit(0)
 
     def getCameraImage(self, imageID, sequenceTag, exposureSequenceID):
         print "getting Camera image for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID)

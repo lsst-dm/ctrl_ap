@@ -1,0 +1,8 @@
+[
+    Cmd = "/lsst/home/srp/ap/ctrl_ap/etc/jobs/replicator.sh";
+    Arguments = "Hello World";
+    Err = "rep.err";
+    Out = "rep.out";
+    ShouldTransferFiles = "NO";
+    FileSystemDomain = "ncsa.illinois.edu";
+]

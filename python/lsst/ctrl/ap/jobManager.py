@@ -33,7 +33,7 @@ class JobManager(object):
         self.ads = []
         self.schedd = htcondor.Schedd() # local schedd
         ap_dir = os.environ["CTRL_AP_DIR"]
-        self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/broken.submit.ad")
+        self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/replicator.submit.ad")
         self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/broken.submit.ad")
 
     def getClassAd(self, fileName):
@@ -63,8 +63,14 @@ class JobManager(object):
 
     def submitAllReplicatorJobs(self):
         ad = self.getClassAd(self.replicatorJobPath)
-        for x in range(1,22):
-            ad["Arguments"] =  "-raft %s " % str(x)
+        # should be 21, but we're running 3 for now, because of the test bed
+        # we're on
+        for x in range(1,4):
+            ad["Arguments"] =  "--raft %s -t 1 -x 101" % str(x)
+            ad["Out"] =  "/tmp/Out.%s" % str(x)
+            ad["Err"] =  "/tmp/Err.%s" % str(x)
+            ad["Log"] =  "/tmp/Log.%s" % str(x)
+            ad["ShouldTransferFiles"] =  "NO"
             cluster = self.schedd.submit(ad,1)
         ad = self.getClassAd(self.wavefrontJobPath)
         cluster = self.schedd.submit(ad,1)
