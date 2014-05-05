@@ -54,9 +54,11 @@ class ReplicatorJob(object):
             print "image id = %s" % imageID
             print "sequence tag = %s" % sequenceTag
             print "exposure sequence id = %s" % exposureSequenceID
-            # TODO:  this should be done through a selector on the broker
+            # NOTE:  While should be done through a selector on the broker
             # so we only get the sequenceTag and exp seq ID we are looking
-            # for.   Create a new Event object so we can filter it that way.
+            # for, DM Messages are not the ultimate way we'll be receiving
+            # this info. we'll be using the DDS OCS messages, so this is good
+            # for now.
             if sequenceTag == self.expectedSequenceTag and exposureSequenceID == self.expectedExpSeqID:
                 print "got expected info.  Getting image"
                 self.getCameraImage(imageID, sequenceTag, exposureSequenceID)
