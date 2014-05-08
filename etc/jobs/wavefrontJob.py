@@ -30,18 +30,17 @@ import argparse
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 
-class ReplicatorJob(Job):
+class WavefrontJob(Job):
 
-    def getCameraImage(self, imageID, sequenceTag, exposureSequenceID):
-        print "getting Camera image for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID)
+    def getCameraImage(self, sequenceTag, exposureSequenceID):
+        print "getting data for four wave front sensors; sequenceTag = %s, exposureSequenceID = %s" % (sequenceTag, exposureSequenceID)
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
-    parser.add_argument("-r", "--raft", type=int, action="store", help="raft number", required=True)
     parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
     args = parser.parse_args()
-    base = ReplicatorJob(args.raft, args.sequenceTag, args.exposureSequenceID)
+    base = WavefrontJob(args.sequenceTag, args.exposureSequenceID)
     base.handleEvents()
