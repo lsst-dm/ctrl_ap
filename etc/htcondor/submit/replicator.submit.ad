@@ -3,6 +3,7 @@
     Arguments = "Hello World";
     Err = "rep.err";
     Out = "rep.out";
+    InitialDir = "/lsst/DC3root/srp_test";
     ShouldTransferFiles = "NO";
     FileSystemDomain = "ncsa.illinois.edu";
 ]

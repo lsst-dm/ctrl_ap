@@ -2,7 +2,7 @@
 
 # 
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2014 LSST Corporation.
 # 
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -22,7 +22,8 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-
+import time
+import datetime
 import os
 import sys
 import argparse
@@ -44,7 +45,8 @@ class ReplicatorJob(object):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
-            print "listening on %s " % self.eventTopic
+            ts = time.time()
+            print datetime.datetime.fromtimestamp(ts).strftime('listening: %Y-%m-%d %H:%M:%S')
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             imageID = ps.get("imageID")

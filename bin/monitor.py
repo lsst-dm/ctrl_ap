@@ -2,7 +2,7 @@
 
 # 
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2014 LSST Corporation.
 # 
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -27,7 +27,10 @@
 #### this is a prototype and will be refactored
 ####
 
-improt time
+import os
+import sys
+import time
+import argparse
 
 class Monitor(object):
 
@@ -36,7 +39,7 @@ class Monitor(object):
         # which is loaded, so they are not embedded in the code
         self.host = host
         self.port = port
-        self.con = -1
+        self.sock = None
 
     def connect(self):
         # attempt a connection.
@@ -49,19 +52,32 @@ class Monitor(object):
             sys.exit(1)
         except socket.error, err:
             print "Connection problem: %s" % err
+            self.sock = None
             return False
         return True
 
     def checkStatus(self):
         # check status of the socket with a ping/pong message
+        self.send("ping")
+        s = self.recv(4)
+        print s
         return True
 
         
 
 if __name__ == "__main__":
-    # and argparse
-    monitor = Monitor(host, port)
-    condor = Condot()
+    basename = os.path.basename(sys.argv[0])
+
+    parser = argparse.ArgumentParser(prog=basename)
+        
+    parser.add_argument("-H", "--host", type=str, action="store", help="host to connect to", required=True)
+    parser.add_argument("-P", "--port", type=int, action="store", help="port to connect to", required=True)
+
+    args = parser.parse_args()
+
+    # add argparse
+    monitor = Monitor(args.host, args.port)
+    condor = Condor()
 
     isConnected = monitor.connect()
     if isConnected:

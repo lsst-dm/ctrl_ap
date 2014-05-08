@@ -1,5 +1,4 @@
 #!/bin/sh
-set -x
 export HOME=/lsst/home/srp
 export SHELL=/bin/sh
 export USER=srp
@@ -15,5 +14,5 @@ setup -r .
 
 export JOBS_PATH=/lsst/home/srp/ap/ctrl_ap/etc/jobs
 
-set -x
-python $JOBS_PATH/replicatorJob.py $* 2>&1 >/tmp/rep.$$
+python $JOBS_PATH/replicatorJob.py $*
+hostname

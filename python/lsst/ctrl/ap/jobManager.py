@@ -2,7 +2,7 @@
 
 # 
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2014 LSST Corporation.
 # 
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -63,14 +63,13 @@ class JobManager(object):
 
     def submitAllReplicatorJobs(self):
         ad = self.getClassAd(self.replicatorJobPath)
-        # should be 21, but we're running 3 for now, because of the test bed
-        # we're on
-        for x in range(1,4):
+        for x in range(1,22):
             ad["Arguments"] =  "--raft %s -t 1 -x 101" % str(x)
-            ad["Out"] =  "/tmp/Out.%s" % str(x)
-            ad["Err"] =  "/tmp/Err.%s" % str(x)
-            ad["Log"] =  "/tmp/Log.%s" % str(x)
+            ad["Out"] =  "Out.%s" % str(x)
+            ad["Err"] =  "Err.%s" % str(x)
+            ad["Log"] =  "Log.%s" % str(x)
             ad["ShouldTransferFiles"] =  "NO"
+            ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.schedd.submit(ad,1)
         ad = self.getClassAd(self.wavefrontJobPath)
         cluster = self.schedd.submit(ad,1)
