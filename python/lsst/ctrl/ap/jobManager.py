@@ -55,16 +55,10 @@ class JobManager(object):
         values = self.schedd.act(htcondor.JobAction.Remove, [name])
         return values
 
-    def submitReplicatorJob(self, x):
-        ad = self.getClassAd(self.replicatorJobPath)
-        ad["Arguments"] = str(x)
-        cluster = self.schedd.submit(ad,1)
-        return cluster
-
-    def submitAllReplicatorJobs(self):
+    def submitAllReplicatorJobs(self, sequenceTag, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
         for x in range(1,22):
-            ad["Arguments"] =  "--raft %s -t 1 -x 101" % str(x)
+            ad["Arguments"] =  "--raft %s -t %s -x %s" % (str(x), sequenceTag, exposureSequenceID)
             ad["Out"] =  "Out.%s" % str(x)
             ad["Err"] =  "Err.%s" % str(x)
             ad["Log"] =  "Log.%s" % str(x)
@@ -72,7 +66,7 @@ class JobManager(object):
             ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.schedd.submit(ad,1)
         ad = self.getClassAd(self.wavefrontJobPath)
-        ad["Arguments"] = "-t 1 -x 101"
+        ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
         cluster = self.schedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 

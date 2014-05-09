@@ -46,7 +46,9 @@ class BaseDMCS(object):
             print ocsEventType
             if ocsEventType == "startIntegration":
                 jm = jobManager.JobManager()
-                jm.submitAllReplicatorJobs()
+                sequenceTag = ps.get("sequenceTag")
+                exposureSequenceID = ps.get("integrationIndex")
+                jm.submitAllReplicatorJobs(sequenceTag, exposureSequenceID)
 
 if __name__ == "__main__":
     base = BaseDMCS()
