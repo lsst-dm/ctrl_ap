@@ -29,10 +29,19 @@ import sys
 import argparse
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+from lsst.ctrl.ap.job import Job
 
 class WavefrontJob(Job):
 
-    def getCameraImage(self, sequenceTag, exposureSequenceID):
+    def __init__(self, expectedSequenceTag, expectedExpSeqID):
+        # TODO:  these need to be placed in a configuration file
+        # which is loaded, so they are not embedded in the code
+        self.brokerName = "lsst8.ncsa.illinois.edu"
+        self.eventTopic = "ocs_startReadout"
+        self.expectedSequenceTag = expectedSequenceTag
+        self.expectedExpSeqID = expectedExpSeqID
+
+    def getCameraImage(self, imageID, sequenceTag, exposureSequenceID):
         print "getting data for four wave front sensors; sequenceTag = %s, exposureSequenceID = %s" % (sequenceTag, exposureSequenceID)
 
 if __name__ == "__main__":
@@ -44,3 +53,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     base = WavefrontJob(args.sequenceTag, args.exposureSequenceID)
     base.handleEvents()
+

@@ -12,7 +12,5 @@ HERE=$PWD
 cd /lsst/home/srp/ap/ctrl_ap
 setup -r .
 
-export JOBS_PATH=/lsst/home/srp/ap/ctrl_ap/etc/jobs
-
-python $JOBS_PATH/wavefrontJob.py $*
+wavefrontJob.py $*
 hostname

@@ -34,7 +34,7 @@ class JobManager(object):
         self.schedd = htcondor.Schedd() # local schedd
         ap_dir = os.environ["CTRL_AP_DIR"]
         self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/replicator.submit.ad")
-        self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/broken.submit.ad")
+        self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
 
     def getClassAd(self, fileName):
         return classad.parse(open(fileName))
@@ -72,6 +72,7 @@ class JobManager(object):
             ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.schedd.submit(ad,1)
         ad = self.getClassAd(self.wavefrontJobPath)
+        ad["Arguments"] = "-t 1 -x 101"
         cluster = self.schedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 

@@ -29,6 +29,7 @@ import sys
 import argparse
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+from lsst.ctrl.ap.job import Job
 
 class ReplicatorJob(Job):
 
