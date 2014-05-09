@@ -23,46 +23,47 @@
 #
 
 
-####
-#### this is a prototype and will be refactored
-####
-
 import os
 import sys
 import time
 import argparse
 import socket
+import threading
 
-class Monitor(object):
-
-    def __init__(self, host, port):
-        # TODO:  these need to be placed in a configuration file
-        # which is loaded, so they are not embedded in the code
-        self.host = host
+class DistributorThread(threading.Thread):
+    def __init__(self, sock, ip, port):
+        self.sock = sock
+        self.ip = ip
         self.port = port
-        self.sock = None
 
-    def connect(self):
-        # attempt a connection.
-
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.sock.connect((self.host, self.port))
-        except socket.gaierror, err:
-            print "address problem?  %s " % err
-            sys.exit(1)
-        except socket.error, err:
-            print "Connection problem: %s" % err
-            self.sock = None
-            return False
-        return True
+    def __run__(self):
+        self.checkStatus()
 
     def checkStatus(self):
         # check status of the socket with a ping/pong message
-        self.send("ping")
         s = self.recv(4)
         print s
         return True
+
+class Distributor(object):
+
+    def __init__(self, port):
+        # TODO:  these need to be placed in a configuration file
+        # which is loaded, so they are not embedded in the code
+        self.port = port
+        self.client = None
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind((socket.gethostname(), self.port))
+        self.sock.listen(5)
+
+    def acceptAndHandle(self):
+        # attempt a connection.
+
+        (self.client, (ipAddr, clientPort)) = self.sock.accept()
+        newThread = DistributorThread(self.client, ipAddr, clientPort)
+        
+        return True
+
 
         
 
@@ -71,25 +72,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog=basename)
         
-    parser.add_argument("-H", "--host", type=str, action="store", help="host to connect to", required=True)
     parser.add_argument("-P", "--port", type=int, action="store", help="port to connect to", required=True)
 
     args = parser.parse_args()
 
     # add argparse
-    monitor = Monitor(args.host, args.port)
-    #reg = CondorRegister()
-
-    isConnected = monitor.connect()
-    if isConnected:
-        print "reg.registerFullyOperation()"
-    else:
-        print "reg.registerLocalOnly()"
-
+    distrib = Distributor(args.port)
     while True:
-        time.sleep(30)
-        connected = monitor.checkStatus()
-        if connected:
-            print "reg.registerFullyOperation()"
-        else:
-            print "reg.registerLocalOnly()"
+        distrib.acceptAndHandle()
