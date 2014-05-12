@@ -45,7 +45,7 @@ class DistributorThread(threading.Thread):
         s = self.recv(1024)
         if s == "":
             return False
-        print s.split(",")
+        print 'received ',s.split(",")
         return True
 
     def checkStatus(self):
@@ -69,7 +69,9 @@ class Distributor(object):
     def acceptAndHandle(self):
         # attempt a connection.
 
+        print "Waiting on connection"
         (self.client, (ipAddr, clientPort)) = self.sock.accept()
+        print "connection received: from ip %s:%d" % (ipAddr, clientPort)
         newThread = DistributorThread(self.client, ipAddr, clientPort)
         
         return True

@@ -34,9 +34,16 @@ from lsst.ctrl.ap.job import Job
 
 class ReplicatorJob(Job):
 
+    def __init__(self, distributor, port, raft, expectedSequenceTag, expectedExpSeqID):
+        super(ReplicatorJob, self).__init__(raft, expectedSequenceTag, expectedExpSeqID)
+        self.distributor = distributor
+        self.distributorPort = port
+        self.distConnection = None
+
+
     def connectToDistributor(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.distConnection = s.connect(self.distributor, self.distributorPort)
+        self.distConnection = s.connect((self.distributor, self.distributorPort))
         if self.distConnection:
             return True
         return False
@@ -50,19 +57,22 @@ class ReplicatorJob(Job):
     def execute(self, imageID, sequenceTag, exposureSequenceID):
         print "sending %s info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (self.distributor, imageID, sequenceTag, exposureSequenceID)
         if self.connectToDistributor():
+            print "sending"
             self.sendDistributorInfo(imageID, sequenceTag, exposureSequenceID)
         else:
+            print "not sending"
             # handle not being able to connect to the distributor
             pass
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
-    parser.add_argument("-d", "--distributor", type=str, action="store", help="distributor node to connect to", required=True)
+    parser.add_argument("-D", "--distributor", type=str, action="store", help="distributor node to connect to", required=True)
+    parser.add_argument("-P", "--port", type=int, action="store", help="distributor port to connect to", required=True)
     parser.add_argument("-r", "--raft", type=int, action="store", help="raft number", required=True)
     parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
     args = parser.parse_args()
-    base = ReplicatorJob(args.distributor, args.raft, args.sequenceTag, args.exposureSequenceID)
+    base = ReplicatorJob(args.distributor, args.port, args.raft, args.sequenceTag, args.exposureSequenceID)
     base.handleEvents()

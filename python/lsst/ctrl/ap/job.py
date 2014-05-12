@@ -32,13 +32,11 @@ from lsst.daf.base import PropertySet
 
 class Job(object):
 
-    def __init__(self, distributor, raft, expectedSequenceTag, expectedExpSeqID):
+    def __init__(self, raft, expectedSequenceTag, expectedExpSeqID):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "ocs_startReadout"
-        self.distributor = distributor
-        self.distConnection = None
         self.raft = raft
         self.expectedSequenceTag = expectedSequenceTag
         self.expectedExpSeqID = expectedExpSeqID
