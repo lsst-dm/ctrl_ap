@@ -27,22 +27,42 @@ import datetime
 import os
 import sys
 import argparse
+import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.job import Job
 
 class ReplicatorJob(Job):
 
-    def getCameraImage(self, imageID, sequenceTag, exposureSequenceID):
-        print "getting Camera image for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID)
+    def connectToDistributor(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.distConnection = s.connect(self.distributor, self.distributorPort)
+        if self.distConnection:
+            return True
+        return False
+
+    def sendDistributorInfo(self, imageID, sequenceTag, raft):
+        s = "%s,%s,%s" % (imageID, sequenceTag, raft)
+        self.distConnection.send(s)
+        # TODO Check return status
+
+
+    def execute(self, imageID, sequenceTag, exposureSequenceID):
+        print "sending %s info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (self.distributor, imageID, sequenceTag, exposureSequenceID)
+        if self.connectToDistributor():
+            self.sendDistributorInfo(imageID, sequenceTag, exposureSequenceID)
+        else:
+            # handle not being able to connect to the distributor
+            pass
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
+    parser.add_argument("-d", "--distributor", type=str, action="store", help="distributor node to connect to", required=True)
     parser.add_argument("-r", "--raft", type=int, action="store", help="raft number", required=True)
     parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
     args = parser.parse_args()
-    base = ReplicatorJob(args.raft, args.sequenceTag, args.exposureSequenceID)
+    base = ReplicatorJob(args.distributor, args.raft, args.sequenceTag, args.exposureSequenceID)
     base.handleEvents()

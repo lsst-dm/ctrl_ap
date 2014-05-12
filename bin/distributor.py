@@ -37,7 +37,16 @@ class DistributorThread(threading.Thread):
         self.port = port
 
     def __run__(self):
-        self.checkStatus()
+        while True:
+            if self.handleMessage() == False:
+                return
+
+    def handleMessage(self):
+        s = self.recv(1024)
+        if s == "":
+            return False
+        print s.split(",")
+        return True
 
     def checkStatus(self):
         # check status of the socket with a ping/pong message
@@ -65,8 +74,6 @@ class Distributor(object):
         
         return True
 
-
-        
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

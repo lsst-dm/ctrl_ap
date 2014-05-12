@@ -32,14 +32,19 @@ from lsst.daf.base import PropertySet
 
 class Job(object):
 
-    def __init__(self, raft, expectedSequenceTag, expectedExpSeqID):
+    def __init__(self, distributor, raft, expectedSequenceTag, expectedExpSeqID):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "ocs_startReadout"
+        self.distributor = distributor
+        self.distConnection = None
         self.raft = raft
         self.expectedSequenceTag = expectedSequenceTag
         self.expectedExpSeqID = expectedExpSeqID
+
+    def execute(self, imageID, sequenceTag, exposureSequenceID):
+        pass
 
     def handleEvents(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
@@ -63,5 +68,5 @@ class Job(object):
             # for now.
             if sequenceTag == self.expectedSequenceTag and exposureSequenceID == self.expectedExpSeqID:
                 print "got expected info.  Getting image"
-                self.getCameraImage(imageID, sequenceTag, exposureSequenceID)
+                self.execute(imageID, sequenceTag, exposureSequenceID)
                 sys.exit(0)
