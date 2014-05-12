@@ -38,19 +38,28 @@ class ReplicatorJob(Job):
         super(ReplicatorJob, self).__init__(raft, expectedSequenceTag, expectedExpSeqID)
         self.distributor = distributor
         self.distributorPort = port
-        self.distConnection = None
+        self.sock = None
+        
 
 
     def connectToDistributor(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.distConnection = s.connect((self.distributor, self.distributorPort))
-        if self.distConnection:
-            return True
-        return False
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print "distributor %s:%d" % (self.distributor, self.distributorPort)
+        try:
+            self.sock.connect((self.distributor, self.distributorPort))
+        except socket.gaierror, err:
+            print "address problem?  %s " % err
+            sys.exit(1)
+        except socket.error, err:
+            print "Connection problem: %s" % err
+            self.sock = None
+            return False
+        return True
 
     def sendDistributorInfo(self, imageID, sequenceTag, raft):
         s = "%s,%s,%s" % (imageID, sequenceTag, raft)
-        self.distConnection.send(s)
+        print "sending = %s" % s
+        self.sock.send(s)
         # TODO Check return status
 
 

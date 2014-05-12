@@ -32,17 +32,18 @@ import threading
 
 class DistributorThread(threading.Thread):
     def __init__(self, sock, ip, port):
+        super(DistributorThread, self).__init__()
         self.sock = sock
         self.ip = ip
         self.port = port
 
-    def __run__(self):
+    def run(self):
         while True:
             if self.handleMessage() == False:
                 return
 
     def handleMessage(self):
-        s = self.recv(1024)
+        s = self.sock.recv(1024)
         if s == "":
             return False
         print 'received ',s.split(",")
@@ -73,6 +74,8 @@ class Distributor(object):
         (self.client, (ipAddr, clientPort)) = self.sock.accept()
         print "connection received: from ip %s:%d" % (ipAddr, clientPort)
         newThread = DistributorThread(self.client, ipAddr, clientPort)
+        newThread.start()
+        newThread.join()
         
         return True
 
