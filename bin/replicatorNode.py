@@ -46,9 +46,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=basename)
     parser.add_argument("-D", "--distributor", type=str, action="store", help="distributor node to connect to", required=True)
     parser.add_argument("-P", "--port", type=int, action="store", help="distributor port to connect to", required=True)
-    parser.add_argument("-r", "--replicatorPort", type=int, action="store", help="replicator port for jobs to connect to", required=True)
+    parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="replicator port for jobs to connect to", required=True)
 
     args = parser.parse_args()
     rep = ReplicatorNode(args.replicatorPort)
+    # connect to the distributor node
     rep.connectToNode(args.distributor, args.port)
+    # accept connections from jobs, which send information which needs to
+    # be passed on to the distributor
     rep.acceptAndHandle(ReplicatorHandler)

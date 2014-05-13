@@ -55,21 +55,27 @@ class JobManager(object):
         values = self.schedd.act(htcondor.JobAction.Remove, [name])
         return values
 
-    def submitAllReplicatorJobs(self, sequenceTag, exposureSequenceID):
+    def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
-        for x in range(1,22):
-            ad["Arguments"] =  "--raft %s -t %s -x %s" % (str(x), sequenceTag, exposureSequenceID)
+        for x in range(0,22):
+            # replicatorPort, raft, sequenceTag, exposureSequenceID
+            entry = rPortList[x]
+            machine = entry[0]
+            slotID = entry[1]
+            rPort = entry[1]
+            ad["Arguments"] =  "-R %s -r %s -t %s -x %s" % (str(rPort), str(x), sequenceTag, exposureSequenceID)
             ad["Out"] =  "Out.%s" % str(x)
             ad["Err"] =  "Err.%s" % str(x)
             ad["Log"] =  "Log.%s" % str(x)
             ad["ShouldTransferFiles"] =  "NO"
             ad["WhenToTransferOutput"] =  "ON_EXIT"
+            print ad["Requirements"]
+            ad["Requirements"].replace('foobar',machine)
+            ad["Requirements"].replace('bling',slotID)
+            print ad
             cluster = self.schedd.submit(ad,1)
+            print "done with this submit"
         ad = self.getClassAd(self.wavefrontJobPath)
         ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
         cluster = self.schedd.submit(ad,1)
         # TODO: should probably return clusters in a list
-
-if __name__ == "__main__":
-    m = JobManager()
-    m.submitAllReplicatorJobs()

@@ -29,11 +29,12 @@ from lsst.ctrl.ap import jobManager
 
 class BaseDMCS(object):
 
-    def __init__(self):
+    def __init__(self, rHostList):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "ocs_event"
+        self.rHostList = rHostList
 
     def handleEvents(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
@@ -48,8 +49,13 @@ class BaseDMCS(object):
                 jm = jobManager.JobManager()
                 sequenceTag = ps.get("sequenceTag")
                 exposureSequenceID = ps.get("integrationIndex")
-                jm.submitAllReplicatorJobs(sequenceTag, exposureSequenceID)
+                jm.submitAllReplicatorJobs(rHostList, sequenceTag, exposureSequenceID)
 
 if __name__ == "__main__":
-    base = BaseDMCS()
+    rHostList = []
+    for x in range(1,9):
+        rHostList.append(("lsst11.ncsa.uiuc.edu", x, 8080+x))
+        rHostList.append(("lsst14.ncsa.illinois.edu", x, 8080+x))
+        rHostList.append(("lsst15.ncsa.illinois.edu", x, 8080+x))
+    base = BaseDMCS(rHostList)
     base.handleEvents()

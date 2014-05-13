@@ -31,12 +31,14 @@ import socket
 import threading
 
 class ReplicatorHandler(threading.Thread):
-    def __init__(self, sock):
-        super(ReplicatorHandler, self).__init__(sock)
+    def __init__(self, jobSocket, distributorSocket):
+        super(ReplicatorHandler, self).__init__(jobSocket)
+        self.distributorSocket
 
     def handleMessage(self):
         s = self.sock.recv(1024)
         if s == "":
             return False
-        print 'received ',s.split(",")
+        print 'received from replicator job',s.split(",")
+        distributorSocket.send(s)
         return True

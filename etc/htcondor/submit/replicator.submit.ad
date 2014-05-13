@@ -6,4 +6,5 @@
     InitialDir = "/lsst/DC3root/srp_test";
     ShouldTransferFiles = "NO";
     FileSystemDomain = "ncsa.illinois.edu";
+    Requirements = TARGET.Machine == "foobar" && TARGET.SLOTID == bling;
 ]

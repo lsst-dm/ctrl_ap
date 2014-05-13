@@ -39,5 +39,5 @@ class DistributorHandler(threading.Thread):
         s = self.sock.recv(1024)
         if s == "":
             return False
-        print 'received ',s.split(",")
+        print 'received from replicator',s.split(",")
         return True

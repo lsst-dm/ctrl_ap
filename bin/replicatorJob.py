@@ -34,40 +34,37 @@ from lsst.ctrl.ap.job import Job
 
 class ReplicatorJob(Job):
 
-    def __init__(self, distributor, port, raft, expectedSequenceTag, expectedExpSeqID):
+    def __init__(self, rPort, raft, expectedSequenceTag, expectedExpSeqID):
         super(ReplicatorJob, self).__init__(raft, expectedSequenceTag, expectedExpSeqID)
-        self.distributor = distributor
-        self.distributorPort = port
-        self.sock = None
+        self.replicatorPort = rPort
+        self.rSock = None
         
 
-
-    def connectToDistributor(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print "distributor %s:%d" % (self.distributor, self.distributorPort)
+    def createAndConnect(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print "connect to replicator @ %s:%d" % ("localhost", self.replicatorPort)
         try:
-            self.sock.connect((self.distributor, self.distributorPort))
+            sock.connect(hostPort)
         except socket.gaierror, err:
             print "address problem?  %s " % err
-            sys.exit(1)
+            return None
         except socket.error, err:
             print "Connection problem: %s" % err
-            self.sock = None
-            return False
-        return True
+            return None
+        return sock
 
-    def sendDistributorInfo(self, imageID, sequenceTag, raft):
+    def sendInfo(self, imageID, sequenceTag, raft):
         s = "%s,%s,%s" % (imageID, sequenceTag, raft)
         print "sending = %s" % s
-        self.sock.send(s)
+        # send this info to the distributor
+        self.dSock.send(s)
         # TODO Check return status
-
 
     def execute(self, imageID, sequenceTag, exposureSequenceID):
         print "sending %s info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (self.distributor, imageID, sequenceTag, exposureSequenceID)
-        if self.connectToDistributor():
-            print "sending"
-            self.sendDistributorInfo(imageID, sequenceTag, exposureSequenceID)
+        if self.connectToReplicator():
+            print "sending info to distributor"
+            self.sendInfo(imageID, sequenceTag, exposureSequenceID)
         else:
             print "not sending"
             # handle not being able to connect to the distributor
@@ -76,12 +73,11 @@ class ReplicatorJob(Job):
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
-    parser.add_argument("-D", "--distributor", type=str, action="store", help="distributor node to connect to", required=True)
-    parser.add_argument("-P", "--port", type=int, action="store", help="distributor port to connect to", required=True)
+    parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="replicator port to connect to", required=True)
     parser.add_argument("-r", "--raft", type=int, action="store", help="raft number", required=True)
     parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
     args = parser.parse_args()
-    base = ReplicatorJob(args.distributor, args.port, args.raft, args.sequenceTag, args.exposureSequenceID)
+    base = ReplicatorJob(args.replicatorPort, args.raft, args.sequenceTag, args.exposureSequenceID)
     base.handleEvents()
