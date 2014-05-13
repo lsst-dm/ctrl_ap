@@ -70,8 +70,10 @@ class JobManager(object):
             ad["ShouldTransferFiles"] =  "NO"
             ad["WhenToTransferOutput"] =  "ON_EXIT"
             print ad["Requirements"]
-            ad["Requirements"].replace('foobar',machine)
-            ad["Requirements"].replace('bling',slotID)
+            # TODO:  use classad.quote() to encircle the machine variable
+            # can't do that until we upgrade to the latest HTCondor on the cluster
+            ad["Requirements"] = classad.ExprTree('TARGET.Machine == "%s" && TARGET.SlotID == %s' % (machine, slotID))
+
             print ad
             cluster = self.schedd.submit(ad,1)
             print "done with this submit"

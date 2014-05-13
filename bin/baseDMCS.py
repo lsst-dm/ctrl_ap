@@ -54,7 +54,7 @@ class BaseDMCS(object):
 if __name__ == "__main__":
     rHostList = []
     for x in range(1,9):
-        rHostList.append(("lsst11.ncsa.uiuc.edu", x, 8080+x))
+        rHostList.append(("lsst11.ncsa.illinois.edu", x, 8080+x))
         rHostList.append(("lsst14.ncsa.illinois.edu", x, 8080+x))
         rHostList.append(("lsst15.ncsa.illinois.edu", x, 8080+x))
     base = BaseDMCS(rHostList)
