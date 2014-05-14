@@ -42,6 +42,7 @@ class DistributorNode(Node):
         while True:
             print "Waiting on connection"
             (client, (ipAddr, clientPort)) = self.inSock.accept()
+            print "connection accepted: %s:%d" % (ipAddr, clientPort)
             dh = DistributorHandler(client)
             dh.start()
             dh.join()

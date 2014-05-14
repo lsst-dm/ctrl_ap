@@ -36,8 +36,8 @@ class ReplicatorJob(Job):
 
     def __init__(self, rPort, raft, expectedSequenceTag, expectedExpSeqID):
         super(ReplicatorJob, self).__init__(raft, expectedSequenceTag, expectedExpSeqID)
-        jobnum = os.getenv("_CONDOR_SLOT",0)
-        self.replicatorPort = rPort+jobnum
+        jobnum = os.getenv("_CONDOR_SLOT","slot0")
+        self.replicatorPort = rPort+int(jobnum[4:])
         
         self.rSock = None
         

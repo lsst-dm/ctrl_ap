@@ -45,6 +45,7 @@ class ReplicatorNode(Node):
 
     def activate(self):
         if  rep.connectToNode(args.distributor, args.port):
+            print "connected to distributor Node %s:%d" % (args.distributor, args.port)
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             rh = ReplicatorHandler(client, self.outSock)
             rh.start()

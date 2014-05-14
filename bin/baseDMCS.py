@@ -54,8 +54,12 @@ class BaseDMCS(object):
 if __name__ == "__main__":
     rHostList = []
     for x in range(1,9):
-        rHostList.append(("lsst11.ncsa.illinois.edu", x, 8080+x))
-        rHostList.append(("lsst14.ncsa.illinois.edu", x, 8080+x))
-        rHostList.append(("lsst15.ncsa.illinois.edu", x, 8080+x))
+        rHostList.append(("lsst11.ncsa.illinois.edu", 8000+x))
+        rHostList.append(("lsst14.ncsa.illinois.edu", 8000+x))
+        rHostList.append(("lsst15.ncsa.illinois.edu", 8000+x))
+        rHostList.append(("lsst9.ncsa.illinois.edu", 8000+x))
+    for x in range(1,5):
+        rHostList.append(("lsst5.ncsa.illinois.edu", 8000+x))
+        rHostList.append(("lsst6.ncsa.illinois.edu", 8000+x))
     base = BaseDMCS(rHostList)
     base.handleEvents()

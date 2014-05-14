@@ -42,4 +42,6 @@ class ReplicatorHandler(threading.Thread):
             if s == "":
                 return
             print 'received from replicator job',s.split(",")
+            print 'sending to distributor'
             self.distSock.send(s)
+            print 'sent!'

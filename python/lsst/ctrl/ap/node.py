@@ -45,7 +45,7 @@ class Node(object):
     def createIncomingSocket(self, host, port):
         self.inSock = self.createSocket()
         self.inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print "creating incoming socket %s:%d" % (host, port)
+        print "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port)
         self.inSock.bind((host, port))
         self.inSock.listen(5)
         print "done creating socket"
