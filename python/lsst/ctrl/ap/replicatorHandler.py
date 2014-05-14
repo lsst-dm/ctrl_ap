@@ -32,13 +32,14 @@ import threading
 
 class ReplicatorHandler(threading.Thread):
     def __init__(self, jobSocket, distributorSocket):
-        super(ReplicatorHandler, self).__init__(jobSocket)
-        self.distributorSocket
+        super(ReplicatorHandler, self).__init__()
+        self.jobSock = jobSocket
+        self.distSock = distributorSocket
 
-    def handleMessage(self):
-        s = self.sock.recv(1024)
-        if s == "":
-            return False
-        print 'received from replicator job',s.split(",")
-        distributorSocket.send(s)
-        return True
+    def run(self):
+        while True:
+            s = self.jobSock.recv(1024)
+            if s == "":
+                return
+            print 'received from replicator job',s.split(",")
+            self.distSock.send(s)

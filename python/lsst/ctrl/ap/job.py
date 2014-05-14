@@ -49,7 +49,7 @@ class Job(object):
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
             ts = time.time()
-            print datetime.datetime.fromtimestamp(ts).strftime('listening: %Y-%m-%d %H:%M:%S')
+            print datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S')
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             imageID = ps.get("imageID")

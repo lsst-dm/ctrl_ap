@@ -36,34 +36,36 @@ class ReplicatorJob(Job):
 
     def __init__(self, rPort, raft, expectedSequenceTag, expectedExpSeqID):
         super(ReplicatorJob, self).__init__(raft, expectedSequenceTag, expectedExpSeqID)
-        self.replicatorPort = rPort
+        jobnum = os.getenv("_CONDOR_SLOT",0)
+        self.replicatorPort = rPort+jobnum
+        
         self.rSock = None
         
 
-    def createAndConnect(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def connectToReplicator(self):
+        self.rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print "connect to replicator @ %s:%d" % ("localhost", self.replicatorPort)
         try:
-            sock.connect(hostPort)
+            self.rSock.connect(("localhost", self.replicatorPort))
         except socket.gaierror, err:
             print "address problem?  %s " % err
-            return None
+            return False
         except socket.error, err:
             print "Connection problem: %s" % err
-            return None
-        return sock
+            return False
+        return True
 
     def sendInfo(self, imageID, sequenceTag, raft):
         s = "%s,%s,%s" % (imageID, sequenceTag, raft)
         print "sending = %s" % s
         # send this info to the distributor
-        self.dSock.send(s)
+        self.rSock.send(s)
         # TODO Check return status
 
     def execute(self, imageID, sequenceTag, exposureSequenceID):
-        print "sending %s info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (self.distributor, imageID, sequenceTag, exposureSequenceID)
+        print "info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID)
         if self.connectToReplicator():
-            print "sending info to distributor"
+            print "sending info to replicator"
             self.sendInfo(imageID, sequenceTag, exposureSequenceID)
         else:
             print "not sending"
@@ -73,7 +75,7 @@ class ReplicatorJob(Job):
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
-    parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="replicator port to connect to", required=True)
+    parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="base replicator port (plus slot #) to connect to", required=True)
     parser.add_argument("-r", "--raft", type=int, action="store", help="raft number", required=True)
     parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)

@@ -35,9 +35,9 @@ class DistributorHandler(threading.Thread):
         super(DistributorHandler, self).__init__()
         self.sock = sock
 
-    def handleMessage(self):
-        s = self.sock.recv(1024)
-        if s == "":
-            return False
-        print 'received from replicator',s.split(",")
-        return True
+    def run(self):
+        while True:
+            s = self.sock.recv(1024)
+            if s == "":
+                return 
+            print 'received from replicator',s.split(",")

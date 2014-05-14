@@ -36,10 +36,19 @@ from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
 
 class ReplicatorNode(Node):
 
-    def __init__(self, port):
+    def __init__(self, distHost, distPort, repPort):
         super(ReplicatorNode, self).__init__()
-        self.createIncomingSocket(port)
+        self.createIncomingSocket("localhost", repPort)
+        self.distHost = distHost
+        self.distPort = distPort
+        self.dSock = None
 
+    def activate(self):
+        if  rep.connectToNode(args.distributor, args.port):
+            (client, (ipAddr, clientPort)) = self.inSock.accept()
+            rh = ReplicatorHandler(client, self.outSock)
+            rh.start()
+            rh.join()
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
@@ -49,9 +58,5 @@ if __name__ == "__main__":
     parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="replicator port for jobs to connect to", required=True)
 
     args = parser.parse_args()
-    rep = ReplicatorNode(args.replicatorPort)
-    # connect to the distributor node
-    rep.connectToNode(args.distributor, args.port)
-    # accept connections from jobs, which send information which needs to
-    # be passed on to the distributor
-    rep.acceptAndHandle(ReplicatorHandler)
+    rep = ReplicatorNode(args.distributor, args.port, args.replicatorPort)
+    rep.activate()

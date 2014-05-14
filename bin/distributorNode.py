@@ -36,8 +36,15 @@ class DistributorNode(Node):
 
     def __init__(self, port):
         super(DistributorNode, self).__init__()
-        self.createIncomingSocket(port)
+        self.createIncomingSocket(socket.gethostname(), port)
 
+    def activate(self):
+        while True:
+            print "Waiting on connection"
+            (client, (ipAddr, clientPort)) = self.inSock.accept()
+            dh = DistributorHandler(client)
+            dh.start()
+            dh.join()
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
@@ -46,6 +53,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     dist = DistributorNode(args.port)
-    while True:
-        dist.acceptAndHandle(DistributorHandler)
+    dist.activate()
 

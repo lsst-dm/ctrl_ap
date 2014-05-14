@@ -42,11 +42,13 @@ class Node(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         return sock
 
-    def createIncomingSocket(self, port):
+    def createIncomingSocket(self, host, port):
         self.inSock = self.createSocket()
         self.inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.inSock.bind((socket.gethostname(), port))
+        print "creating incoming socket %s:%d" % (host, port)
+        self.inSock.bind((host, port))
         self.inSock.listen(5)
+        print "done creating socket"
 
     def connectToNode(self, host, port):
         self.outSock = self.createSocket()
@@ -62,12 +64,5 @@ class Node(object):
             return False
         return True
 
-    def acceptAndHandle(self, handler):
-        print "Waiting on connection"
-        (self.client, (ipAddr, clientPort)) = self.inSock.accept()
-        print "connection received: from ip %s:%d" % (ipAddr, clientPort)
-        newThread = handler(self.client)
-        newThread.start()
-        newThread.join()
-
-        return True
+    def process(self):
+        pass 
