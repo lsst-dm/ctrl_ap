@@ -29,6 +29,7 @@ import sys
 import argparse
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+from lsst.pex.logging import Log
 
 class Job(object):
 
@@ -40,6 +41,7 @@ class Job(object):
         self.raft = raft
         self.expectedSequenceTag = expectedSequenceTag
         self.expectedExpSeqID = expectedExpSeqID
+        self.logger = Log.getDefaultLog()
 
     def execute(self, imageID, sequenceTag, exposureSequenceID):
         pass
@@ -49,7 +51,7 @@ class Job(object):
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
             ts = time.time()
-            print datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S')
+            self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             imageID = ps.get("imageID")

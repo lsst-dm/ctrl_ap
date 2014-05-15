@@ -1,10 +1,10 @@
 #!/bin/bash
-export LSSTSW=/lsst/home/srp/lsstsw_temp/lsstsw
-. $LSSTSW/bin/setup.sh
+
+# setup the main lsst stack in .bashrc before executing
+# and set _CTRL_AP_DIR and _HTCONDOR_DIR to the correct directories.
 setup ctrl_events
-cd ap
-setup -r ctrl_ap
-setup -r htcondor
+setup -r $_CTRL_AP_DIR
+setup -r $_HTCONDOR_DIR
 let repPort=8001
 let distPort=$1
 for i in `seq 1 $2`;

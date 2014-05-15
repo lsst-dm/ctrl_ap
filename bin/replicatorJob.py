@@ -31,6 +31,7 @@ import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.job import Job
+from lsst.pex.logging import Log
 
 class ReplicatorJob(Job):
 
@@ -40,35 +41,38 @@ class ReplicatorJob(Job):
         self.replicatorPort = rPort+int(jobnum[4:])
         
         self.rSock = None
+
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger, "replicatorJob")
         
 
     def connectToReplicator(self):
         self.rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print "connect to replicator @ %s:%d" % ("localhost", self.replicatorPort)
+        self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % ("localhost", self.replicatorPort))
         try:
             self.rSock.connect(("localhost", self.replicatorPort))
         except socket.gaierror, err:
-            print "address problem?  %s " % err
+            self.logger.log(Log.INFO, "address problem?  %s " % err)
             return False
         except socket.error, err:
-            print "Connection problem: %s" % err
+            self.logger.log(Log.INFO, "Connection problem: %s" % err)
             return False
         return True
 
     def sendInfo(self, imageID, sequenceTag, raft):
         s = "%s,%s,%s" % (imageID, sequenceTag, raft)
-        print "sending = %s" % s
+        self.logger.log(Log.INFO, "sending = %s" % s)
         # send this info to the distributor
         self.rSock.send(s)
         # TODO Check return status
 
     def execute(self, imageID, sequenceTag, exposureSequenceID):
-        print "info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID)
+        self.logger.log(Log.INFO, "info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID))
         if self.connectToReplicator():
-            print "sending info to replicator"
+            self.logger.log("sending info to replicator")
             self.sendInfo(imageID, sequenceTag, exposureSequenceID)
         else:
-            print "not sending"
+            self.logger.log("not sending")
             # handle not being able to connect to the distributor
             pass
 
