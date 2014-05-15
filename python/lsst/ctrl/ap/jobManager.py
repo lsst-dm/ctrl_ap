@@ -60,8 +60,6 @@ class JobManager(object):
         for x in range(0,22):
             # replicatorPort, raft, sequenceTag, exposureSequenceID
             entry = rPortList[x]
-            machine = entry[0]
-            slotID = entry[1]
             rPort = entry[1]
             ad["Arguments"] =  "-R %s -r %s -t %s -x %s" % (str(rPort), str(x), sequenceTag, exposureSequenceID)
             ad["Out"] =  "Out.%s" % str(x)
