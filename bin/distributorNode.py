@@ -31,18 +31,21 @@ import socket
 import threading
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.distributorHandler import DistributorHandler
+from lsst.pex.logging import Log
 
 class DistributorNode(Node):
 
     def __init__(self, port):
         super(DistributorNode, self).__init__()
         self.createIncomingSocket(socket.gethostname(), port)
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger,"DistributorNode")
 
     def activate(self):
         while True:
-            print "Waiting on connection"
+            self.logger.log(Log.INFO, "Waiting on connection")
             (client, (ipAddr, clientPort)) = self.inSock.accept()
-            print "connection accepted: %s:%d" % (ipAddr, clientPort)
+            self.logger.log(Log.INFO, "connection accepted: %s:%d" % (ipAddr, clientPort))
             dh = DistributorHandler(client)
             dh.start()
             dh.join()

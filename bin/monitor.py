@@ -32,15 +32,17 @@ import sys
 import time
 import argparse
 import socket
+from lsst.pex.logging import Log
 
 class Monitor(object):
 
-    def __init__(self, host, port):
+    def __init__(self, logger, host, port):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
         self.host = host
         self.port = port
         self.sock = None
+        self.logger = logger
 
     def connect(self):
         # attempt a connection.
@@ -49,10 +51,10 @@ class Monitor(object):
         try:
             self.sock.connect((self.host, self.port))
         except socket.gaierror, err:
-            print "address problem?  %s " % err
+            self.logger.Log(Log.INFO, "address problem?  %s " % err
             sys.exit(1)
         except socket.error, err:
-            print "Connection problem: %s" % err
+            self.logger.Log(Log.INFO, "Connection problem: %s" % err
             self.sock = None
             return False
         return True
@@ -61,12 +63,14 @@ class Monitor(object):
         # check status of the socket with a ping/pong message
         self.send("ping")
         s = self.recv(4)
-        print s
+        self.logger.Log(s)
         return True
 
         
 
 if __name__ == "__main__":
+    logger = Log.getDefaultLog()
+    logger = Log(logger, "Monitor")
     basename = os.path.basename(sys.argv[0])
 
     parser = argparse.ArgumentParser(prog=basename)
@@ -77,19 +81,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # add argparse
-    monitor = Monitor(args.host, args.port)
-    #reg = CondorRegister()
+    monitor = Monitor(logger, args.host, args.port)
 
     isConnected = monitor.connect()
     if isConnected:
-        print "reg.registerFullyOperation()"
+        logger.Log(Log.INFO, "reg.registerFullyOperation()")
     else:
-        print "reg.registerLocalOnly()"
+        logger.Log(Log.INFO, "reg.registerLocalOnly()")
 
     while True:
         time.sleep(30)
         connected = monitor.checkStatus()
         if connected:
-            print "reg.registerFullyOperation()"
+            logger.Log(Log.INFO, "reg.registerFullyOperation()")
         else:
-            print "reg.registerLocalOnly()"
+            logger.Log(Log.INFO, "reg.registerLocalOnly()")

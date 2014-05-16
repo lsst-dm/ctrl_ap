@@ -30,6 +30,7 @@ import argparse
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.job import Job
+from lsst.pex.logging import Log
 
 class WavefrontJob(Job):
 
@@ -40,9 +41,11 @@ class WavefrontJob(Job):
         self.eventTopic = "ocs_startReadout"
         self.expectedSequenceTag = expectedSequenceTag
         self.expectedExpSeqID = expectedExpSeqID
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger, "WavefrontJob")
 
     def getCameraImage(self, imageID, sequenceTag, exposureSequenceID):
-        print "getting data for four wave front sensors; sequenceTag = %s, exposureSequenceID = %s" % (sequenceTag, exposureSequenceID)
+        self.logger(Log.INFO, "getting data for four wave front sensors; sequenceTag = %s, exposureSequenceID = %s" % (sequenceTag, exposureSequenceID))
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

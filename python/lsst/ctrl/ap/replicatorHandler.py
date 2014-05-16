@@ -29,19 +29,21 @@ import time
 import argparse
 import socket
 import threading
+from lsst.pex.logging import Log
 
 class ReplicatorHandler(threading.Thread):
     def __init__(self, jobSocket, distributorSocket):
         super(ReplicatorHandler, self).__init__()
         self.jobSock = jobSocket
         self.distSock = distributorSocket
+        self.logger = Log.getDefaultLog()
 
     def run(self):
         while True:
             s = self.jobSock.recv(1024)
             if s == "":
                 return
-            print 'received from replicator job',s.split(",")
-            print 'sending to distributor'
+            self.logger(Log.INFO, 'received from replicator job',s.split(","))
+            self.logger(Log.INFO, 'sending to distributor')
             self.distSock.send(s)
-            print 'sent!'
+            self.logger(Log.INFO, 'sent!')

@@ -30,12 +30,14 @@ import socket
 import time
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+from lsst.pex.logging import Log
 
 class Node(object):
 
     def __init__(self):
         self.inSock = None
         self.outSock = None
+        self.logger = Log.getDefaultLog()
 
 
     def createSocket(self):
@@ -45,21 +47,21 @@ class Node(object):
     def createIncomingSocket(self, host, port):
         self.inSock = self.createSocket()
         self.inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port)
+        self.logger.Log(Log.INFO, "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))
         self.inSock.bind((host, port))
         self.inSock.listen(5)
-        print "done creating socket"
+        self.logger.Log(Log.INFO, "done creating socket")
 
     def connectToNode(self, host, port):
         self.outSock = self.createSocket()
-        print "connecting to node %s:%d" % (host, port)
+        self.logger.Log(Log.INFO, "connecting to node %s:%d" % (host, port)
         try:
             self.outSock.connect((host, port))
         except socket.gaierror, err:
-            print "address problem?  %s " % err
+            self.logger.Log(Log.INFO, "address problem?  %s " % err)
             sys.exit(1)
         except socket.error, err:
-            print "Connection problem: %s" % err
+            self.logger.Log(Log.INFO, "Connection problem: %s" % err)
             self.outSock = None
             return False
         return True

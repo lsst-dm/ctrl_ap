@@ -29,16 +29,18 @@ import time
 import argparse
 import socket
 import threading
+from lsst.pex.logging import Log
 
 class DistributorHandler(threading.Thread):
     def __init__(self, sock):
         super(DistributorHandler, self).__init__()
         self.sock = sock
+        self.logger = Log.getDefaultLog()
 
     def run(self):
         while True:
             s = self.sock.recv(1024)
             if s == "":
-                print 'received nothing'
+                self.logger(Log.INFO, 'received nothing')
                 return 
-            print 'received from replicator',s.split(",")
+            self.logger(Log.INFO, 'received from replicator',s.split(","))

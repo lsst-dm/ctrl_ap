@@ -26,14 +26,15 @@ import time
 import datetime
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+from lsst.pex.logging import Log
 
 class CondorRegister(object):
 
     def __init__(self):
-        pass
+        self.logger = Log.getDefaultLog()
 
     def registerFullyOperational(self):
-        print "register with fully operational pool"
+        self.logger.log(Log.INFO, "register with fully operational pool")
 
     def registerLocalOnly(self):
-        print "register with local only pool"
+        self.logger.log(Log.INFO, "register with local only pool")

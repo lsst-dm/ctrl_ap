@@ -25,6 +25,7 @@
 import os
 import htcondor
 import classad
+from lsst.pex.logging import Log
 
 class JobManager(object):
 
@@ -35,6 +36,7 @@ class JobManager(object):
         ap_dir = os.environ["CTRL_AP_DIR"]
         self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/replicator.submit.ad")
         self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
+        self.logger = Log.getDefaultLog()
 
     def getClassAd(self, fileName):
         return classad.parse(open(fileName))
@@ -69,7 +71,7 @@ class JobManager(object):
             ad["WhenToTransferOutput"] =  "ON_EXIT"
 
             cluster = self.schedd.submit(ad,1)
-            print "done with this submit"
+            self.logger(Log.INFO, "done with this submit")
         ad = self.getClassAd(self.wavefrontJobPath)
         ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
         cluster = self.schedd.submit(ad,1)

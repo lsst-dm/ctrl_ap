@@ -58,15 +58,15 @@ class Job(object):
             # TODO:  for now, assume visit id, and exp. seq. id is also sent
             sequenceTag = ps.get("sequenceTag")
             exposureSequenceID = ps.get("exposureSequenceID")
-            print "image id = %s" % imageID
-            print "sequence tag = %s" % sequenceTag
-            print "exposure sequence id = %s" % exposureSequenceID
+            self.logger.log(Log.INFO, "image id = %s" % imageID)
+            self.logger.log(Log.INFO, "sequence tag = %s" % sequenceTag)
+            self.logger.log(Log.INFO, "exposure sequence id = %s" % exposureSequenceID)
             # NOTE:  While should be done through a selector on the broker
             # so we only get the sequenceTag and exp seq ID we are looking
             # for, DM Messages are not the ultimate way we'll be receiving
             # this info. we'll be using the DDS OCS messages, so this is good
             # for now.
             if sequenceTag == self.expectedSequenceTag and exposureSequenceID == self.expectedExpSeqID:
-                print "got expected info.  Getting image"
+                self.logger.log(Log.INFO, "got expected info.  Getting image")
                 self.execute(imageID, sequenceTag, exposureSequenceID)
                 sys.exit(0)

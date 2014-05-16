@@ -33,6 +33,7 @@ from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.job import Job
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
+from lsst.pex.logging import Log
 
 class ReplicatorNode(Node):
 
@@ -42,10 +43,12 @@ class ReplicatorNode(Node):
         self.distHost = distHost
         self.distPort = distPort
         self.dSock = None
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger, "ReplicatorNode")
 
     def activate(self):
         if  rep.connectToNode(args.distributor, args.port):
-            print "connected to distributor Node %s:%d" % (args.distributor, args.port)
+            self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             rh = ReplicatorHandler(client, self.outSock)
             rh.start()

@@ -26,6 +26,7 @@
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
+from lsst.pex.logging import Log
 
 class BaseDMCS(object):
 
@@ -35,16 +36,18 @@ class BaseDMCS(object):
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "ocs_event"
         self.rHostList = rHostList
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger, "BaseDMCS")
 
     def handleEvents(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
-            print "listening on %s " % self.eventTopic
+            self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
-            print ocsEventType
+            self.logger.log(Log.INFO, ocsEventType)
             if ocsEventType == "startIntegration":
                 jm = jobManager.JobManager()
                 sequenceTag = ps.get("sequenceTag")
