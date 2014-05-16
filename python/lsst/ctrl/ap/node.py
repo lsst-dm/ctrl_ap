@@ -54,7 +54,7 @@ class Node(object):
 
     def connectToNode(self, host, port):
         self.outSock = self.createSocket()
-        self.logger.Log(Log.INFO, "connecting to node %s:%d" % (host, port)
+        self.logger.Log(Log.INFO, "connecting to node %s:%d" % (host, port))
         try:
             self.outSock.connect((host, port))
         except socket.gaierror, err:

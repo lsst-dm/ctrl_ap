@@ -50,7 +50,7 @@ class ReplicatorNode(Node):
         if  rep.connectToNode(args.distributor, args.port):
             self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
             (client, (ipAddr, clientPort)) = self.inSock.accept()
-            rh = ReplicatorHandler(client, self.outSock)
+            rh = ReplicatorHandler(client, self.distHost, self.outSock)
             rh.start()
             rh.join()
 

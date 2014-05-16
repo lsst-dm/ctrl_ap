@@ -29,13 +29,15 @@ import time
 import argparse
 import socket
 import threading
+import subprocess
 from lsst.pex.logging import Log
 
 class ReplicatorHandler(threading.Thread):
-    def __init__(self, jobSocket, distributorSocket):
+    def __init__(self, jobSocket, distHost, distSock):
         super(ReplicatorHandler, self).__init__()
         self.jobSock = jobSocket
-        self.distSock = distributorSocket
+        self.distHost = distHost
+        self.distSock = distSock
         self.logger = Log.getDefaultLog()
 
     def run(self):
@@ -47,3 +49,10 @@ class ReplicatorHandler(threading.Thread):
             self.logger(Log.INFO, 'sending to distributor')
             self.distSock.send(s)
             self.logger(Log.INFO, 'sent!')
+            name = self.jobSock.recv(1024)
+            # TODO: check the file name to transfer
+
+            # send the file
+            p = subprocess.Popen(["scp",name, "%s:s" % (self.distHost,name)], shell=False)
+            p.wait()
+
