@@ -66,19 +66,6 @@ class ReplicatorJob(Job):
         self.rSock.send(s)
         # TODO Check return status
 
-    def sendFile(self, name):
-        f = open(name,"rb")
-        self.rSock.send('%d\n', size)
-        chunks = size/1024
-        leftover = size-(chunks*1024)
-        for i in range(0,chunks)
-            chunk = f.read(1024)
-            self.rSock.send(chunk)
-        chunk = f.read(leftover)
-        self.rSock.send(chunk)
-        f.close()
-        return True
-
     def execute(self, imageID, sequenceTag, exposureSequenceID):
         self.logger.log(Log.INFO, "info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID))
         if self.connectToReplicator():
@@ -93,8 +80,6 @@ class ReplicatorJob(Job):
         f = NamedTemporaryFile(delete=False)
         f.write(os.urandom(1024*1024))
         f.close()
-        #if self.sendFile(f.name):
-        #    os.unlink(f.name)
 
         # send the replicator node the name of the file
         self.rSock.send("%s",name)
