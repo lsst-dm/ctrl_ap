@@ -30,6 +30,7 @@ import argparse
 import socket
 import threading
 import subprocess
+import getpass
 from lsst.pex.logging import Log
 
 class ReplicatorHandler(threading.Thread):
@@ -45,14 +46,19 @@ class ReplicatorHandler(threading.Thread):
             s = self.jobSock.recv(1024)
             if s == "":
                 return
-            self.logger(Log.INFO, 'received from replicator job',s.split(","))
-            self.logger(Log.INFO, 'sending to distributor')
+            self.logger.log(Log.INFO, 'received from replicator job %s' % s)
+            self.logger.log(Log.INFO, 'sending to distributor')
             self.distSock.send(s)
-            self.logger(Log.INFO, 'sent!')
+            self.logger.log(Log.INFO, 'sent!')
             name = self.jobSock.recv(1024)
             # TODO: check the file name to transfer
+            self.logger.log(Log.INFO, 'received the name = "%s"; sending' % name)
 
             # send the file
-            p = subprocess.Popen(["scp",name, "%s:s" % (self.distHost,name)], shell=False)
+            print "user = %s" % getpass.getuser()
+            n = os.path.join("/tmp", os.path.basename(name))
+            print "self.distHost = %s" % self.distHost
+            print "n = %s" % n
+            p = subprocess.Popen(["scp", name, "%s:%s" % (self.distHost,n)], shell=False)
             p.wait()
 

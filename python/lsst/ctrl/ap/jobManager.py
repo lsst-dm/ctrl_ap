@@ -71,7 +71,7 @@ class JobManager(object):
             ad["WhenToTransferOutput"] =  "ON_EXIT"
 
             cluster = self.schedd.submit(ad,1)
-            self.logger(Log.INFO, "done with this submit")
+            self.logger.log(Log.INFO, "done with this submit")
         ad = self.getClassAd(self.wavefrontJobPath)
         ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
         cluster = self.schedd.submit(ad,1)

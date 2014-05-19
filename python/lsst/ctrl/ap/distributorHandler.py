@@ -35,12 +35,13 @@ class DistributorHandler(threading.Thread):
     def __init__(self, sock):
         super(DistributorHandler, self).__init__()
         self.sock = sock
-        self.logger = Log.getDefaultLog()
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger, "distributorHandler")
 
     def run(self):
         while True:
             s = self.sock.recv(1024)
             if s == "":
-                self.logger(Log.INFO, 'received nothing')
+                self.logger.log(Log.INFO, 'received nothing')
                 return 
-            self.logger(Log.INFO, 'received from replicator',s.split(","))
+            self.logger.log(Log.INFO, 'received from replicator %s' % s)

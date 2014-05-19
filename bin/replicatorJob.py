@@ -32,6 +32,7 @@ import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.job import Job
 from lsst.pex.logging import Log
+from tempfile import NamedTemporaryFile
 
 class ReplicatorJob(Job):
 
@@ -69,20 +70,26 @@ class ReplicatorJob(Job):
     def execute(self, imageID, sequenceTag, exposureSequenceID):
         self.logger.log(Log.INFO, "info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID))
         if self.connectToReplicator():
-            self.logger.log("sending info to replicator")
+            self.logger.log(Log.INFO, "sending info to replicator")
             self.sendInfo(imageID, sequenceTag, exposureSequenceID)
         else:
-            self.logger.log("not sending")
+            self.logger.log(Log.INFO, "not sending")
             # handle not being able to connect to the distributor
             pass
 
+        here = os.getcwd()
+        os.chdir("/tmp")
+        print "was here = %s" % here
+        print "now here = %s" % os.getcwd()
         # write out a temporary, but big, file
-        f = NamedTemporaryFile(delete=False)
+        f = NamedTemporaryFile(delete=False, dir="/tmp")
         f.write(os.urandom(1024*1024))
         f.close()
+        print "file created is named %s" % f.name
+        os.chdir(here)
 
         # send the replicator node the name of the file
-        self.rSock.send("%s",name)
+        self.rSock.send("%s" % f.name)
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

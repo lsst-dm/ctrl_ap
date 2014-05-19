@@ -47,21 +47,21 @@ class Node(object):
     def createIncomingSocket(self, host, port):
         self.inSock = self.createSocket()
         self.inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.logger.Log(Log.INFO, "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))
+        self.logger.log(Log.INFO, "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))
         self.inSock.bind((host, port))
         self.inSock.listen(5)
-        self.logger.Log(Log.INFO, "done creating socket")
+        self.logger.log(Log.INFO, "done creating socket")
 
     def connectToNode(self, host, port):
         self.outSock = self.createSocket()
-        self.logger.Log(Log.INFO, "connecting to node %s:%d" % (host, port))
+        self.logger.log(Log.INFO, "connecting to node %s:%d" % (host, port))
         try:
             self.outSock.connect((host, port))
         except socket.gaierror, err:
-            self.logger.Log(Log.INFO, "address problem?  %s " % err)
+            self.logger.log(Log.INFO, "address problem?  %s " % err)
             sys.exit(1)
         except socket.error, err:
-            self.logger.Log(Log.INFO, "Connection problem: %s" % err)
+            self.logger.log(Log.INFO, "Connection problem: %s" % err)
             self.outSock = None
             return False
         return True
