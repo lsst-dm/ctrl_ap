@@ -27,6 +27,7 @@ import os
 import sys
 import time
 import argparse
+import json
 import socket
 import threading
 import subprocess
@@ -44,12 +45,13 @@ class ReplicatorHandler(threading.Thread):
 
 
     def sendFile(self, name):
-        st = os.path.stat(name)
+        st = os.stat(name)
         size = st.st_size
         chunks = size/self.chunksize
         leftover = size-chunks*self.chunksize
         f = open(name)
-        self.distSock.send("{ size : %s }" % size)
+        vals = { "filename" : name, "size": size }
+        self.distSock.send(json.dumps(vals))
         for i in range(0,chunks):
             val = f.read(self.chunksize)
             self.distSock.send(val)
@@ -67,15 +69,21 @@ class ReplicatorHandler(threading.Thread):
             self.logger.log(Log.INFO, 'sending to distributor')
             self.distSock.send(s)
             self.logger.log(Log.INFO, 'sent!')
-            name = self.jobSock.recv(1024)
+            info = self.jobSock.recv(1024)
+            self.logger.log(Log.INFO, 'received: %s' % info)
+            vals = json.loads(info)
+            name = vals["filename"]
             # TODO: check the file name to transfer
-            self.logger.log(Log.INFO, 'received the name = "%s"; sending' % name)
+            print "name = %s" % name
+            self.logger.log(Log.INFO, 'name from replicator job %s' % str(name))
+
 
             # send the file
-            print "user = %s" % getpass.getuser()
-            n = os.path.join("/tmp", os.path.basename(name))
-            print "self.distHost = %s" % self.distHost
-            print "n = %s" % n
-            p = subprocess.Popen(["scp", name, "%s:%s" % (self.distHost,n)], shell=False)
-            p.wait()
-
+            #print "user = %s" % getpass.getuser()
+            #n = os.path.join("/tmp", os.path.basename(name))
+            #print "self.distHost = %s" % self.distHost
+            #print "n = %s" % n
+            #p = subprocess.Popen(["scp", name, "%s:%s" % (self.distHost,n)], shell=False)
+            #p.wait()
+            self.sendFile(name)
+            print "file  %s was sent" % name

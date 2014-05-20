@@ -27,6 +27,7 @@ import datetime
 import os
 import sys
 import argparse
+import json
 import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
@@ -61,9 +62,11 @@ class ReplicatorJob(Job):
         return True
 
     def sendInfo(self, imageID, sequenceTag, raft):
-        s = "%s,%s,%s" % (imageID, sequenceTag, raft)
+        vals = {"imageID" : int(imageID), "sequenceTag": int(sequenceTag), "raft" : int(raft)}
+        s = json.dumps(vals)
         self.logger.log(Log.INFO, "sending = %s" % s)
         # send this info to the distributor
+
         self.rSock.send(s)
         # TODO Check return status
 
@@ -89,7 +92,9 @@ class ReplicatorJob(Job):
         #os.chdir(here)
 
         # send the replicator node the name of the file
-        self.rSock.send("%s" % f.name)
+        vals = {"filename" : f.name}
+        info = json.dumps(vals)
+        self.rSock.send(info)
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

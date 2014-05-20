@@ -27,6 +27,7 @@ import os
 import sys
 import time
 import argparse
+import json
 import socket
 import threading
 from lsst.pex.logging import Log
@@ -44,4 +45,18 @@ class DistributorHandler(threading.Thread):
             if s == "":
                 self.logger.log(Log.INFO, 'received nothing')
                 return 
-            self.logger.log(Log.INFO, 'received from replicator %s' % s)
+            self.logger.log(Log.INFO, '1 received from replicator %s' % s)
+            s = self.sock.recv(1024)
+            self.logger.log(Log.INFO, '2 received from replicator %s' % s)
+            info = json.loads(s)
+            name = str(info["filename"])
+            size = str(info["size"])
+            self.logger.log(Log.INFO, "received: filename = '%s', size = %d" % (filename, size))
+            total = 0
+            f = open(name,"wb")
+            while total < size:
+                len = self.sock.recv_info(buf)
+                f.write(buf)
+                total = total + len
+            f.close() 
+            self.logger.log(Log.INFO, "finished writing file.")
