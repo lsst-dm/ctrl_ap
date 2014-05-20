@@ -49,10 +49,11 @@ class ReplicatorNode(Node):
     def activate(self):
         if  rep.connectToNode(args.distributor, args.port):
             self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
-            (client, (ipAddr, clientPort)) = self.inSock.accept()
-            rh = ReplicatorHandler(client, self.distHost, self.outSock)
-            rh.start()
-            rh.join()
+            while True:
+                (client, (ipAddr, clientPort)) = self.inSock.accept()
+                rh = ReplicatorHandler(client, self.distHost, self.outSock)
+                rh.start()
+                rh.join()
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

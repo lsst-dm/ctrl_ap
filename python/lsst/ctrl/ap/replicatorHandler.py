@@ -40,7 +40,24 @@ class ReplicatorHandler(threading.Thread):
         self.distHost = distHost
         self.distSock = distSock
         self.logger = Log.getDefaultLog()
+        self.chunksize = 1024
 
+
+    def sendFile(self, name):
+        st = os.path.stat(name)
+        size = st.st_size
+        chunks = size/self.chunksize
+        leftover = size-chunks*self.chunksize
+        f = open(name)
+        self.distSock.send("{ size : %s }" % size)
+        for i in range(0,chunks):
+            val = f.read(self.chunksize)
+            self.distSock.send(val)
+        val = f.read(leftover)
+        self.distSock.send(val)
+        f.close()
+
+        
     def run(self):
         while True:
             s = self.jobSock.recv(1024)
