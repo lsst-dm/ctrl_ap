@@ -26,13 +26,11 @@
 import os
 import sys
 import json
-import time
 import socket
-from lsst.pex.logging import Log
 
-class JSONSocket(socket.Socket):
-    def __init__(self):
-        super(JSONSocket, self).__init__()
+class JSONSocket(object):
+    def __init__(self, s):
+        self.sock = s
 
     def sendJSON(self, obj):
         s = json.dumps(obj)
@@ -44,8 +42,8 @@ class JSONSocket(socket.Socket):
         return s
 
     def sendWithLength(self, s):
-        self.sendall(struct.pack('!I',len(s)))
-        self.sendall(s)
+        self.sock.sendall(struct.pack('!I',len(s)))
+        self.sock.sendall(s)
 
     def recvall(self):
         # receive a message length and a JSON message
@@ -60,7 +58,7 @@ class JSONSocket(socket.Socket):
         dataSize = ""
         data =[]
         while total < size:
-            s = self.recv(recvSize)
+            s = self.sock.recv(recvSize)
             if not data:
                 # if we haven't put anything in the data buffer yet,
                 # we haven't gotten the message length yet, so deal
