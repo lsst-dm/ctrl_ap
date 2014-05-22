@@ -116,12 +116,14 @@ class JSONSocket(object):
         self.sock.sendall(s)
 
     def recvall(self):
-        # receive a message length and a JSON message
+        # receive data which is returned in a buffer
+        #
         # the idea here it to get the message length first and then
         # get the rest of the message.  We are never guaranteed to
         # get the full number of bytes requested on a recv, so we go
         # through some extra work to make sure we do, along with not 
-        # over reading the amount of data we're supposed to get.
+        # over reading the amount of data we're supposed to get and
+        # accidently spilling into the next message.
         total = 0
         size = sys.maxint
         recvSize = 4
