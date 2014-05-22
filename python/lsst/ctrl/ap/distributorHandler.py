@@ -41,22 +41,9 @@ class DistributorHandler(threading.Thread):
 
     def run(self):
         while True:
-            s = self.sock.recv(1024)
+            s = self.sock.recvJSON()
             if s == "":
                 self.logger.log(Log.INFO, 'received nothing')
                 return 
             self.logger.log(Log.INFO, '1 received from replicator %s' % s)
-            s = self.sock.recv(1024)
-            self.logger.log(Log.INFO, '2 received from replicator %s' % s)
-            info = json.loads(s)
-            name = str(info["filename"])
-            size = str(info["size"])
-            self.logger.log(Log.INFO, "received: filename = '%s', size = %d" % (filename, size))
-            total = 0
-            f = open(name,"wb")
-            while total < size:
-                len = self.sock.recv_info(buf)
-                f.write(buf)
-                total = total + len
-            f.close() 
-            self.logger.log(Log.INFO, "finished writing file.")
+            self.sock.recvFile()

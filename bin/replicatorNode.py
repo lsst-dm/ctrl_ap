@@ -33,6 +33,7 @@ from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.job import Job
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
+from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.pex.logging import Log
 
 class ReplicatorNode(Node):
@@ -51,7 +52,8 @@ class ReplicatorNode(Node):
             self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
             while True:
                 (client, (ipAddr, clientPort)) = self.inSock.accept()
-                rh = ReplicatorHandler(client, self.distHost, self.outSock)
+                sock = JSONSocket(client)
+                rh = ReplicatorHandler(sock, self.distHost, self.outSock)
                 rh.start()
                 rh.join()
 

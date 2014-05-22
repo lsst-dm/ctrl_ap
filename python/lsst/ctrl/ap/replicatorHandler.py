@@ -44,34 +44,18 @@ class ReplicatorHandler(threading.Thread):
         self.chunksize = 1024
 
 
-    def sendFile(self, name):
-        st = os.stat(name)
-        size = st.st_size
-        chunks = size/self.chunksize
-        leftover = size-chunks*self.chunksize
-        f = open(name)
-        vals = { "filename" : name, "size": size }
-        self.distSock.send(json.dumps(vals))
-        for i in range(0,chunks):
-            val = f.read(self.chunksize)
-            self.distSock.send(val)
-        val = f.read(leftover)
-        self.distSock.send(val)
-        f.close()
-
-        
     def run(self):
         while True:
-            s = self.jobSock.recv(1024)
+            # don't need to decode it;  we're just passing it on
+            s = self.jobSock.recvall()
             if s == "":
                 return
-            self.logger.log(Log.INFO, 'received from replicator job %s' % s)
+            self.logger.log(Log.INFO, 'received from replicator job %s' % json.loads(s))
             self.logger.log(Log.INFO, 'sending to distributor')
-            self.distSock.send(s)
+            # don't need to re-encode it
+            self.distSock.sendWithLength(s)
             self.logger.log(Log.INFO, 'sent!')
-            info = self.jobSock.recv(1024)
-            self.logger.log(Log.INFO, 'received: %s' % info)
-            vals = json.loads(info)
+            vals = self.jobSock.recvJSON()
             name = vals["filename"]
             # TODO: check the file name to transfer
             print "name = %s" % name
@@ -85,5 +69,5 @@ class ReplicatorHandler(threading.Thread):
             #print "n = %s" % n
             #p = subprocess.Popen(["scp", name, "%s:%s" % (self.distHost,n)], shell=False)
             #p.wait()
-            self.sendFile(name)
+            self.distSock.sendFile(name)
             print "file  %s was sent" % name

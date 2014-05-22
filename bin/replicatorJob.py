@@ -31,6 +31,7 @@ import json
 import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.job import Job
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
@@ -49,26 +50,23 @@ class ReplicatorJob(Job):
         
 
     def connectToReplicator(self):
-        self.rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % ("localhost", self.replicatorPort))
         try:
-            self.rSock.connect(("localhost", self.replicatorPort))
+            rSock.connect(("localhost", self.replicatorPort))
         except socket.gaierror, err:
             self.logger.log(Log.INFO, "address problem?  %s " % err)
             return False
         except socket.error, err:
             self.logger.log(Log.INFO, "Connection problem: %s" % err)
             return False
+        self.rSock = JSONSocket(rSock)
         return True
 
     def sendInfo(self, imageID, sequenceTag, raft):
         vals = {"imageID" : int(imageID), "sequenceTag": int(sequenceTag), "raft" : int(raft)}
-        s = json.dumps(vals)
-        self.logger.log(Log.INFO, "sending = %s" % s)
         # send this info to the distributor
-
-        self.rSock.send(s)
-        # TODO Check return status
+        self.rSock.sendJSON(vals)
 
     def execute(self, imageID, sequenceTag, exposureSequenceID):
         self.logger.log(Log.INFO, "info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID))
@@ -93,8 +91,7 @@ class ReplicatorJob(Job):
 
         # send the replicator node the name of the file
         vals = {"filename" : f.name}
-        info = json.dumps(vals)
-        self.rSock.send(info)
+        self.rSock.sendJSON(vals)
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

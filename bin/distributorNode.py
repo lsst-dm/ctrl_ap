@@ -31,6 +31,7 @@ import socket
 import threading
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.distributorHandler import DistributorHandler
+from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.pex.logging import Log
 
 class DistributorNode(Node):
@@ -46,6 +47,7 @@ class DistributorNode(Node):
             self.logger.log(Log.INFO, "Waiting on connection")
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             self.logger.log(Log.INFO, "connection accepted: %s:%d" % (ipAddr, clientPort))
+            client = JSONSocket(client)
             dh = DistributorHandler(client)
             dh.start()
             dh.join()

@@ -31,6 +31,7 @@ import time
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.pex.logging import Log
+from lsst.ctrl.ap.jsonSocket import JSONSocket
 
 class Node(object):
 
@@ -40,30 +41,28 @@ class Node(object):
         self.logger = Log.getDefaultLog()
 
 
-    def createSocket(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        return sock
-
     def createIncomingSocket(self, host, port):
-        self.inSock = self.createSocket()
-        self.inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        inSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.logger.log(Log.INFO, "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))
-        self.inSock.bind((host, port))
-        self.inSock.listen(5)
+        inSock.bind((host, port))
+        inSock.listen(5)
         self.logger.log(Log.INFO, "done creating socket")
+        self.inSock = JSONSocket(inSock)
 
     def connectToNode(self, host, port):
-        self.outSock = self.createSocket()
+        outSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.logger.log(Log.INFO, "connecting to node %s:%d" % (host, port))
         try:
-            self.outSock.connect((host, port))
+            outSock.connect((host, port))
         except socket.gaierror, err:
             self.logger.log(Log.INFO, "address problem?  %s " % err)
             sys.exit(1)
         except socket.error, err:
             self.logger.log(Log.INFO, "Connection problem: %s" % err)
-            self.outSock = None
+            outSock = None
             return False
+        self.outSock = JSONSocket(outSock)
         return True
 
     def process(self):
