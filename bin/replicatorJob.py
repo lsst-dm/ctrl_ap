@@ -78,16 +78,14 @@ class ReplicatorJob(Job):
             # handle not being able to connect to the distributor
             pass
 
-        #here = os.getcwd()
-        #os.chdir("/tmp")
-        #print "was here = %s" % here
-        #print "now here = %s" % os.getcwd()
-        # write out a temporary, but big, file
+        # artificial wait to simulate some processing going on.
+        time.sleep(2)
+
+        # write a random binary file to disk
         f = NamedTemporaryFile(delete=False, dir="/tmp")
         f.write(os.urandom(1024*1024))
         f.close()
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
-        #os.chdir(here)
 
         # send the replicator node the name of the file
         vals = {"filename" : f.name}
