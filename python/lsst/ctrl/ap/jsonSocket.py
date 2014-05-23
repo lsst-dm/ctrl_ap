@@ -106,7 +106,7 @@ class JSONSocket(object):
                 recvSize = recvSize-n
                 f.write(s)
         f.close()
-        return
+        return name
 
     def accept(self):
         return self.sock.accept()
@@ -131,6 +131,9 @@ class JSONSocket(object):
         data =[]
         while total < size:
             s = self.sock.recv(recvSize)
+            if s == "":
+                # this shouldn't happen in the middle of a message
+                return ""
             if not data:
                 # if we haven't put anything in the data buffer yet,
                 # we haven't gotten the message length yet, so deal

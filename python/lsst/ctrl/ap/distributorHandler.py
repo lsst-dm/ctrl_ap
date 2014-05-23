@@ -46,4 +46,5 @@ class DistributorHandler(threading.Thread):
                 self.logger.log(Log.INFO, 'received nothing')
                 return 
             self.logger.log(Log.INFO, '1 received from replicator %s' % s)
-            self.sock.recvFile()
+            name = self.sock.recvFile()
+            self.logger.log(Log.INFO, 'file received: %s' % name)

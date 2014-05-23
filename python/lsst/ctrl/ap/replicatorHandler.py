@@ -57,17 +57,11 @@ class ReplicatorHandler(threading.Thread):
             self.logger.log(Log.INFO, 'sent!')
             vals = self.jobSock.recvJSON()
             name = vals["filename"]
-            # TODO: check the file name to transfer
-            print "name = %s" % name
+
             self.logger.log(Log.INFO, 'name from replicator job %s' % str(name))
 
 
-            # send the file
-            #print "user = %s" % getpass.getuser()
-            #n = os.path.join("/tmp", os.path.basename(name))
-            #print "self.distHost = %s" % self.distHost
-            #print "n = %s" % n
-            #p = subprocess.Popen(["scp", name, "%s:%s" % (self.distHost,n)], shell=False)
-            #p.wait()
             self.distSock.sendFile(name)
             print "file  %s was sent" % name
+            # remove the file locally
+            os.unlink(name)
