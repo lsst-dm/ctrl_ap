@@ -59,7 +59,7 @@ class JobManager(object):
 
     def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
-        for x in range(0,22):
+        for x in range(0,21):
             # replicatorPort, raft, sequenceTag, exposureSequenceID
             entry = rPortList[x]
             rPort = entry[1]
