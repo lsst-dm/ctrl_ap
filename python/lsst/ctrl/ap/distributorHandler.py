@@ -30,7 +30,9 @@ import argparse
 import json
 import socket
 import threading
+import lsst.ctrl.events as events
 from lsst.pex.logging import Log
+from lsst.daf.base import PropertySet
 
 class DistributorHandler(threading.Thread):
     def __init__(self, sock):
@@ -39,12 +41,34 @@ class DistributorHandler(threading.Thread):
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "distributorHandler")
 
+        # TODO: get these from a config
+        self.broker = "lsst8.ncsa.uiuc.edu"
+        self.topic = "distributor_event"
+        eventSystem = events.EventSystem.getDefaultEventSystem()
+        self.archiveTransmitter = events.EventTransmitter(self.broker, self.topic)
+        
+    def sendToArchiveDMCS(self, vals):
+        props = PropertySet()
+        for x in vals:
+            print x, vals[x]
+            val = vals[x]
+            if type(val) == int:
+                props.set(str(x), int(vals[x]))
+            else:
+                props.set(str(x), str(vals[x]))
+        props.set("distributor_event", "archive info")
+        props.set("inetaddr", socket.gethostbyname(socket.gethostname()))
+
+        event = events.Event("distributor", props)
+        self.archiveTransmitter.publishEvent(event)
+
     def run(self):
         while True:
             s = self.sock.recvJSON()
             if s == "":
                 self.logger.log(Log.INFO, 'received nothing')
                 return 
+            self.sendToArchiveDMCS(s) 
             self.logger.log(Log.INFO, '1 received from replicator %s' % s)
             name = self.sock.recvFile()
             self.logger.log(Log.INFO, 'file received: %s' % name)
