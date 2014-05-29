@@ -22,7 +22,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-
 import os
 import sys
 import time
