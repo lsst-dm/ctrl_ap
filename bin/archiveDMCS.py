@@ -47,11 +47,11 @@ class ArchiveDMCS(object):
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("distributor_event")
             self.logger.log(Log.INFO, ocsEventType)
-            sequenceTag = ps.get("sequenceTag")
-            imageID = ps.get("imageID")
+            exposureSequenceID = ps.get("exposureSequenceID")
+            visitID = ps.get("visitID")
             raft = ps.get("raft")
             inetaddr = ps.get("inetaddr")
-            print "sequenceTag = %s, imageID = %s, raft = %s, networkAddress = %s" % (sequenceTag, imageID, raft, inetaddr)
+            print "exposureSequenceID = %s, visitID = %s, raft = %s, networkAddress = %s" % (exposureSequenceID, visitID, raft, inetaddr)
 
 if __name__ == "__main__":
     archive = ArchiveDMCS()
