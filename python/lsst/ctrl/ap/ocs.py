@@ -69,3 +69,16 @@ class OCS(object):
 
         trans = events.EventTransmitter(self.brokerName, "ocs_startReadout")
         trans.publishEvent(event)
+
+    def sendNextVisit(self):
+        eventSystem = events.EventSystem().getDefaultEventSystem()
+
+        originatorId = eventSystem.createOriginatorId()
+
+        props = PropertySet()
+        props.set("ocs_event", "nextVisit")
+        
+        runId = "ocs"
+        event = events.Event(runId, props)
+        trans = events.EventTransmitter(self.brokerName, self.eventTopic)
+        trans.publishEvent(event)

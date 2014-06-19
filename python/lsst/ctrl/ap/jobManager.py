@@ -33,9 +33,15 @@ class JobManager(object):
         self.temp = None
         self.ads = []
         self.schedd = htcondor.Schedd() # local schedd
+
+        c = htCondor.Collector("lsst-work.ncsa.illinois.edu")
+        scheddAd = c.locate(htcondor.DaemonTypes.Schedd, "lsst-work.ncsa.illinois.edu")
+        
+        self.workerSchedd = htcondor.Schedd(scheddAd)
         ap_dir = os.environ["CTRL_AP_DIR"]
         self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/replicator.submit.ad")
         self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
+        self.workerJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
         self.logger = Log.getDefaultLog()
 
     def getClassAd(self, fileName):
@@ -75,4 +81,10 @@ class JobManager(object):
         ad = self.getClassAd(self.wavefrontJobPath)
         ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
         cluster = self.schedd.submit(ad,1)
+        # TODO: should probably return clusters in a list
+
+    def submitWorkerJobs(self):
+        ad = self.getClassAd(self.workerJobPath)
+        ad["Arguments"] = "-args go here"
+        cluster = self.workerSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list

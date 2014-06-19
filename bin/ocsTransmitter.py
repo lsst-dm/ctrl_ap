@@ -77,3 +77,5 @@ if __name__ == "__main__":
         ocsT.sendStartIntegration(args.sequenceTag, args.integrationIndex)
     elif args.cmd == "startReadout":
         ocsT.sendStartReadout(args.imageID, args.sequenceTag, args.exposureSequenceID)
+    elif args.cmd == "nextVisit":
+        ocsT.sendNextVisit()

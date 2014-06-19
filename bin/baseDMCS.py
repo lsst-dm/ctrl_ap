@@ -53,6 +53,9 @@ class BaseDMCS(object):
                 sequenceTag = ps.get("sequenceTag")
                 exposureSequenceID = ps.get("integrationIndex")
                 jm.submitAllReplicatorJobs(rHostList, sequenceTag, exposureSequenceID)
+            elif ocsEventTYpe == "nextVisit":
+                jm = jobManager.JobManager()
+                jm.submitWorkerJobs()
 
 if __name__ == "__main__":
     rHostList = []
