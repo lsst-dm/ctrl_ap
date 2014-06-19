@@ -41,7 +41,8 @@ class JobManager(object):
         ap_dir = os.environ["CTRL_AP_DIR"]
         self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/replicator.submit.ad")
         self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
-        self.workerJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
+        self.workerJobPath = os.path.join(ap_dir,"etc/htcondor/submit/worker.submit.ad")
+        self.wavefrontSensorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefrontSensor.submit.ad")
         self.logger = Log.getDefaultLog()
 
     def getClassAd(self, fileName):
@@ -65,7 +66,7 @@ class JobManager(object):
 
     def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
-        for x in range(0,21):
+        for x in range(1,22):
             # replicatorPort, raft, sequenceTag, exposureSequenceID
             entry = rPortList[x]
             rPort = entry[1]
@@ -85,6 +86,13 @@ class JobManager(object):
 
     def submitWorkerJobs(self):
         ad = self.getClassAd(self.workerJobPath)
-        ad["Arguments"] = "-args go here"
-        cluster = self.workerSchedd.submit(ad,1)
+        for x in range(1,190):
+            ad["Arguments"] = "-args %d" % x
+            cluster = self.workerSchedd.submit(ad,1)
+
+        ad = self.getClassAd(self.wavefrontSensorJobPath)
+        for x in range(1,5):
+            ad["Arguments"] = "-args %d" % x
+            cluster = self.workerSchedd.submit(ad,1)
+
         # TODO: should probably return clusters in a list
