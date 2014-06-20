@@ -32,12 +32,16 @@ class JobManager(object):
     def __init__(self):
         self.temp = None
         self.ads = []
-        self.schedd = htcondor.Schedd() # local schedd
-
-        c = htCondor.Collector("lsst-work.ncsa.illinois.edu")
+        c = htcondor.Collector("lsst-work.ncsa.illinois.edu")
         scheddAd = c.locate(htcondor.DaemonTypes.Schedd, "lsst-work.ncsa.illinois.edu")
         
+        # for replicators
+        self.schedd = htcondor.Schedd(scheddAd)
+
+        # for workers
         self.workerSchedd = htcondor.Schedd(scheddAd)
+
+
         ap_dir = os.environ["CTRL_AP_DIR"]
         self.replicatorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/replicator.submit.ad")
         self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
@@ -66,6 +70,7 @@ class JobManager(object):
 
     def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
+        # 21 jobs
         for x in range(1,22):
             # replicatorPort, raft, sequenceTag, exposureSequenceID
             entry = rPortList[x]
@@ -79,19 +84,23 @@ class JobManager(object):
 
             cluster = self.schedd.submit(ad,1)
             #self.logger.log(Log.INFO, "done with this submit")
+
+        # one job
         ad = self.getClassAd(self.wavefrontJobPath)
         ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
         cluster = self.schedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 
-    def submitWorkerJobs(self):
+    def submitWorkerJobs(self, visitId, numExposures, foresightPointing, filterId):
         ad = self.getClassAd(self.workerJobPath)
-        for x in range(1,190):
-            ad["Arguments"] = "-args %d" % x
+        #for x in range(1,190):
+        for x in range(1,3):
+            ad["Arguments"] = "--visitid %s --numExposures %s --foresightPointing %s --filterId %s --ccdId %d" % (visitid, numExposures, foresightPointing, filterId, x)
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
-        for x in range(1,5):
+        #for x in range(1,5):
+        for x in range(1,3):
             ad["Arguments"] = "-args %d" % x
             cluster = self.workerSchedd.submit(ad,1)
 
