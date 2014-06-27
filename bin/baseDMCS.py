@@ -59,16 +59,9 @@ class BaseDMCS(object):
 
 if __name__ == "__main__":
     rHostList = []
-    #for x in range(1,9):
-    #    rHostList.append(("lsst11.ncsa.illinois.edu", 8000))
-    #    rHostList.append(("lsst14.ncsa.illinois.edu", 8000))
-    #    rHostList.append(("lsst15.ncsa.illinois.edu", 8000))
-    #    rHostList.append(("lsst9.ncsa.illinois.edu", 8000))
-    #for x in range(1,5):
-    #    rHostList.append(("lsst5.ncsa.illinois.edu", 8000))
-    #    rHostList.append(("lsst6.ncsa.illinois.edu", 8000))
+    # replicator connection locations
     for x in range(1,12):
-        rHostList.append(("lsst-run1.ncsa.illinois.edu", 8000))
+        rHostList.append(("lsst-rep1.ncsa.illinois.edu", 8000))
         rHostList.append(("lsst-run2.ncsa.illinois.edu", 8000))
         
     base = BaseDMCS(rHostList)
