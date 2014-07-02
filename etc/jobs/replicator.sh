@@ -1,15 +1,16 @@
 #!/bin/sh
-export HOME=/lsst/home/srp
+export HOME=/usr/local/home/srp
 export SHELL=/bin/sh
 export USER=srp
 source /etc/bashrc
 
 # LSST Personal software stack
-export LSSTSW=/lsst/home/srp/lsstsw_temp/lsstsw
-. $LSSTSW/bin/setup.sh
+WORKDIR=/nfs/workflow/srp
+export LSSTSW=$WORKDIR/lsstsw
+. $LSSTSW/loadLSST.sh
 setup ctrl_events
 HERE=$PWD
-cd /lsst/home/srp/ap/ctrl_ap
+cd $WORKDIR/ap/ctrl_ap
 setup -r .
 
 

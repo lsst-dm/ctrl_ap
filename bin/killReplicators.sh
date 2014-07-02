@@ -1,3 +1,3 @@
 #!/bin/bash
-ssh lsst-run1 killall python
-ssh lsst-run2 killall python
+ssh lsst-rep1 killall python
+ssh lsst-rep2 killall python

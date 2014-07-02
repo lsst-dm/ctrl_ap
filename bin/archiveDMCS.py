@@ -27,18 +27,40 @@ import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
 from lsst.pex.logging import Log
+import threading
+import socket
 
-class ArchiveDMCS(object):
+class SocketHandler(threading.Thread):
+    def __init__(self, dataTable):
+        print "init SocketHandler()"
+        threading.Thread.__init__(self)
+        self.dataTable = dataTable
 
-    def __init__(self):
-        # TODO:  these need to be placed in a configuration file
-        # which is loaded, so they are not embedded in the code
-        self.brokerName = "lsst8.ncsa.illinois.edu"
-        self.eventTopic = "distributor_event"
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "ArchiveDMCS")
+    def run(self):
+        print "starting SocketHandler()"
+        serverSock = socket.socket()
+        host = socket.gethostname()
+        port = 9595
+        print "starting on %s:%d" % (host, port)
+        serverSock.bind((host,port))
+        serverSock.listen(5)
+        while True:
+            client, port = serverSock.accept()
+            # do something interesting here
+    
 
-    def handleEvents(self):
+class EventHandler(threading.Thread):
+
+    def __init__(self, logger, brokerName, eventTopic, dataTable):
+        print "init EventHandler()"
+        threading.Thread.__init__(self)
+        self.logger = logger
+        self.dataTable = dataTable
+        self.brokerName = brokerName
+        self.eventTopic = eventTopic
+
+    def run(self):
+        print "starting EventHandler()"
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
@@ -53,6 +75,29 @@ class ArchiveDMCS(object):
             inetaddr = ps.get("inetaddr")
             print "exposureSequenceID = %s, visitID = %s, raft = %s, networkAddress = %s" % (exposureSequenceID, visitID, raft, inetaddr)
 
+class ArchiveDMCS(object):
+
+    def __init__(self):
+        # TODO:  these need to be placed in a configuration file
+        # which is loaded, so they are not embedded in the code
+        self.brokerName = "lsst8.ncsa.illinois.edu"
+        self.eventTopic = "distributor_event"
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger, "ArchiveDMCS")
+
+
 if __name__ == "__main__":
     archive = ArchiveDMCS()
-    archive.handleEvents()
+
+    dataTable = {}
+
+    socks = SocketHandler(dataTable)
+    socks.setDaemon(True)
+    socks.start()
+
+    eve = EventHandler(archive.logger, archive.brokerName, archive.eventTopic, dataTable)
+    eve.setDaemon(True)
+    eve.start()
+
+    socks.join()
+    eve.join()

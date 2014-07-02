@@ -13,5 +13,6 @@ HERE=$PWD
 cd $WORKDIR/ap/ctrl_ap
 setup -r .
 
-wavefrontJob.py $*
+
+workerJob.py $*
 hostname

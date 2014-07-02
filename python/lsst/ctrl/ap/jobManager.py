@@ -32,14 +32,16 @@ class JobManager(object):
     def __init__(self):
         self.temp = None
         self.ads = []
-        c = htcondor.Collector("lsst-work.ncsa.illinois.edu")
-        scheddAd = c.locate(htcondor.DaemonTypes.Schedd, "lsst-work.ncsa.illinois.edu")
+        cRep = htcondor.Collector("lsst-rep.ncsa.illinois.edu")
+        scheddRep = cRep.locate(htcondor.DaemonTypes.Schedd, "lsst-rep.ncsa.illinois.edu")
+        cWork = htcondor.Collector("lsst-work.ncsa.illinois.edu")
+        scheddWork = cWork.locate(htcondor.DaemonTypes.Schedd, "lsst-work.ncsa.illinois.edu")
         
         # for replicators
-        self.schedd = htcondor.Schedd(scheddAd)
+        self.repSchedd = htcondor.Schedd(scheddRep)
 
         # for workers
-        self.workerSchedd = htcondor.Schedd(scheddAd)
+        self.workerSchedd = htcondor.Schedd(scheddWork)
 
 
         ap_dir = os.environ["CTRL_AP_DIR"]
@@ -53,10 +55,6 @@ class JobManager(object):
         return classad.parse(open(fileName))
         
 
-    def submitClassAd(self, ad):
-        cluster = self.schedd.submit(ad,1)
-        return cluster
-
     def removeJob(self, cluster):
         """
         Remove a job from the queue.
@@ -65,7 +63,7 @@ class JobManager(object):
         # HTCondor expects the name with the ".0" at the end, otherwise
         # it will not be recognized.
         name = "%s.0" % cluster
-        values = self.schedd.act(htcondor.JobAction.Remove, [name])
+        values = self.repSchedd.act(htcondor.JobAction.Remove, [name])
         return values
 
     def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
@@ -82,25 +80,25 @@ class JobManager(object):
             ad["ShouldTransferFiles"] =  "NO"
             ad["WhenToTransferOutput"] =  "ON_EXIT"
 
-            cluster = self.schedd.submit(ad,1)
+            cluster = self.repSchedd.submit(ad,1)
             #self.logger.log(Log.INFO, "done with this submit")
 
         # one job
         ad = self.getClassAd(self.wavefrontJobPath)
         ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
-        cluster = self.schedd.submit(ad,1)
+        cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 
-    def submitWorkerJobs(self, visitId, numExposures, foresightPointing, filterId):
+    def submitWorkerJobs(self, visitID, numExposures, boresightPointing, filterId):
         ad = self.getClassAd(self.workerJobPath)
         #for x in range(1,190):
-        for x in range(1,3):
-            ad["Arguments"] = "--visitid %s --numExposures %s --foresightPointing %s --filterId %s --ccdId %d" % (visitid, numExposures, foresightPointing, filterId, x)
+	# start 50 worker jobs
+        for x in range(1,51):
+            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --ccd %d" % (visitID, numExposures, boresightPointing, filterId, x)
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
-        #for x in range(1,5):
-        for x in range(1,3):
+        for x in range(1,5):
             ad["Arguments"] = "-args %d" % x
             cluster = self.workerSchedd.submit(ad,1)
 

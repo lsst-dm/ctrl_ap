@@ -70,13 +70,17 @@ class OCS(object):
         trans = events.EventTransmitter(self.brokerName, "ocs_startReadout")
         trans.publishEvent(event)
 
-    def sendNextVisit(self):
+    def sendNextVisit(self, visitID, exposures, boresight, filterID):
         eventSystem = events.EventSystem().getDefaultEventSystem()
 
         originatorId = eventSystem.createOriginatorId()
 
         props = PropertySet()
         props.set("ocs_event", "nextVisit")
+	props.set("visitID", visitID)
+	props.set("exposures", exposures)
+	props.set("boresight", boresight)
+	props.set("filterID", filterID)
         
         runId = "ocs"
         event = events.Event(runId, props)

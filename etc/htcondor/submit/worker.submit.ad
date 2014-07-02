@@ -1,8 +1,8 @@
 [
-    Cmd = "/nfs/workflow/srp/ap/ctrl_ap/etc/jobs/replicator.sh";
+    Cmd = "/nfs/workflow/srp/ap/ctrl_ap/etc/jobs/worker.sh";
     Arguments = "Hello World";
-    Err = "rep.err";
-    Out = "rep.out";
+    Err = "worker.err";
+    Out = "worker.out";
     InitialDir = "/nfs/workflow/srp/temp";
     ShouldTransferFiles = "NO";
     FileSystemDomain = "ncsa.illinois.edu";
