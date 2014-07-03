@@ -72,8 +72,9 @@ class EventHandler(threading.Thread):
             exposureSequenceID = ps.get("exposureSequenceID")
             visitID = ps.get("visitID")
             raft = ps.get("raft")
-            inetaddr = ps.get("inetaddr")
-            print "exposureSequenceID = %s, visitID = %s, raft = %s, networkAddress = %s" % (exposureSequenceID, visitID, raft, inetaddr)
+            inetaddr = ps.get("networkAddress")
+            port = ps.get("networkPort")
+            print "exposureSequenceID = %s, visitID = %s, raft = %s, networkAddress = %s, networkPort = %s" % (exposureSequenceID, visitID, raft, inetaddr, str(port))
 
 class ArchiveDMCS(object):
 

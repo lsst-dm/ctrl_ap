@@ -56,7 +56,9 @@ class DistributorHandler(threading.Thread):
             else:
                 props.set(str(x), str(vals[x]))
         props.set("distributor_event", "archive info")
-        props.set("inetaddr", socket.gethostbyname(socket.gethostname()))
+        hostinfo = self.sock.getsockname()
+        props.set("networkAddress", hostinfo[0])
+        props.set("networkPort", hostinfo[1])
 
         event = events.Event("distributor", props)
         self.archiveTransmitter.publishEvent(event)
