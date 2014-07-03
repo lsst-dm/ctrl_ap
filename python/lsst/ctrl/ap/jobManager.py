@@ -69,11 +69,13 @@ class JobManager(object):
     def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
         # 21 jobs
-        for x in range(1,22):
+        for x in range(0,25):
+            if (x == 0) or (x == 4) or (x == 20) or (x == 24):
+                continue
             # replicatorPort, raft, sequenceTag, exposureSequenceID
             entry = rPortList[x]
             rPort = entry[1]
-            ad["Arguments"] =  "-R %s -r %s -t %s -x %s" % (str(rPort), str(x), sequenceTag, exposureSequenceID)
+            ad["Arguments"] =  "-R %s --raft %s -t %s -x %s" % (str(rPort), self.encodeToRaft(x), sequenceTag, exposureSequenceID)
             ad["Out"] =  "Out.%s" % str(x)
             ad["Err"] =  "Err.%s" % str(x)
             ad["Log"] =  "Log.%s" % str(x)
@@ -89,12 +91,17 @@ class JobManager(object):
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 
+    def encodeToRaft(self, raft):
+        s = "R:%d,%d" % (raft % 5, raft / 5)
+        return s
+
     def submitWorkerJobs(self, visitID, numExposures, boresightPointing, filterId):
         ad = self.getClassAd(self.workerJobPath)
         #for x in range(1,190):
 	# start 50 worker jobs
         for x in range(1,51):
-            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --ccd %d" % (visitID, numExposures, boresightPointing, filterId, x)
+            ccd = self.encodeToCCD(x)
+            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --ccd %s" % (visitID, numExposures, boresightPointing, filterId, x)
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)

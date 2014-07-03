@@ -31,10 +31,11 @@ import threading
 import socket
 
 class SocketHandler(threading.Thread):
-    def __init__(self, dataTable):
+    def __init__(self, dataTable, lock):
         print "init SocketHandler()"
         threading.Thread.__init__(self)
         self.dataTable = dataTable
+        self.lock = lock
 
     def run(self):
         print "starting SocketHandler()"
@@ -45,19 +46,35 @@ class SocketHandler(threading.Thread):
         serverSock.bind((host,port))
         serverSock.listen(5)
         while True:
-            client, port = serverSock.accept()
+            (clientSock, (ipAddr, clientPort)) = serverSock.accept()
             # do something interesting here
+            jsock = JSONSocket(clientSock)
+            
+            request = jsock.recvJSON()
+
+    def lookupData(self, request):
+        exposureSequenceID = request["exposureSequenceID"]
+        visitID = request["visitID"]
+        ccd = request["ccd"]
+        raft = ccd.split(" ")
+        key = "%s:%s:%s" % (exposureSequenceID,visitID,raft)
+        self.lock.aquire()
+        data = self.dataTable[key]
+        self.lock.release()
+        return data
+
     
 
 class EventHandler(threading.Thread):
 
-    def __init__(self, logger, brokerName, eventTopic, dataTable):
+    def __init__(self, logger, brokerName, eventTopic, dataTable, lock):
         print "init EventHandler()"
         threading.Thread.__init__(self)
         self.logger = logger
-        self.dataTable = dataTable
         self.brokerName = brokerName
         self.eventTopic = eventTopic
+        self.dataTable = dataTable
+        self.lock = lock
 
     def run(self):
         print "starting EventHandler()"
@@ -76,8 +93,12 @@ class EventHandler(threading.Thread):
             port = ps.get("networkPort")
             print "exposureSequenceID = %s, visitID = %s, raft = %s, networkAddress = %s, networkPort = %s" % (exposureSequenceID, visitID, raft, inetaddr, str(port))
 
-class ArchiveDMCS(object):
+            key = "%s:%s:%s" % (exposuresequenceID, visitID, raft)
+            self.lock.acquire()
+            self.dataTable[key] = (inetaddr, port)
+            self.lock.release()
 
+class ArchiveDMCS(object):
     def __init__(self):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
@@ -90,13 +111,14 @@ class ArchiveDMCS(object):
 if __name__ == "__main__":
     archive = ArchiveDMCS()
 
+    lock = threading.Lock()
     dataTable = {}
 
-    socks = SocketHandler(dataTable)
+    socks = SocketHandler(dataTable, lock)
     socks.setDaemon(True)
     socks.start()
 
-    eve = EventHandler(archive.logger, archive.brokerName, archive.eventTopic, dataTable)
+    eve = EventHandler(archive.logger, archive.brokerName, archive.eventTopic, dataTable, lock)
     eve.setDaemon(True)
     eve.start()
 

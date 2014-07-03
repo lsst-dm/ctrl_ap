@@ -46,20 +46,29 @@ class WorkerJob(object):
         self.ccd =ccd
 
     def requestDistributor(self, host, port):
-        remoteHost, reportPort = self.connectToArchiveDMCS(host, port)
-        return True
+        sock = self.connectToArchiveDMCS(host, port)
+
+        jsock = JSONSocket(sock)
+
+        vals = {"visitID":int(visitID), "ccd":ccd}
+
+        jsock.sendJSON(vals)
+
+        resp = jsock.recvJSON()
+        
+        return resp
         
     def connectToArchiveDMCS(self, host, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            remoteHost, reportPort = sock.connect((host, port))
+            sock.connect((host, port))
         except socket.gaierror, err:
             print "address problem?"
             return False
         except socket.error, err:
             print "connection problem: %s" % err
             return False
-        return remoteHost, remotePort
+        return sock
 
     def connectToDistributor(self):
         return True

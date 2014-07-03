@@ -76,7 +76,7 @@ class ReplicatorJob(object):
             pass
 
         self.logger.log(Log.INFO, "sending info to replicator")
-        vals = {"visitID" : int(self.expectedSequenceTag), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : int(self.raft)}
+        vals = {"visitID" : int(self.expectedSequenceTag), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
     parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="base replicator port (plus slot #) to connect to", required=True)
-    parser.add_argument("-r", "--raft", type=int, action="store", help="raft number", required=True)
+    parser.add_argument("-r", "--raft", type=str, action="store", help="raft number", required=True)
     parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag/visitID", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id/integrationIndex", required=True)
 
