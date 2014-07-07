@@ -91,17 +91,35 @@ class JobManager(object):
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 
-    def encodeToRaft(self, raft):
-        s = "R:%d,%d" % (raft % 5, raft / 5)
         return s
+
+    def encodeToCcdID(self, ccd):
+        raft = calculateRaftInfoFromCCD(ccd)
+        sRaft = "R:%d,%d" % (raft % 5, raft / 5)
+        sCcd = "S:%d,%d" % (ccd % 3, ccd / 3)
+        ccdId = "%s %s" % (sRaft, sCcd)
+        return ccdId
+
+
+    // given a ccd number (1 to 189), calculate the raft and the ccd within the
+    // raft
+    def calculateRaftInfoFromCCD(self, i):
+        x = i
+        raft = 1
+        while (x > 9):
+            x = x - 9
+            raft += 1
+            if (raft == 4) or (raft == 20):
+            raft += 1
+        return x-1, raft
 
     def submitWorkerJobs(self, visitID, numExposures, boresightPointing, filterId):
         ad = self.getClassAd(self.workerJobPath)
         #for x in range(1,190):
 	# start 50 worker jobs
         for x in range(1,51):
-            ccd = self.encodeToCCD(x)
-            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --ccd %s" % (visitID, numExposures, boresightPointing, filterId, x)
+            ccd = self.encodeToCcdId(x)
+            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --ccd %s" % (visitID, numExposures, boresightPointing, filterId, ccd)
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
