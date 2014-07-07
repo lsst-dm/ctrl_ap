@@ -52,6 +52,19 @@ class SocketHandler(threading.Thread):
             
             request = jsock.recvJSON()
 
+            
+            inetaddr = None
+            port = None
+            data = self.lookupData(request)
+            if data is not None:
+                inetaddr = data[0]
+                port = data[1]
+
+            vals = {"inetaddr":inetaddr, "port":port}
+            jsock.sendJSON(vals)
+
+    // xxx - is this supposed to block until we actually get the correct info
+    // back?
     def lookupData(self, request):
         exposureSequenceID = request["exposureSequenceID"]
         visitID = request["visitID"]
@@ -59,7 +72,11 @@ class SocketHandler(threading.Thread):
         raft = ccd.split(" ")
         key = "%s:%s:%s" % (exposureSequenceID,visitID,raft)
         self.lock.aquire()
-        data = self.dataTable[key]
+        // TODO: check to see if the key exists
+        if key in self.dataTable:
+            data = self.dataTable[key]
+        else:
+            data = None
         self.lock.release()
         return data
 
