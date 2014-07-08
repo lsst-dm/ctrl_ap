@@ -1,0 +1,8 @@
+[
+    Cmd = "/nfs/workflow/srp/ap/ctrl_ap/etc/jobs/wavefront.sh";
+    Arguments = "Hello World";
+    Err = "wave.err";
+    Out = "wave.out";
+    ShouldTransferFiles = "NO";
+    FileSystemDomain = "ncsa.illinois.edu";
+]
