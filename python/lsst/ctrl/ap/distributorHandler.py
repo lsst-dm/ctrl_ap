@@ -48,6 +48,7 @@ class DistributorHandler(threading.Thread):
         
     def sendToArchiveDMCS(self, vals):
         props = PropertySet()
+        print "sendToArchiveDMCS: props = ",props
         for x in vals:
             print x, vals[x]
             val = vals[x]

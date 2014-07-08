@@ -37,21 +37,25 @@ from tempfile import NamedTemporaryFile
 
 class WorkerJob(object):
 
-    def __init__(self, visitID, exposures, boresight, filterID, ccd):
+    def __init__(self, visitID, exposures, boresight, filterID, raft, ccd):
         print "worker startd"
         self.visitID = visitID
         self.exposures = exposures
         self.boresight = boresight
         self.filterID = filterID
-        self.ccd =ccd
+        self.raft = raft
+        self.ccd = ccd
 
     def requestDistributor(self, host, port):
         sock = self.connectToArchiveDMCS(host, port)
 
         jsock = JSONSocket(sock)
 
-        vals = {"visitID":int(visitID), "ccd":ccd}
+        # XX Placeholder for exposureSequenceID
 
+        vals = {"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":101}
+
+        print "vals = ",vals
         jsock.sendJSON(vals)
 
         resp = jsock.recvJSON()
@@ -76,8 +80,10 @@ class WorkerJob(object):
     def sendInfoToDistributor(self):
         return True
 
+    def retrieveDistributorImage(self, host, port):
+        
+
     def execute(self, host, port):
-        self.connectToArchiveDMCS()
         # TODO: do these next two lines twice
         distHost, distPort = self.requestDistributor(host, port)
         image, telemetry = self.retrieveDistributorImage(distHost, distPort)
@@ -96,10 +102,11 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--exposures", type=int, action="store", help="number of exposures", required=True)
     parser.add_argument("-b", "--boresight", type=str, action="store", help="boresight pointing", required=True)
     parser.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)
-    parser.add_argument("-c", "--ccd", type=int, action="store", help="ccd #", required=True)
-    parser.add_argument("-h", "--host", type=str, action="store", help="archive DMCS host", required=True)
-    parser.add_argument("-p", "--port", type=int, action="store", help="archive DMCS port", required=True)
+    parser.add_argument("-r", "--raft", type=str, action="store", help="raft id", required=True)
+    parser.add_argument("-c", "--ccd", type=str, action="store", help="ccd #", required=True)
+    parser.add_argument("-H", "--host", type=str, action="store", help="archive DMCS host", required=True)
+    parser.add_argument("-P", "--port", type=int, action="store", help="archive DMCS port", required=True)
     
     args = parser.parse_args()
-    job = WorkerJob(args.visitID, args.exposures, args.boresight, args.filterID, args.ccd)
+    job = WorkerJob(args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
     job.execute(args.host, args.port)

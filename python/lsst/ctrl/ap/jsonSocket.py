@@ -35,7 +35,11 @@ class JSONSocket(object):
 
     def sendJSON(self, obj):
         s = json.dumps(obj)
+        print "sendJSON: s =",s
         self.sendWithLength(s)
+
+    def getsockname(self):
+        return self.sock.getsockname()
 
     def recvJSON(self):
         s = self.recvall()
@@ -112,6 +116,8 @@ class JSONSocket(object):
         return self.sock.accept()
 
     def sendWithLength(self, s):
+        print "sendWithLength type = ",type(s)
+        print "sendWithLength len = ",len(s)
         self.sock.sendall(struct.pack('!I',len(s)))
         self.sock.sendall(s)
 

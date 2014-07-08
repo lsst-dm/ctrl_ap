@@ -27,6 +27,7 @@ import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
 from lsst.pex.logging import Log
+from lsst.ctrl.ap.jsonSocket import JSONSocket
 import threading
 import socket
 
@@ -40,6 +41,7 @@ class SocketHandler(threading.Thread):
     def run(self):
         print "starting SocketHandler()"
         serverSock = socket.socket()
+        serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         host = socket.gethostname()
         port = 9595
         print "starting on %s:%d" % (host, port)
@@ -47,6 +49,7 @@ class SocketHandler(threading.Thread):
         serverSock.listen(5)
         while True:
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
+            print "accepted connection"
             # do something interesting here
             jsock = JSONSocket(clientSock)
             
@@ -63,24 +66,22 @@ class SocketHandler(threading.Thread):
             vals = {"inetaddr":inetaddr, "port":port}
             jsock.sendJSON(vals)
 
-    // xxx - is this supposed to block until we actually get the correct info
-    // back?
+    # xxx - is this supposed to block until we actually get the correct info
+    # back?
     def lookupData(self, request):
         exposureSequenceID = request["exposureSequenceID"]
         visitID = request["visitID"]
+        raft = request["raft"]
         ccd = request["ccd"]
-        raft = ccd.split(" ")
         key = "%s:%s:%s" % (exposureSequenceID,visitID,raft)
-        self.lock.aquire()
-        // TODO: check to see if the key exists
+        self.lock.acquire()
+        # TODO: check to see if the key exists
         if key in self.dataTable:
             data = self.dataTable[key]
         else:
             data = None
         self.lock.release()
         return data
-
-    
 
 class EventHandler(threading.Thread):
 
@@ -110,7 +111,7 @@ class EventHandler(threading.Thread):
             port = ps.get("networkPort")
             print "exposureSequenceID = %s, visitID = %s, raft = %s, networkAddress = %s, networkPort = %s" % (exposureSequenceID, visitID, raft, inetaddr, str(port))
 
-            key = "%s:%s:%s" % (exposuresequenceID, visitID, raft)
+            key = "%s:%s:%s" % (exposureSequenceID, visitID, raft)
             self.lock.acquire()
             self.dataTable[key] = (inetaddr, port)
             self.lock.release()

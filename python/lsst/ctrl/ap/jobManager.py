@@ -69,11 +69,14 @@ class JobManager(object):
     def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
         # 21 jobs
+        raft = 1
+        print rPortList
         for x in range(0,25):
             if (x == 0) or (x == 4) or (x == 20) or (x == 24):
                 continue
             # replicatorPort, raft, sequenceTag, exposureSequenceID
-            entry = rPortList[x]
+            print "x = %d" % x
+            entry = rPortList[raft-1]
             rPort = entry[1]
             ad["Arguments"] =  "-R %s --raft %s -t %s -x %s" % (str(rPort), self.encodeToRaft(x), sequenceTag, exposureSequenceID)
             ad["Out"] =  "Out.%s" % str(x)
@@ -84,6 +87,7 @@ class JobManager(object):
 
             cluster = self.repSchedd.submit(ad,1)
             #self.logger.log(Log.INFO, "done with this submit")
+            raft += 1
 
         # one job
         ad = self.getClassAd(self.wavefrontJobPath)
@@ -91,40 +95,62 @@ class JobManager(object):
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 
-        return s
+    def encodeToRaft(self, raft):
+        sRaft = "R:%d,%d" % (raft % 5, raft / 5)
+        return sRaft
 
     def encodeToCcdID(self, ccd):
-        raft = calculateRaftInfoFromCCD(ccd)
-        sRaft = "R:%d,%d" % (raft % 5, raft / 5)
-        sCcd = "S:%d,%d" % (ccd % 3, ccd / 3)
-        ccdId = "%s %s" % (sRaft, sCcd)
+        sub, raft = self.calculateRaftInfoFromCcd(ccd)
+        sRaft = self.encodeToRaft(raft)
+        sCcd = "S:%d,%d" % (sub % 3, sub / 3)
+        ccdId = "%s\\ %s" % (sRaft, sCcd)
         return ccdId
 
 
-    // given a ccd number (1 to 189), calculate the raft and the ccd within the
-    // raft
-    def calculateRaftInfoFromCCD(self, i):
+    # given a ccd number (1 to 189), calculate the raft and the ccd within the
+    # raft
+    def calculateRaftInfoFromCcd(self, i):
         x = i
         raft = 1
         while (x > 9):
             x = x - 9
             raft += 1
             if (raft == 4) or (raft == 20):
-            raft += 1
+                raft += 1
         return x-1, raft
 
     def submitWorkerJobs(self, visitID, numExposures, boresightPointing, filterId):
         ad = self.getClassAd(self.workerJobPath)
-        #for x in range(1,190):
-	# start 50 worker jobs
+	    # start 50 worker jobs
+        # TODO: change hardcoded distributor and port
+        distHost = "lsst-work.ncsa.illinois.edu"
+        distPort = 9595
         for x in range(1,51):
-            ccd = self.encodeToCcdId(x)
-            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --ccd %s" % (visitID, numExposures, boresightPointing, filterId, ccd)
+            ccd = self.encodeToCcdID(x)
+            sub, raft = self.calculateRaftInfoFromCcd(x)
+            sRaft = self.encodeToRaft(raft)
+            sCcd = "S:%d,%d" % (sub % 3, sub / 3)
+            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s -H %s -P %d" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd, distHost, distPort)
+            print ad["Arguments"]
+            ad["Out"] =  "worker.Out.%s" % str(x)
+            ad["Err"] =  "worker.Err.%s" % str(x)
+            ad["Log"] =  "worker.Log.%s" % str(x)
+            cluster = self.workerSchedd.submit(ad,1)
+
+        # TODO: should probably return clusters in a list
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
         for x in range(1,5):
             ad["Arguments"] = "-args %d" % x
+            ad["Out"] =  "wavefront.Out.%s" % str(x)
+            ad["Err"] =  "wavefront.Err.%s" % str(x)
+            ad["Log"] =  "wavefront.Log.%s" % str(x)
             cluster = self.workerSchedd.submit(ad,1)
 
         # TODO: should probably return clusters in a list
+
+if __name__ == "__main__":
+    jm = JobManager()
+    for i in range (1,190):
+        print jm.encodeToCcdID(i)
