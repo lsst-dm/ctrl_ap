@@ -76,7 +76,7 @@ class ReplicatorJob(object):
             pass
 
         self.logger.log(Log.INFO, "sending info to replicator")
-        vals = {"visitID" : int(self.expectedSequenceTag), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
+        vals = {"msgtype":"replicator job", "visitID" : int(self.expectedSequenceTag), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
 

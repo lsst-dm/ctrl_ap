@@ -53,9 +53,7 @@ class WorkerJob(object):
 
         jsock = JSONSocket(sock)
 
-        # XX Placeholder for exposureSequenceID
-
-        vals = {"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
+        vals = {"msgtype":"worker job", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
 
         print "vals = ",vals
         jsock.sendJSON(vals)

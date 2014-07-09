@@ -50,6 +50,7 @@ class DistributorNode(Node):
             client = JSONSocket(client)
             dh = DistributorHandler(client)
             dh.start()
+            # XXX - don't do this when doing multiple threads
             dh.join()
 
 if __name__ == "__main__":
