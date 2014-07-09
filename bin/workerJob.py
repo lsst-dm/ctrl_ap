@@ -37,8 +37,10 @@ from tempfile import NamedTemporaryFile
 
 class WorkerJob(object):
 
-    def __init__(self, visitID, exposures, boresight, filterID, raft, ccd):
+    def __init__(self, host, port, visitID, exposures, boresight, filterID, raft, ccd):
         print "worker startd"
+        self.host = host
+        self.port = port
         self.visitID = visitID
         self.exposures = exposures
         self.boresight = boresight
@@ -46,14 +48,14 @@ class WorkerJob(object):
         self.raft = raft
         self.ccd = ccd
 
-    def requestDistributor(self, host, port):
-        sock = self.connectToArchiveDMCS(host, port)
+    def requestDistributor(self, exposureSequenceID):
+        sock = self.connectToArchiveDMCS(self.host, self.port)
 
         jsock = JSONSocket(sock)
 
         # XX Placeholder for exposureSequenceID
 
-        vals = {"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":101}
+        vals = {"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
 
         print "vals = ",vals
         jsock.sendJSON(vals)
@@ -62,10 +64,10 @@ class WorkerJob(object):
         
         return resp
         
-    def connectToArchiveDMCS(self, host, port):
+    def connectToArchiveDMCS(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.connect((host, port))
+            sock.connect((self.host, self.port))
         except socket.gaierror, err:
             print "address problem?"
             return False
@@ -80,13 +82,15 @@ class WorkerJob(object):
     def sendInfoToDistributor(self):
         return True
 
-    def retrieveDistributorImage(self, host, port):
+    def retrieveDistributorImage(self, host, port, exposure):
+        return True
         
 
-    def execute(self, host, port):
+    def execute(self):
         # TODO: do these next two lines twice
-        distHost, distPort = self.requestDistributor(host, port)
-        image, telemetry = self.retrieveDistributorImage(distHost, distPort)
+        for exposure in range (0, self.exposures):
+            distHost, distPort = self.requestDistributor(self.host, self.port)
+            image, telemetry = self.retrieveDistributorImage(distHost, distPort, exposure)
 
         print "Perform alert production:"
         print "generating DIASources"
@@ -108,5 +112,5 @@ if __name__ == "__main__":
     parser.add_argument("-P", "--port", type=int, action="store", help="archive DMCS port", required=True)
     
     args = parser.parse_args()
-    job = WorkerJob(args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
-    job.execute(args.host, args.port)
+    job = WorkerJob(args.host, args.port, args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
+    job.execute()

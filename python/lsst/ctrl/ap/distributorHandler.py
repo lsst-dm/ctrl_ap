@@ -65,12 +65,22 @@ class DistributorHandler(threading.Thread):
         self.archiveTransmitter.publishEvent(event)
 
     def run(self):
+        # TODO:  this should probably renew a lease to the archive, so the
+        # archive knows this is still alive, rather than the archive always
+        # assuming it.
+
+        # receive the visit id, exposure sequence nuber and raft id, from
+        # the replicator.
+        s = self.sock.recvJSON()
+        if s == "":
+            self.logger.log(Log.INFO, 'received nothing')
+            return 
+        # send the message we just received, along with some additional
+        # information, to the Archive DMCS.
+        self.sendToArchiveDMCS(s) 
+
+        # now wait for messages from workers.
         while True:
-            s = self.sock.recvJSON()
-            if s == "":
-                self.logger.log(Log.INFO, 'received nothing')
-                return 
-            self.sendToArchiveDMCS(s) 
             self.logger.log(Log.INFO, '1 received from replicator %s' % s)
             name = self.sock.recvFile()
             self.logger.log(Log.INFO, 'file received: %s' % name)
