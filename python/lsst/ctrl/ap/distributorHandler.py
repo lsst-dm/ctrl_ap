@@ -64,7 +64,7 @@ class DistributorHandler(threading.Thread):
         event = events.Event("distributor", props)
         self.archiveTransmitter.publishEvent(event)
 
-    def putFile(self, name):
+    def putFile(self, key, name):
         self.lock.aquire()
         self.data[key] = name
         self.lock.release()
@@ -111,7 +111,7 @@ class DistributorHandler(threading.Thread):
             key = self.createKey(vals)
             # now wait for messages from workers.
             while True:
-                self.logger.log(Log.INFO, '1 received from replicator %s' % s)
+                self.logger.log(Log.INFO, '1 received from replicator %s' % vals)
                 name = self.sock.recvFile()
                 self.logger.log(Log.INFO, 'file received: %s' % name)
                 self.putFile(key, name)

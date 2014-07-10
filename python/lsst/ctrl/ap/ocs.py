@@ -36,15 +36,15 @@ class OCS(object):
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.logger = Log.getDefaultLog()
 
-    def sendStartIntegration(self, sequenceTag, integrationIndex):
+    def sendStartIntegration(self, visitID, exposureSequenceID):
         eventSystem = events.EventSystem().getDefaultEventSystem()
 
         originatorId = eventSystem.createOriginatorId()
 
         props = PropertySet()
         props.set("ocs_event", "startIntegration")
-        props.set("sequenceTag", sequenceTag)
-        props.set("integrationIndex", integrationIndex)
+        props.set("visitID", visitID)
+        props.set("exposureSequenceID", exposureSequenceID)
 
         runId = "ocs"
         event = events.Event(runId, props)
@@ -54,14 +54,14 @@ class OCS(object):
         ts = time.time()
         self.logger.log(Log.INFO,  datetime.datetime.fromtimestamp(ts).strftime('startIntegration: %Y-%m-%d %H:%M:%S'))
 
-    def sendStartReadout(self, imageID, sequenceTag, exposureSequenceID):
+    def sendStartReadout(self, imageID, visitID, exposureSequenceID):
         eventSystem = events.EventSystem().getDefaultEventSystem()
 
         originatorId = eventSystem.createOriginatorId()
 
         props = PropertySet()
         props.set("imageID", imageID)
-        props.set("sequenceTag", sequenceTag)
+        props.set("visitID", visitID)
         props.set("exposureSequenceID", exposureSequenceID)
 
         runId = "ocs"
@@ -77,10 +77,10 @@ class OCS(object):
 
         props = PropertySet()
         props.set("ocs_event", "nextVisit")
-	props.set("visitID", visitID)
-	props.set("exposures", exposures)
-	props.set("boresight", boresight)
-	props.set("filterID", filterID)
+        props.set("visitID", visitID)
+        props.set("exposures", exposures)
+        props.set("boresight", boresight)
+        props.set("filterID", filterID)
         
         runId = "ocs"
         event = events.Event(runId, props)

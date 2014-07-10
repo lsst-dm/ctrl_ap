@@ -34,26 +34,26 @@ from lsst.pex.logging import Log
 
 class WavefrontJob(Job):
 
-    def __init__(self, expectedSequenceTag, expectedExpSeqID):
+    def __init__(self, expectedVisitID, expectedExpSeqID):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "ocs_startReadout"
-        self.expectedSequenceTag = expectedSequenceTag
+        self.expectedVisitID = expectedVisitID
         self.expectedExpSeqID = expectedExpSeqID
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "WavefrontJob")
 
-    def getCameraImage(self, imageID, sequenceTag, exposureSequenceID):
-        self.logger(Log.INFO, "getting data for four wave front sensors; sequenceTag = %s, exposureSequenceID = %s" % (sequenceTag, exposureSequenceID))
+    def getCameraImage(self, imageID, visitID, exposureSequenceID):
+        self.logger(Log.INFO, "getting data for four wave front sensors; visitID = %s, exposureSequenceID = %s" % (visitID, exposureSequenceID))
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
-    parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag", required=True)
+    parser.add_argument("-I", "--visitID", type=int, action="store", help="visit id", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
     args = parser.parse_args()
-    base = WavefrontJob(args.sequenceTag, args.exposureSequenceID)
+    base = WavefrontJob(args.visitID, args.exposureSequenceID)
     base.handleEvents()
 

@@ -50,14 +50,14 @@ class BaseDMCS(object):
             self.logger.log(Log.INFO, ocsEventType)
             if ocsEventType == "startIntegration":
                 jm = jobManager.JobManager()
-                sequenceTag = ps.get("sequenceTag")
-                exposureSequenceID = ps.get("integrationIndex")
-                jm.submitAllReplicatorJobs(rHostList, sequenceTag, exposureSequenceID)
+                visitID = ps.get("visitID")
+                exposureSequenceID = ps.get("exposureSequenceID")
+                jm.submitAllReplicatorJobs(rHostList, visitID, exposureSequenceID)
             elif ocsEventType == "nextVisit":
-		visitID = ps.get("visitID")
-		exposures = ps.get("exposures")
-		boresight = ps.get("boresight")
-		filterID = ps.get("filterID")
+                visitID = ps.get("visitID")
+                exposures = ps.get("exposures")
+                boresight = ps.get("boresight")
+                filterID = ps.get("filterID")
                 jm = jobManager.JobManager()
                 jm.submitWorkerJobs(visitID, exposures, boresight, filterID)
 

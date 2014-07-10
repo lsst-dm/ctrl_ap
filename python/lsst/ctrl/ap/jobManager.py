@@ -66,7 +66,7 @@ class JobManager(object):
         values = self.repSchedd.act(htcondor.JobAction.Remove, [name])
         return values
 
-    def submitAllReplicatorJobs(self, rPortList, sequenceTag, exposureSequenceID):
+    def submitAllReplicatorJobs(self, rPortList, visitID, exposureSequenceID):
         ad = self.getClassAd(self.replicatorJobPath)
         # 21 jobs
         raft = 1
@@ -74,11 +74,11 @@ class JobManager(object):
         for x in range(0,25):
             if (x == 0) or (x == 4) or (x == 20) or (x == 24):
                 continue
-            # replicatorPort, raft, sequenceTag, exposureSequenceID
+            # replicatorPort, raft, visitID, exposureSequenceID
             print "x = %d" % x
             entry = rPortList[raft-1]
             rPort = entry[1]
-            ad["Arguments"] =  "-R %s --raft %s -t %s -x %s" % (str(rPort), self.encodeToRaft(x), sequenceTag, exposureSequenceID)
+            ad["Arguments"] =  "-R %s --raft %s -I %s -x %s" % (str(rPort), self.encodeToRaft(x), visitID, exposureSequenceID)
             ad["Out"] =  "Out.%s" % str(x)
             ad["Err"] =  "Err.%s" % str(x)
             ad["Log"] =  "Log.%s" % str(x)
@@ -91,7 +91,7 @@ class JobManager(object):
 
         # one job
         ad = self.getClassAd(self.wavefrontJobPath)
-        ad["Arguments"] = "-t %s -x %s" % (sequenceTag, exposureSequenceID)
+        ad["Arguments"] = "-t %s -x %s" % (visitID, exposureSequenceID)
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 

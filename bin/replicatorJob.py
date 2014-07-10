@@ -37,7 +37,7 @@ from tempfile import NamedTemporaryFile
 
 class ReplicatorJob(object):
 
-    def __init__(self, rPort, raft, expectedSequenceTag, expectedExpSeqID):
+    def __init__(self, rPort, raft, expectedVisitID, expectedExpSeqID):
         jobnum = os.getenv("_CONDOR_SLOT","slot0")
         self.replicatorPort = rPort+int(jobnum[4:])
         
@@ -47,7 +47,7 @@ class ReplicatorJob(object):
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "ocs_startReadout"
         self.raft = raft
-        self.expectedSequenceTag = expectedSequenceTag
+        self.expectedVisitID = expectedVisitID
         self.expectedExpSeqID = expectedExpSeqID
 
         logger = Log.getDefaultLog()
@@ -76,12 +76,12 @@ class ReplicatorJob(object):
             pass
 
         self.logger.log(Log.INFO, "sending info to replicator")
-        vals = {"msgtype":"replicator job", "visitID" : int(self.expectedSequenceTag), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
+        vals = {"msgtype":"replicator job", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
 
-    def execute(self, imageID, sequenceTag, exposureSequenceID):
-        self.logger.log(Log.INFO, "info for image id = %s, sequenceTag = %s, exposureSequenceID = %s" % (imageID, sequenceTag, exposureSequenceID))
+    def execute(self, imageID, visitID, exposureSequenceID):
+        self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
         time.sleep(2)
@@ -109,19 +109,19 @@ class ReplicatorJob(object):
             ps = ocsEvent.getPropertySet()
             imageID = ps.get("imageID")
             # TODO:  for now, assume visit id, and exp. seq. id is also sent
-            sequenceTag = ps.get("sequenceTag")
+            visitID = ps.get("visitID")
             exposureSequenceID = ps.get("exposureSequenceID")
             self.logger.log(Log.INFO, "image id = %s" % imageID)
-            self.logger.log(Log.INFO, "sequence tag = %s" % sequenceTag)
+            self.logger.log(Log.INFO, "sequence tag = %s" % visitID)
             self.logger.log(Log.INFO, "exposure sequence id = %s" % exposureSequenceID)
             # NOTE:  While should be done through a selector on the broker
-            # so we only get the sequenceTag and exp seq ID we are looking
+            # so we only get the visitID and exp seq ID we are looking
             # for, DM Messages are not the ultimate way we'll be receiving
             # this info. we'll be using the DDS OCS messages, so this is good
             # for now.
-            if sequenceTag == self.expectedSequenceTag and exposureSequenceID == self.expectedExpSeqID:
+            if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
                 self.logger.log(Log.INFO, "got expected info.  Getting image")
-                self.execute(imageID, sequenceTag, exposureSequenceID)
+                self.execute(imageID, visitID, exposureSequenceID)
                 sys.exit(0)
 
 if __name__ == "__main__":
@@ -129,9 +129,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=basename)
     parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="base replicator port (plus slot #) to connect to", required=True)
     parser.add_argument("-r", "--raft", type=str, action="store", help="raft", required=True)
-    parser.add_argument("-t", "--sequenceTag", type=int, action="store", help="sequence Tag/visitID", required=True)
-    parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id/integrationIndex", required=True)
+    parser.add_argument("-I", "--visitID", type=int, action="store", help="visitID", required=True)
+    parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
     args = parser.parse_args()
-    base = ReplicatorJob(args.replicatorPort, args.raft, args.sequenceTag, args.exposureSequenceID)
+    base = ReplicatorJob(args.replicatorPort, args.raft, args.visitID, args.exposureSequenceID)
     base.start()
