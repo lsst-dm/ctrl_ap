@@ -49,7 +49,7 @@ class WorkerJob(object):
         self.ccd = ccd
 
     def requestDistributor(self, exposureSequenceID):
-        sock = self.connectToArchiveDMCS(self.host, self.port)
+        sock = self.connectToArchiveDMCS()
 
         jsock = JSONSocket(sock)
 
@@ -58,7 +58,9 @@ class WorkerJob(object):
         print "vals = ",vals
         jsock.sendJSON(vals)
 
+        # wait for a response from the Archive DMCS
         resp = jsock.recvJSON()
+        print "worker response received; resp =", resp
         
         return resp
         
@@ -87,7 +89,7 @@ class WorkerJob(object):
     def execute(self):
         # TODO: do these next two lines twice
         for exposure in range (0, self.exposures):
-            distHost, distPort = self.requestDistributor(self.host, self.port)
+            distHost, distPort = self.requestDistributor(exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, distPort, exposure)
 
         print "Perform alert production:"

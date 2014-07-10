@@ -73,7 +73,7 @@ class DistributorHandler(threading.Thread):
     def getFile(self, key):
         name = ""
         self.lock.aquire()
-        if key is in self.data:
+        if key in self.data:
             name = self.data[key]
         self.lock.release()
         return name
@@ -115,6 +115,6 @@ class DistributorHandler(threading.Thread):
                 name = self.sock.recvFile()
                 self.logger.log(Log.INFO, 'file received: %s' % name)
                 self.putFile(key, name)
-        else if msgtype == "worker job":
+        elif msgtype == "worker job":
             self.transmitFile(s)
 

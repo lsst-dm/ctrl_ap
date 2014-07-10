@@ -120,12 +120,13 @@ class JobManager(object):
         return x-1, raft
 
     def submitWorkerJobs(self, visitID, numExposures, boresightPointing, filterId):
+        print "submit worker jobs called"
         ad = self.getClassAd(self.workerJobPath)
 	    # start 50 worker jobs
         # TODO: change hardcoded distributor and port
         distHost = "lsst-work.ncsa.illinois.edu"
         distPort = 9595
-        for x in range(1,51):
+        for x in range(1,61):
             ccd = self.encodeToCcdID(x)
             sub, raft = self.calculateRaftInfoFromCcd(x)
             sRaft = self.encodeToRaft(raft)
@@ -135,9 +136,6 @@ class JobManager(object):
             ad["Out"] =  "worker.Out.%s" % str(x)
             ad["Err"] =  "worker.Err.%s" % str(x)
             ad["Log"] =  "worker.Log.%s" % str(x)
-            cluster = self.workerSchedd.submit(ad,1)
-
-        # TODO: should probably return clusters in a list
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
