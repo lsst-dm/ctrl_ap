@@ -34,9 +34,11 @@ from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 
 class DistributorHandler(threading.Thread):
-    def __init__(self, sock):
+    def __init__(self, sock, dataTable, lock):
         super(DistributorHandler, self).__init__()
         self.sock = sock
+        self.dataTable = dataTable
+        self.lock = lock
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "distributorHandler")
 
@@ -65,16 +67,16 @@ class DistributorHandler(threading.Thread):
         self.archiveTransmitter.publishEvent(event)
 
     def putFile(self, key, name):
-        self.lock.aquire()
-        self.data[key] = name
+        self.lock.acquire()
+        self.dataTable[key] = name
         self.lock.release()
 
 
     def getFile(self, key):
         name = ""
-        self.lock.aquire()
-        if key in self.data:
-            name = self.data[key]
+        self.lock.acquire()
+        if key in self.dataTable:
+            name = self.dataTable[key]
         self.lock.release()
         return name
 

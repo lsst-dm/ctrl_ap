@@ -91,7 +91,7 @@ class JobManager(object):
 
         # one job
         ad = self.getClassAd(self.wavefrontJobPath)
-        ad["Arguments"] = "-t %s -x %s" % (visitID, exposureSequenceID)
+        ad["Arguments"] = "-I %s -x %s" % (visitID, exposureSequenceID)
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 
