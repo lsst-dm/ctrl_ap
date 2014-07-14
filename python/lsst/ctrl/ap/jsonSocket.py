@@ -43,11 +43,12 @@ class JSONSocket(object):
 
     def recvJSON(self):
         s = self.recvall()
-        print "recvJSON: '%s'" % s
-        print "type = ",type(s)
-        print "length = ",len(s)
-        print ' '.join(format(ord(x), 'x') for x in s)
+        #print "recvJSON: '%s'" % s
+        #print "type = ",type(s)
+        #print "length = ",len(s)
+        #print ' '.join(format(ord(x), 'x') for x in s)
         s = json.loads(s)
+        #print "recvJSON: '%s'" % s
         return s
 
     def sendFile(self, name):

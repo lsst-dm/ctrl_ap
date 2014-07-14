@@ -79,9 +79,9 @@ class JobManager(object):
             entry = rPortList[raft-1]
             rPort = entry[1]
             ad["Arguments"] =  "-R %s --raft %s -I %s -x %s" % (str(rPort), self.encodeToRaft(x), visitID, exposureSequenceID)
-            ad["Out"] =  "Out.%s" % str(x)
-            ad["Err"] =  "Err.%s" % str(x)
-            ad["Log"] =  "Log.%s" % str(x)
+            ad["Out"] =  "rep.out.%s.%s" % (str(x), exposureSequenceID)
+            ad["Err"] =  "rep.err.%s.%s" % (str(x), exposureSequenceID)
+            ad["Log"] =  "rep.log.%s.%s" % (str(x), exposureSequenceID)
             ad["ShouldTransferFiles"] =  "NO"
             ad["WhenToTransferOutput"] =  "ON_EXIT"
 
@@ -136,6 +136,8 @@ class JobManager(object):
             ad["Out"] =  "worker.Out.%s" % str(x)
             ad["Err"] =  "worker.Err.%s" % str(x)
             ad["Log"] =  "worker.Log.%s" % str(x)
+            ad["ShouldTransferFiles"] =  "NO"
+            ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
@@ -145,6 +147,8 @@ class JobManager(object):
             ad["Out"] =  "wavefront.Out.%s" % str(x)
             ad["Err"] =  "wavefront.Err.%s" % str(x)
             ad["Log"] =  "wavefront.Log.%s" % str(x)
+            ad["ShouldTransferFiles"] =  "NO"
+            ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.workerSchedd.submit(ad,1)
 
         # TODO: should probably return clusters in a list

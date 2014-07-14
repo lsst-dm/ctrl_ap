@@ -95,6 +95,7 @@ class DistributorHandler(threading.Thread):
         name = self.getFile(key)
         print "transmitFile: name = ",name,"to ",self.sock.getsockname()
         self.sock.sendFile(name)
+        print "transmitFile: done"
 
     def createKey(self, vals):
         exposureSequenceID = vals["exposureSequenceID"]
@@ -122,14 +123,14 @@ class DistributorHandler(threading.Thread):
             self.sendToArchiveDMCS(vals) 
         
             key = self.createKey(vals)
-            # now wait for messages from workers.
-            while True:
-                self.logger.log(Log.INFO, '1 received from replicator %s' % vals)
-                name = self.sock.recvFile()
-                self.logger.log(Log.INFO, 'file received: %s' % name)
-                self.putFile(key, name)
+            self.logger.log(Log.INFO, 'received from replicator %s' % vals)
+            name = self.sock.recvFile()
+            self.logger.log(Log.INFO, 'file received: %s' % name)
+            self.putFile(key, name)
+            self.exit()
         elif msgtype == "worker job":
             request = vals["request"]
             if request == "file":
                 self.transmitFile(vals)
+                self.exit()
 

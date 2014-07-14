@@ -87,8 +87,9 @@ class ReplicatorJob(object):
         time.sleep(2)
 
         # write a random binary file to disk
-        tmp = "tmp_"+socket.gethostname().split('.')[0]+"_"
-        f = NamedTemporaryFile(delete=False, dir="/tmp", prefix=tmp)
+        tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
+        tmp = os.path.join("/tmp",tmp)
+        f = open(tmp, "wb")
         f.write(os.urandom(1024*1024))
         f.close()
         self.logger.log(Log.INFO, "file created is named %s" % f.name)

@@ -43,7 +43,6 @@ class DistributorLookupHandler(threading.Thread):
         jsock = JSONSocket(self.sock)
             
         request = jsock.recvJSON()
-
             
         inetaddr = None
         port = None
@@ -54,6 +53,8 @@ class DistributorLookupHandler(threading.Thread):
 
         vals = {"inetaddr":inetaddr, "port":port}
         jsock.sendJSON(vals)
+        self.sock.close()
+        print "arc: dist. request finished"
 
     def lookupData(self, request):
         print "lookupData, request = ", request
@@ -63,7 +64,7 @@ class DistributorLookupHandler(threading.Thread):
         ccd = request["ccd"]
         key = "%s:%s:%s" % (exposureSequenceID,visitID,raft)
         # 
-        print "about to acquire condition"
+        #print "about to acquire condition"
         self.condition.acquire()
         print "condition acquired"
         while True:
@@ -72,7 +73,7 @@ class DistributorLookupHandler(threading.Thread):
                 break
             # sleep until the self.dataTable is updated, so we can
             # check again
-            print "not found; condition waiting"
+            #print "not found; condition waiting"
             self.condition.wait()
         print "condition waiting released"
         self.condition.release()
@@ -128,10 +129,10 @@ class EventHandler(threading.Thread):
             raft = ps.get("raft")
             inetaddr = ps.get("networkAddress")
             port = ps.get("networkPort")
-            print "exposureSequenceID = %s, visitID = %s, raft = %s, networkAddress = %s, networkPort = %s" % (exposureSequenceID, visitID, raft, inetaddr, str(port))
-
             key = "%s:%s:%s" % (exposureSequenceID, visitID, raft)
+
             self.condition.acquire()
+            print "adding %s:%s: for key = %s" % (inetaddr, str(port), key)
             self.dataTable[key] = (inetaddr, port)
             self.condition.notifyAll()
             self.condition.release()

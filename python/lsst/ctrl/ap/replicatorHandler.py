@@ -64,4 +64,4 @@ class ReplicatorHandler(threading.Thread):
             self.distSock.sendFile(name)
             print "file  %s was sent" % name
             # remove the file locally
-            os.unlink(name)
+            #os.unlink(name)
