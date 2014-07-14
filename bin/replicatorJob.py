@@ -75,7 +75,7 @@ class ReplicatorJob(object):
             # handle not being able to connect to the distributor
             pass
 
-        self.logger.log(Log.INFO, "sending info to replicator")
+        self.logger.log(Log.INFO, "sending info to replicator node")
         vals = {"msgtype":"replicator job", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)

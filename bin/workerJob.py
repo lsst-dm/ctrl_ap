@@ -49,48 +49,58 @@ class WorkerJob(object):
         self.ccd = ccd
 
     def requestDistributor(self, exposureSequenceID):
-        sock = self.connectToArchiveDMCS()
+        sock = self.makeConnection(self.host, self.port)
 
         jsock = JSONSocket(sock)
 
-        vals = {"msgtype":"worker job", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
+        # send a message to the Archive DMCS, requesting the host and port
+        # of the correct distributor
+        vals = {"msgtype":"worker job", "request":"distributor", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
 
         print "vals = ",vals
         jsock.sendJSON(vals)
 
-        # wait for a response from the Archive DMCS
+        # wait for a response from the Archive DMCS, which is the host and port
         resp = jsock.recvJSON()
         print "worker response received; resp =", resp
         
-        return resp
+        return resp["inetaddr"],resp["port"]
         
-    def connectToArchiveDMCS(self):
+    def makeConnection(self, host, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.connect((self.host, self.port))
+            sock.connect((host, port))
         except socket.gaierror, err:
             print "address problem?"
             return False
         except socket.error, err:
             print "connection problem: %s" % err
             return False
+        print "connection successful!"
         return sock
 
-    def connectToDistributor(self):
-        return True
-
-    def sendInfoToDistributor(self):
-        return True
-
     def retrieveDistributorImage(self, host, port, exposure):
-        return True
+        print "retriving image from %s:%d" % (host, port)
+        sock = self.makeConnection(host, port)
+        jsock = JSONSocket(sock)
+        vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure}
+        print "sending request"
+        jsock.sendJSON(vals)
+        print "sent request; attempting to receive file"
+        newName = "%s_%s_%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
+        newName = os.path.join("/tmp",newName)
+        name = jsock.recvFile(receiveTo=newName)
+        print "file received = %s" % name
+        return name, "telemetry"
         
-
     def execute(self):
+        print "execution"
         # TODO: do these next two lines twice
         for exposure in range (0, self.exposures):
+            print "getting exposure %d" % exposure
             distHost, distPort = self.requestDistributor(exposure)
-            image, telemetry = self.retrieveDistributorImage(distHost, distPort, exposure)
+            print "distHost = %s:%s, exposure = %d" % (distHost, int(distPort), exposure)
+            image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
 
         print "Perform alert production:"
         print "generating DIASources"
@@ -102,7 +112,7 @@ class WorkerJob(object):
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
-    parser.add_argument("-I", "--visitID", type=int, action="store", help="visit id", required=True)
+    parser.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
     parser.add_argument("-n", "--exposures", type=int, action="store", help="number of exposures", required=True)
     parser.add_argument("-b", "--boresight", type=str, action="store", help="boresight pointing", required=True)
     parser.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)

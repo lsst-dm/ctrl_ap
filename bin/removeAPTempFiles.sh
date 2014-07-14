@@ -1,8 +1,10 @@
 #!/bin/bash
-ssh lsst5 /bin/rm -f /tmp/tmp?_* /tmp/rep.*.out
-ssh lsst6 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
-ssh lsst9 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
-ssh lsst11 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
-ssh lsst14 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
-ssh lsst15 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
 ssh lsst-work /bin/rm -f /tmp/tmp_* /tmp/rep.*.out /tmp/dist.*.out
+ssh lsst-run1 /bin/rm -f /tmp/*R:*S:* /tmp/rep.*.out
+ssh lsst-run2 /bin/rm -f /tmp/*R:*S:* /tmp/rep.*.out
+ssh lsst-run3 /bin/rm -f /tmp/*R:*S:* /tmp/rep.*.out
+ssh lsst-run4 /bin/rm -f /tmp/*R:*S:* /tmp/rep.*.out
+ssh lsst-run5 /bin/rm -f /tmp/*R:*S:* /tmp/rep.*.out
+ssh lsst-rep /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
+ssh lsst-rep1 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
+ssh lsst-rep2 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out

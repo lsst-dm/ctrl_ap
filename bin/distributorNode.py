@@ -44,16 +44,14 @@ class DistributorNode(Node):
 
     def activate(self):
         dataTable = {}
-        lock = threading.Lock()
+        condition = threading.Condition()
         while True:
             self.logger.log(Log.INFO, "Waiting on connection")
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             self.logger.log(Log.INFO, "connection accepted: %s:%d" % (ipAddr, clientPort))
             jclient = JSONSocket(client)
-            dh = DistributorHandler(jclient, dataTable, lock)
+            dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()
-            # XXX - don't do this when doing multiple threads
-            dh.join()
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

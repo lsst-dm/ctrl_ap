@@ -34,11 +34,11 @@ from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 
 class DistributorHandler(threading.Thread):
-    def __init__(self, sock, dataTable, lock):
+    def __init__(self, sock, dataTable, condition):
         super(DistributorHandler, self).__init__()
         self.sock = sock
         self.dataTable = dataTable
-        self.lock = lock
+        self.condition = condition
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "distributorHandler")
 
@@ -67,23 +67,33 @@ class DistributorHandler(threading.Thread):
         self.archiveTransmitter.publishEvent(event)
 
     def putFile(self, key, name):
-        self.lock.acquire()
+        print "putFile: key = %s, name = %s " % (key, name)
+        self.condition.acquire()
         self.dataTable[key] = name
-        self.lock.release()
+        self.condition.notifyAll()
+        self.condition.release()
 
 
     def getFile(self, key):
+        print "getFile: key = %s" % key
         name = ""
-        self.lock.acquire()
-        if key in self.dataTable:
-            name = self.dataTable[key]
-        self.lock.release()
+        self.condition.acquire()
+        while True:
+            if key in self.dataTable:
+                name = self.dataTable[key]
+                print "getFile name = ",name
+                break
+            self.condition.wait()
+        self.condition.release()
         return name
 
     # todo: this needs to block when the key doesn't exist.
     def transmitFile(self, vals):
+        print "transmitFile: vals = ",vals
         key = self.createKey(vals)
-        name = self.getFile()
+        print "transmitFile: key = ",key
+        name = self.getFile(key)
+        print "transmitFile: name = ",name,"to ",self.sock.getsockname()
         self.sock.sendFile(name)
 
     def createKey(self, vals):
@@ -105,6 +115,7 @@ class DistributorHandler(threading.Thread):
             self.logger.log(Log.INFO, 'received nothing')
             return 
         msgtype = vals["msgtype"]
+        print "message type = ",msgtype
         if msgtype == "replicator job":
             # send the message we just received, along with some additional
             # information, to the Archive DMCS.
@@ -118,5 +129,7 @@ class DistributorHandler(threading.Thread):
                 self.logger.log(Log.INFO, 'file received: %s' % name)
                 self.putFile(key, name)
         elif msgtype == "worker job":
-            self.transmitFile(s)
+            request = vals["request"]
+            if request == "file":
+                self.transmitFile(vals)
 

@@ -73,9 +73,13 @@ class JSONSocket(object):
         self.sock.sendall(val)
         f.close()
 
-    def recvFile(self):
+    def recvFile(self, receiveTo=None):
         vals = self.recvJSON()
-        name = str(vals["filename"])
+        if receiveTo is None:
+            name = str(vals["filename"])
+        else:
+            name = receiveTo
+        print "jsonSocket: recvFile, name = ",name
         total = 0
         size = sys.maxint
         recvSize = 4
@@ -110,6 +114,7 @@ class JSONSocket(object):
                 recvSize = recvSize-n
                 f.write(s)
         f.close()
+        print "jsonSocket: recvFile - done"
         return name
 
     def accept(self):

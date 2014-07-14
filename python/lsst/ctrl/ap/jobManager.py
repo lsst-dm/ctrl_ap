@@ -126,7 +126,7 @@ class JobManager(object):
         # TODO: change hardcoded distributor and port
         distHost = "lsst-work.ncsa.illinois.edu"
         distPort = 9595
-        for x in range(1,61):
+        for x in range(1,57):
             ccd = self.encodeToCcdID(x)
             sub, raft = self.calculateRaftInfoFromCcd(x)
             sRaft = self.encodeToRaft(raft)
@@ -139,8 +139,9 @@ class JobManager(object):
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
+        # XXX not sure about these args
         for x in range(1,5):
-            ad["Arguments"] = "-args %d" % x
+            ad["Arguments"] = "-I %s -x %d" % (visitID, x)
             ad["Out"] =  "wavefront.Out.%s" % str(x)
             ad["Err"] =  "wavefront.Err.%s" % str(x)
             ad["Log"] =  "wavefront.Log.%s" % str(x)
