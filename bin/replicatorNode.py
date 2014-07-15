@@ -52,10 +52,10 @@ class ReplicatorNode(Node):
             self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
             while True:
                 (client, (ipAddr, clientPort)) = self.inSock.accept()
-                sock = JSONSocket(client)
-                rh = ReplicatorHandler(sock, self.distHost, self.outSock)
+                print "replicator node: accepted connection"
+                jsock = JSONSocket(client)
+                rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
                 rh.start()
-                rh.join()
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

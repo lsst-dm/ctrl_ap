@@ -82,8 +82,8 @@ class JobManager(object):
             ad["Out"] =  "rep.out.%s.%s" % (str(x), exposureSequenceID)
             ad["Err"] =  "rep.err.%s.%s" % (str(x), exposureSequenceID)
             ad["Log"] =  "rep.log.%s.%s" % (str(x), exposureSequenceID)
-            ad["ShouldTransferFiles"] =  "NO"
-            ad["WhenToTransferOutput"] =  "ON_EXIT"
+            #ad["ShouldTransferFiles"] =  "NO"
+            #ad["WhenToTransferOutput"] =  "ON_EXIT"
 
             cluster = self.repSchedd.submit(ad,1)
             #self.logger.log(Log.INFO, "done with this submit")
@@ -123,32 +123,31 @@ class JobManager(object):
         print "submit worker jobs called"
         ad = self.getClassAd(self.workerJobPath)
 	    # start 50 worker jobs
-        # TODO: change hardcoded distributor and port
-        distHost = "lsst-work.ncsa.illinois.edu"
-        distPort = 9595
+        # TODO: change hardcoded archive and port
+        archiveHost = "lsst-arch.ncsa.illinois.edu"
+        archivePort = 9595
         for x in range(1,57):
             ccd = self.encodeToCcdID(x)
             sub, raft = self.calculateRaftInfoFromCcd(x)
             sRaft = self.encodeToRaft(raft)
             sCcd = "S:%d,%d" % (sub % 3, sub / 3)
-            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s -H %s -P %d" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd, distHost, distPort)
+            ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s -H %s -P %d" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd, archiveHost, archivePort)
             print ad["Arguments"]
             ad["Out"] =  "worker.Out.%s" % str(x)
             ad["Err"] =  "worker.Err.%s" % str(x)
             ad["Log"] =  "worker.Log.%s" % str(x)
-            ad["ShouldTransferFiles"] =  "NO"
-            ad["WhenToTransferOutput"] =  "ON_EXIT"
+            #ad["ShouldTransferFiles"] =  "NO"
+            #ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.workerSchedd.submit(ad,1)
 
         ad = self.getClassAd(self.wavefrontSensorJobPath)
-        # XXX not sure about these args
         for x in range(1,5):
             ad["Arguments"] = "-I %s -x %d" % (visitID, x)
             ad["Out"] =  "wavefront.Out.%s" % str(x)
             ad["Err"] =  "wavefront.Err.%s" % str(x)
             ad["Log"] =  "wavefront.Log.%s" % str(x)
-            ad["ShouldTransferFiles"] =  "NO"
-            ad["WhenToTransferOutput"] =  "ON_EXIT"
+            #ad["ShouldTransferFiles"] =  "NO"
+            #ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.workerSchedd.submit(ad,1)
 
         # TODO: should probably return clusters in a list

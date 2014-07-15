@@ -45,23 +45,22 @@ class ReplicatorHandler(threading.Thread):
 
 
     def run(self):
-        while True:
-            # don't need to decode it;  we're just passing it on
-            s = self.jobSock.recvall()
-            if s == "":
-                return
-            self.logger.log(Log.INFO, 'received from replicator job %s' % json.loads(s))
-            self.logger.log(Log.INFO, 'sending to distributor')
-            # don't need to re-encode it
-            self.distSock.sendWithLength(s)
-            self.logger.log(Log.INFO, 'sent!')
-            vals = self.jobSock.recvJSON()
-            name = vals["filename"]
+        # don't need to decode it;  we're just passing it on
+        s = self.jobSock.recvall()
+        if s == "":
+            return
+        self.logger.log(Log.INFO, 'received from replicator job %s' % json.loads(s))
+        self.logger.log(Log.INFO, 'sending to distributor')
+        # don't need to re-encode it
+        self.distSock.sendWithLength(s)
+        self.logger.log(Log.INFO, 'sent!')
+        vals = self.jobSock.recvJSON()
+        name = vals["filename"]
 
-            self.logger.log(Log.INFO, 'name from replicator job %s' % str(name))
+        self.logger.log(Log.INFO, 'name from replicator job %s' % str(name))
 
 
-            self.distSock.sendFile(name)
-            print "file  %s was sent" % name
-            # remove the file locally
-            #os.unlink(name)
+        self.distSock.sendFile(name)
+        print "file  %s was sent" % name
+        # remove the file locally
+        #os.unlink(name)

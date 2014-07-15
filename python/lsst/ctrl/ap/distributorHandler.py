@@ -87,7 +87,6 @@ class DistributorHandler(threading.Thread):
         self.condition.release()
         return name
 
-    # todo: this needs to block when the key doesn't exist.
     def transmitFile(self, vals):
         print "transmitFile: vals = ",vals
         key = self.createKey(vals)
@@ -127,10 +126,7 @@ class DistributorHandler(threading.Thread):
             name = self.sock.recvFile()
             self.logger.log(Log.INFO, 'file received: %s' % name)
             self.putFile(key, name)
-            self.exit()
         elif msgtype == "worker job":
             request = vals["request"]
             if request == "file":
                 self.transmitFile(vals)
-                self.exit()
-
