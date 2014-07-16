@@ -90,7 +90,7 @@ class ReplicatorJob(object):
         tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
         tmp = os.path.join("/tmp",tmp)
         f = open(tmp, "wb")
-        f.write(os.urandom(1024*1024))
+        f.write(os.urandom(1024*200*9)) # nine 200k images
         f.close()
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
 

@@ -54,10 +54,8 @@ class DistributorLookupHandler(threading.Thread):
         vals = {"inetaddr":inetaddr, "port":port}
         jsock.sendJSON(vals)
         self.sock.close()
-        print "arc: dist. request finished"
 
     def lookupData(self, request):
-        print "lookupData, request = ", request
         exposureSequenceID = request["exposureSequenceID"]
         visitID = request["visitID"]
         raft = request["raft"]
@@ -66,39 +64,31 @@ class DistributorLookupHandler(threading.Thread):
         # 
         #print "about to acquire condition"
         self.condition.acquire()
-        print "condition acquired"
         while True:
             if key in self.dataTable:
                 data = self.dataTable[key]
                 break
-            # sleep until the self.dataTable is updated, so we can
+            # wait until the self.dataTable is updated, so we can
             # check again
-            #print "not found; condition waiting"
             self.condition.wait()
-        print "condition waiting released"
         self.condition.release()
         return data
 
 class ArchiveConnectionHandler(threading.Thread):
     def __init__(self, dataTable, condition):
-        print "init ArchiveConnectionHandler()"
         threading.Thread.__init__(self)
         self.dataTable = dataTable
         self.condition = condition
 
     def run(self):
-        print "starting ArchiveConnectionHandler()"
         serverSock = socket.socket()
         serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         host = socket.gethostname()
         port = 9595
-        print "starting on %s:%d" % (host, port)
         serverSock.bind((host,port))
         serverSock.listen(5)
         while True:
-            print "waiting on worker connection"
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
-            print "accepted worker connection"
             # spawn a thread to handle this connection
             dist = DistributorLookupHandler(self.dataTable, self.condition, clientSock)
             dist.start()
@@ -107,7 +97,6 @@ class ArchiveConnectionHandler(threading.Thread):
 class EventHandler(threading.Thread):
 
     def __init__(self, logger, brokerName, eventTopic, dataTable, condition):
-        print "init EventHandler()"
         threading.Thread.__init__(self)
         self.logger = logger
         self.brokerName = brokerName
@@ -116,7 +105,6 @@ class EventHandler(threading.Thread):
         self.condition = condition
 
     def run(self):
-        print "starting EventHandler()"
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
@@ -133,7 +121,6 @@ class EventHandler(threading.Thread):
             key = "%s:%s:%s" % (exposureSequenceID, visitID, raft)
 
             self.condition.acquire()
-            print "adding %s:%s: for key = %s" % (inetaddr, str(port), key)
             self.dataTable[key] = (inetaddr, port)
             self.condition.notifyAll()
             self.condition.release()

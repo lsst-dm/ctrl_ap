@@ -86,6 +86,28 @@ class DistributorHandler(threading.Thread):
             self.condition.wait()
         self.condition.release()
         return name
+    
+    def splitFile(self, vals, filename):
+        names = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2", ]
+        statinfo = os.stat(filename)
+        filesize = statinfo.st_size
+        buflen = filesize/9
+        raft = vals["raft"]
+        visitID = vals["visitID"]
+        exposureSequenceID = vals["exposureSequenceID"]
+        sensor = 0
+        with open(filename, 'rb') as src:
+            for sensor in names:
+                target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
+                if not os.path.exists(os.path.dirname(target)):
+                    os.makedirs(os.path.dirname(target))
+                f = open(target,'wb')
+                f.write(src.read(buflen))
+                f.close()
+                d = vals.copy()
+                d["sensor"] = sensor
+                key = self.createKey(d)
+                self.putFile(key, target)
 
     def transmitFile(self, vals):
         print "transmitFile: vals = ",vals
@@ -100,7 +122,8 @@ class DistributorHandler(threading.Thread):
         exposureSequenceID = vals["exposureSequenceID"]
         visitID = vals["visitID"]
         raft = vals["raft"]
-        key = "%s:%s:%s" % (exposureSequenceID, visitID, raft)
+        sensor = vals["raft"]
+        key = "%s:%s:%s_%s" % (visitID, exposureSequenceID, raft, sensor)
         return key
 
     def run(self):
@@ -122,11 +145,10 @@ class DistributorHandler(threading.Thread):
                 # information, to the Archive DMCS.
                 self.sendToArchiveDMCS(vals) 
             
-                key = self.createKey(vals)
                 self.logger.log(Log.INFO, 'received from replicator %s' % vals)
                 name = self.sock.recvFile()
                 self.logger.log(Log.INFO, 'file received: %s' % name)
-                self.putFile(key, name)
+                self.splitFile(vals, name)
             elif msgtype == "worker job":
                 request = vals["request"]
                 if request == "file":

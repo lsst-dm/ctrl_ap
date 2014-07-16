@@ -35,7 +35,7 @@ class JSONSocket(object):
 
     def sendJSON(self, obj):
         s = json.dumps(obj)
-        print "sendJSON: s =",s
+        #print "sendJSON: s =",s
         self.sendWithLength(s)
 
     def getsockname(self):
@@ -80,7 +80,7 @@ class JSONSocket(object):
             name = str(vals["filename"])
         else:
             name = receiveTo
-        print "jsonSocket: recvFile, name = ",name
+        #print "jsonSocket: recvFile, name = ",name
         total = 0
         size = sys.maxint
         recvSize = 4
@@ -115,15 +115,15 @@ class JSONSocket(object):
                 recvSize = recvSize-n
                 f.write(s)
         f.close()
-        print "jsonSocket: recvFile - done"
+        #print "jsonSocket: recvFile - done"
         return name
 
     def accept(self):
         return self.sock.accept()
 
     def sendWithLength(self, s):
-        print "sendWithLength type = ",type(s)
-        print "sendWithLength len = ",len(s)
+        #print "sendWithLength type = ",type(s)
+        #print "sendWithLength len = ",len(s)
         self.sock.sendall(struct.pack('!I',len(s)))
         self.sock.sendall(s)
 

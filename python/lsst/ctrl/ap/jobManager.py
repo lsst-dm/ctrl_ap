@@ -70,12 +70,10 @@ class JobManager(object):
         ad = self.getClassAd(self.replicatorJobPath)
         # 21 jobs
         raft = 1
-        print rPortList
         for x in range(0,25):
             if (x == 0) or (x == 4) or (x == 20) or (x == 24):
                 continue
             # replicatorPort, raft, visitID, exposureSequenceID
-            print "x = %d" % x
             entry = rPortList[raft-1]
             rPort = entry[1]
             ad["Arguments"] =  "-R %s --raft %s -I %s -x %s" % (str(rPort), self.encodeToRaft(x), visitID, exposureSequenceID)
@@ -91,7 +89,9 @@ class JobManager(object):
 
         # one job
         ad = self.getClassAd(self.wavefrontJobPath)
-        ad["Arguments"] = "-I %s -x %s" % (visitID, exposureSequenceID)
+        entry = rPortList[21]
+        rPort = entry[1]
+        ad["Arguments"] = "-R %s -I %s -x %s" % (str(rPort), visitID, exposureSequenceID)
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
 
@@ -132,7 +132,6 @@ class JobManager(object):
             sRaft = self.encodeToRaft(raft)
             sCcd = "S:%d,%d" % (sub % 3, sub / 3)
             ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s -H %s -P %d" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd, archiveHost, archivePort)
-            print ad["Arguments"]
             ad["Out"] =  "worker.Out.%s" % str(x)
             ad["Err"] =  "worker.Err.%s" % str(x)
             ad["Log"] =  "worker.Log.%s" % str(x)
@@ -140,16 +139,18 @@ class JobManager(object):
             #ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.workerSchedd.submit(ad,1)
 
-        ad = self.getClassAd(self.wavefrontSensorJobPath)
-        for x in range(1,5):
-            ad["Arguments"] = "-I %s -x %d" % (visitID, x)
-            ad["Out"] =  "wavefront.Out.%s" % str(x)
-            ad["Err"] =  "wavefront.Err.%s" % str(x)
-            ad["Log"] =  "wavefront.Log.%s" % str(x)
-            #ad["ShouldTransferFiles"] =  "NO"
-            #ad["WhenToTransferOutput"] =  "ON_EXIT"
-            cluster = self.workerSchedd.submit(ad,1)
-#
+        # comment this out for the time being, until we know what info
+        # the wavefront sensors are supposed to get
+        #ad = self.getClassAd(self.wavefrontSensorJobPath)
+        #for x in range(1,5):
+        #    ad["Arguments"] = "-I %s -n %d" % (visitID, numExposures)
+        #    ad["Out"] =  "wavefront.Out.%s" % str(x)
+        #    ad["Err"] =  "wavefront.Err.%s" % str(x)
+        #    ad["Log"] =  "wavefront.Log.%s" % str(x)
+        #    #ad["ShouldTransferFiles"] =  "NO"
+        #    #ad["WhenToTransferOutput"] =  "ON_EXIT"
+        #    cluster = self.workerSchedd.submit(ad,1)
+
         # TODO: should probably return clusters in a list
 
 if __name__ == "__main__":

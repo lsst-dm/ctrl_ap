@@ -38,7 +38,6 @@ from tempfile import NamedTemporaryFile
 class WorkerJob(object):
 
     def __init__(self, host, port, visitID, exposures, boresight, filterID, raft, ccd):
-        print "worker startd"
         self.host = host
         self.port = port
         self.visitID = visitID
@@ -48,21 +47,25 @@ class WorkerJob(object):
         self.raft = raft
         self.ccd = ccd
 
+        logger = Log.getDefaultLog()
+        self.logger = Log(logger, "workerJob")
+        self.logger.log(Log.INFO, "worker started")
+
     def requestDistributor(self, exposureSequenceID):
         sock = self.makeConnection(self.host, self.port)
 
         jsock = JSONSocket(sock)
 
+        self.logger.log(Log.INFO, "worker sending request to Archive for distributor info")
         # send a message to the Archive DMCS, requesting the host and port
         # of the correct distributor
         vals = {"msgtype":"worker job", "request":"distributor", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
 
-        print "vals = ",vals
         jsock.sendJSON(vals)
 
         # wait for a response from the Archive DMCS, which is the host and port
         resp = jsock.recvJSON()
-        print "worker response received; resp =", resp
+        self.logger.log(Log.INFO, "worker from response received")
         
         return resp["inetaddr"],resp["port"]
         
@@ -71,44 +74,37 @@ class WorkerJob(object):
         try:
             sock.connect((host, port))
         except socket.gaierror, err:
-            print "tried to connect to %s:%d" % (host, port)
-            print "address problem?"
+            self.logger.log(Log.INFO, "address problem?")
             return False
         except socket.error, err:
-            print "tried to connect to %s:%d" % (host, port)
-            print "connection problem: %s" % err
+            self.logger.log(Log.INFO, "connection problem: %s" % err)
             return False
-        print "connection successful!"
         return sock
 
     def retrieveDistributorImage(self, host, port, exposure):
-        print "retriving image from %s:%d" % (host, port)
+        self.logger.log(Log.INFO, "retriving image from distributor")
         sock = self.makeConnection(host, port)
         jsock = JSONSocket(sock)
-        vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure}
-        print "sending request"
+        vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
         jsock.sendJSON(vals)
-        print "sent request; attempting to receive file"
-        newName = "%s_%s_%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
+        newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
         newName = os.path.join("/tmp",newName)
+        if not os.path.exists(os.path.dirname(newName)):
+            os.makedirs(os.path.dirname(newName))
         name = jsock.recvFile(receiveTo=newName)
-        print "file received = %s" % name
+        self.logger.log(Log.INFO, "file received = %s" % name)
         return name, "telemetry"
         
     def execute(self):
-        print "execution"
-        # TODO: do these next two lines twice
         for exposure in range (0, self.exposures):
-            print "getting exposure %d" % exposure
             distHost, distPort = self.requestDistributor(exposure)
-            print "distHost = %s:%s, exposure = %d" % (distHost, int(distPort), exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
 
-        print "Perform alert production:"
-        print "generating DIASources"
-        print "updating  DIAObjects"
-        print "issuing alerts"
-        print "alert production ends"
+        self.logger.log(Log.INFO, "Perform alert production:")
+        self.logger.log(Log.INFO, "generating DIASources")
+        self.logger.log(Log.INFO, "updating  DIAObjects")
+        self.logger.log(Log.INFO, "issuing alerts")
+        self.logger.log(Log.INFO, "worker completed")
         sys.exit(0)
 
 if __name__ == "__main__":
