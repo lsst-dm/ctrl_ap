@@ -104,29 +104,31 @@ class DistributorHandler(threading.Thread):
         return key
 
     def run(self):
-        # TODO:  this should probably renew a lease to the archive, so the
-        # archive knows this is still alive, rather than the archive always
-        # assuming it.
-
-        # receive the visit id, exposure sequence number and raft id, from
-        # the replicator.
-        vals = self.sock.recvJSON()
-        if vals ==  None:
-            self.logger.log(Log.INFO, 'received nothing')
-            return 
-        msgtype = vals["msgtype"]
-        print "message type = ",msgtype
-        if msgtype == "replicator job":
-            # send the message we just received, along with some additional
-            # information, to the Archive DMCS.
-            self.sendToArchiveDMCS(vals) 
-        
-            key = self.createKey(vals)
-            self.logger.log(Log.INFO, 'received from replicator %s' % vals)
-            name = self.sock.recvFile()
-            self.logger.log(Log.INFO, 'file received: %s' % name)
-            self.putFile(key, name)
-        elif msgtype == "worker job":
-            request = vals["request"]
-            if request == "file":
-                self.transmitFile(vals)
+        while True:
+            # TODO:  this should probably renew a lease to the archive, so the
+            # archive knows this is still alive, rather than the archive always
+            # assuming it.
+    
+            # receive the visit id, exposure sequence number and raft id, from
+            # the replicator.
+            vals = self.sock.recvJSON()
+            if vals ==  None:
+                self.logger.log(Log.INFO, 'received nothing')
+                return 
+            msgtype = vals["msgtype"]
+            print "message type = ",msgtype
+            if msgtype == "replicator job":
+                # send the message we just received, along with some additional
+                # information, to the Archive DMCS.
+                self.sendToArchiveDMCS(vals) 
+            
+                key = self.createKey(vals)
+                self.logger.log(Log.INFO, 'received from replicator %s' % vals)
+                name = self.sock.recvFile()
+                self.logger.log(Log.INFO, 'file received: %s' % name)
+                self.putFile(key, name)
+            elif msgtype == "worker job":
+                request = vals["request"]
+                if request == "file":
+                    self.transmitFile(vals)
+                    return

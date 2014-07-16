@@ -149,7 +149,7 @@ class JobManager(object):
             #ad["ShouldTransferFiles"] =  "NO"
             #ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.workerSchedd.submit(ad,1)
-
+#
         # TODO: should probably return clusters in a list
 
 if __name__ == "__main__":

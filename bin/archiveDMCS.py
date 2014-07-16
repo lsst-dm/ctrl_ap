@@ -96,8 +96,9 @@ class ArchiveConnectionHandler(threading.Thread):
         serverSock.bind((host,port))
         serverSock.listen(5)
         while True:
+            print "waiting on worker connection"
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
-            print "accepted connection"
+            print "accepted worker connection"
             # spawn a thread to handle this connection
             dist = DistributorLookupHandler(self.dataTable, self.condition, clientSock)
             dist.start()

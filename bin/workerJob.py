@@ -71,9 +71,11 @@ class WorkerJob(object):
         try:
             sock.connect((host, port))
         except socket.gaierror, err:
+            print "tried to connect to %s:%d" % (host, port)
             print "address problem?"
             return False
         except socket.error, err:
+            print "tried to connect to %s:%d" % (host, port)
             print "connection problem: %s" % err
             return False
         print "connection successful!"
