@@ -86,30 +86,44 @@ class DistributorHandler(threading.Thread):
             self.condition.wait()
         self.condition.release()
         return name
-    
-    def splitFile(self, vals, filename):
-        names = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2", ]
+
+    def splitReplicatorFile(self, visitID, exposureSequenceID, raft, filename):
+        sensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
+        x = 0
+        for s in sensors:
+            sensors[x] = raft+" "+s
+            x += 1
+        self.splitFile(visitID, exposureSequenceID, filename, sensors)
+
+    def splitWavefrontFile(self, visitID, exposureSequenceID, filename):
+        sensors = ["R:0,0 S:2,2", "R:0,4 S:0,2", "R:4,0 S:2,0", "R:4,4 S:0,0"]
+        self.splitFile(visitID, exposureSequenceID, filename, sensors)
+
+    def splitFile(self, visitID, exposureSequenceID, filename, sensors):
         statinfo = os.stat(filename)
         filesize = statinfo.st_size
-        buflen = filesize/9
-        raft = vals["raft"]
-        visitID = vals["visitID"]
-        exposureSequenceID = vals["exposureSequenceID"]
-        sensor = 0
+        buflen = filesize/len(sensors)
         with open(filename, 'rb') as src:
-            for sensor in names:
+            for sensorInfo in sensors:
+                raft = sensorInfo.split(" ")[0]
+                sensor = sensorInfo.split(" ")[1]
                 target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
                 if not os.path.exists(os.path.dirname(target)):
                     os.makedirs(os.path.dirname(target))
                 f = open(target,'wb')
                 f.write(src.read(buflen))
                 f.close()
-                d = vals.copy()
-                d["sensor"] = sensor
-                key = self.createKey(d)
+                key = self.createKey(visitID, exposureSequenceID, raft, sensor)
                 self.putFile(key, target)
 
-    def transmitFile(self, vals):
+    def transmitFile(self, key):
+        print "transmitFile: key = ",key
+        name = self.getFile(key)
+        print "transmitFile: name = ",name,"to ",self.sock.getsockname()
+        self.sock.sendFile(name)
+        print "transmitFile: done"
+
+    def oldtransmitFile(self, vals):
         print "transmitFile: vals = ",vals
         key = self.createKey(vals)
         print "transmitFile: key = ",key
@@ -118,11 +132,16 @@ class DistributorHandler(threading.Thread):
         self.sock.sendFile(name)
         print "transmitFile: done"
 
-    def createKey(self, vals):
+    def createKey(self, visitID, exposureSequenceID, raft, sensor):
+        key = "%s:%s:%s_%s" % (visitID, exposureSequenceID, raft, sensor)
+        return key
+        
+
+    def oldcreateKey(self, vals):
         exposureSequenceID = vals["exposureSequenceID"]
         visitID = vals["visitID"]
         raft = vals["raft"]
-        sensor = vals["raft"]
+        sensor = vals["sensor"]
         key = "%s:%s:%s_%s" % (visitID, exposureSequenceID, raft, sensor)
         return key
 
@@ -140,17 +159,40 @@ class DistributorHandler(threading.Thread):
                 return 
             msgtype = vals["msgtype"]
             print "message type = ",msgtype
-            if msgtype == "replicator job":
+            if (msgtype == "replicator job") or (msgtype == "wavefront job"):
                 # send the message we just received, along with some additional
                 # information, to the Archive DMCS.
-                self.sendToArchiveDMCS(vals) 
+                if msgtype == "replicator job":
+                    self.sendToArchiveDMCS(vals) 
             
-                self.logger.log(Log.INFO, 'received from replicator %s' % vals)
-                name = self.sock.recvFile()
-                self.logger.log(Log.INFO, 'file received: %s' % name)
-                self.splitFile(vals, name)
+                    self.logger.log(Log.INFO, 'received from replicator %s' % vals)
+                    name = self.sock.recvFile()
+                    self.logger.log(Log.INFO, 'file received: %s' % name)
+                    visitID = vals["visitID"]
+                    exposureSequenceID = vals["exposureSequenceID"]
+                # - here
+                    raft = vals["raft"]
+                    self.splitReplicatorFile(visitID, exposureSequenceID, raft, name)
+                elif msgtype == "wavefront job":
+                    d = vals.copy()
+                    for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
+                        d["raft"] = raft
+                        self.sendToArchiveDMCS(d)
+                    name = self.sock.recvFile()
+                    self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
+                    visitID = vals["visitID"]
+                    exposureSequenceID = vals["exposureSequenceID"]
+                    self.splitWavefrontFile(visitID, exposureSequenceID, name)
+                else:
+                    print "message type unknown"
+                    return
             elif msgtype == "worker job":
                 request = vals["request"]
                 if request == "file":
-                    self.transmitFile(vals)
+                    visitID = vals["visitID"]
+                    exposureSequenceID = vals["exposureSequenceID"]
+                    raft = vals["raft"]
+                    sensor = vals["sensor"]
+                    key = self.createKey(visitID, exposureSequenceID, raft, sensor)
+                    self.transmitFile(key)
                     return

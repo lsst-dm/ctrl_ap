@@ -50,7 +50,7 @@ class WavefrontJob(object):
         self.expectedExpSeqID = expectedExpSeqID
 
         logger = Log.getDefaultLog()
-        self.logger = Log(logger, "replicatorJob")
+        self.logger = Log(logger, "wavefrontJob")
         
 
     def connectToReplicator(self):
@@ -79,30 +79,27 @@ class WavefrontJob(object):
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
 
-    def execute(self, imageID, visitID, exposureSequenceID, rafts):
+    def execute(self, imageID, visitID, exposureSequenceID, raft):
         self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
         time.sleep(2)
 
-        for raft in rafts:
-            # write a random binary file to disk
-            tmp = "%s_%s_%s_%s" % (raft, imageID, visitID, exposureSequenceID)
-            tmp = os.path.join("/tmp",tmp)
-            f = open(tmp, "wb")
-            f.write(os.urandom(1024*1024))
-            f.close()
-            self.logger.log(Log.INFO, "file created is named %s" % f.name)
+        # write a random binary file to disk
+        tmp = "%s_%s_%s_%s" % (raft, imageID, visitID, exposureSequenceID)
+        tmp = os.path.join("/tmp",tmp)
+        f = open(tmp, "wb")
+        f.write(os.urandom(1024*200*4))
+        f.close()
+        self.logger.log(Log.INFO, "file created is named %s" % f.name)
 
-            # send the replicator node the name of the file
-            vals = {"filename" : f.name}
-            self.rSock.sendJSON(vals)
+        # send the replicator node the name of the file
+        vals = {"filename" : f.name}
+        self.rSock.sendJSON(vals)
 
     def start(self):
-        #rafts = ["R:0,0 S:2,2", "R:0,4 S:0,2", "R:4,0 S:2,0", "R:4,4 S:0,0"]
-        rafts = ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]
-        for raft in rafts:
-            self.sendInfoToReplicator(raft)
+        raft = "synthetic_raft"
+        self.sendInfoToReplicator(raft)
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         # loop until you get the right thing, process and then die.
@@ -112,7 +109,6 @@ class WavefrontJob(object):
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             imageID = ps.get("imageID")
-            # TODO:  for now, assume visit id, and exp. seq. id is also sent
             visitID = ps.get("visitID")
             exposureSequenceID = ps.get("exposureSequenceID")
             self.logger.log(Log.INFO, "image id = %s" % imageID)
@@ -125,7 +121,7 @@ class WavefrontJob(object):
             # for now.
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
                 self.logger.log(Log.INFO, "got expected info.  Getting image")
-                self.execute(imageID, visitID, exposureSequenceID, rafts)
+                self.execute(imageID, visitID, exposureSequenceID, raft)
                 sys.exit(0)
 
 if __name__ == "__main__":
