@@ -45,29 +45,6 @@ class DistributorHandler(threading.Thread):
         self.logger = Log(logger, "distributorHandler")
 
         
-    def sendToArchiveDMCS(self, vals):
-        props = PropertySet()
-        print "sendToArchiveDMCS: props = ",props
-        for x in vals:
-            print x, vals[x]
-            val = vals[x]
-            if type(val) == int:
-                props.set(str(x), int(vals[x]))
-            else:
-                props.set(str(x), str(vals[x]))
-        props.set("distributor_event", "archive info")
-        hostinfo = self.jsock.getsockname()
-        props.set("networkAddress", hostinfo[0])
-        props.set("networkPort", hostinfo[1])
-
-        # TODO: get these from a config
-        self.broker = "lsst8.ncsa.uiuc.edu"
-        self.topic = "distributor_event"
-        eventSystem = events.EventSystem.getDefaultEventSystem()
-        self.archiveTransmitter = events.EventTransmitter(self.broker, self.topic)
-        event = events.Event("distributor", props)
-        self.archiveTransmitter.publishEvent(event)
-
     def respond(self):
         msg = {"msgtype":"response", "status":"alive"}
         self.jsock.sendJSON(msg)
@@ -90,12 +67,12 @@ class DistributorHandler(threading.Thread):
                 handler = ReplicatorRequestHandler(self.logger, self.jsock, vals, self.dataTable, self.condition)
                 handler.handleRequest()
                 # note that we do not return, since this is an open connection
-            elif msgtype == "heartbeat":
-                self.respond()
             elif msgtype == "worker job":
-                handler = WorkerRequestHandler(self.jsock, vals, self.dataTable,  self.condition)
+                handler = WorkerRequestHandler(self.logger, self.jsock, vals, self.dataTable,  self.condition)
                 handler.handleRequest()
                 return
+            elif msgtype == "heartbeat":
+                self.respond()
             else:
                 print "message type unknown"
                 return

@@ -32,7 +32,8 @@ import threading
 from lsst.ctrl.ap.key import Key
 
 class WorkerRequestHandler(object):
-    def __init__(self, jsock, msg, dataTable, condition):
+    def __init__(self, logger, jsock, msg, dataTable, condition):
+        self.logger = logger
         self.jsock = jsock
         self.msg = msg
         self.dataTable = dataTable

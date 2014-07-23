@@ -104,9 +104,23 @@ class EventHandler(threading.Thread):
         self.dataTable = dataTable
         self.condition = condition
 
+    def requestDistributors(self):
+        topic = "archive_event"
+
+        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem.createTransmitter(self.brokerName, topic)
+
+        root = PropertySet()
+        root.add("request","distributorInfo")
+
+        event = events.Event("archive", root)
+        eventSystem.publishEvent(topic, event)
+        
+
     def run(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
+        self.requestDistributors()
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)

@@ -46,16 +46,19 @@ class ReplicatorNode(Node):
         self.dSock = None
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "ReplicatorNode")
+        self.sleepInterval = 5 # seconds
 
     def activate(self):
-        if  rep.connectToNode(args.distributor, args.port):
-            self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
-            while True:
-                (client, (ipAddr, clientPort)) = self.inSock.accept()
-                print "replicator node: accepted connection"
-                jsock = JSONSocket(client)
-                rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
-                rh.start()
+        while self.connectToNode(args.distributor, args.port) == False:
+            time.sleep(self.sleepInterval)
+            pass
+        self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
+        while True:
+            (client, (ipAddr, clientPort)) = self.inSock.accept()
+            print "replicator node: accepted connection"
+            jsock = JSONSocket(client)
+            rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
+            rh.start()
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
