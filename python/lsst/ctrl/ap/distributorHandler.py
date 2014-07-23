@@ -32,11 +32,13 @@ import threading
 import lsst.ctrl.events as events
 from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
+from lsst.ctrl.ap.replicatorRequestHandler import ReplicatorRequestHandler
+from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
 
 class DistributorHandler(threading.Thread):
-    def __init__(self, sock, dataTable, condition):
+    def __init__(self, jsock, dataTable, condition):
         super(DistributorHandler, self).__init__()
-        self.sock = sock
+        self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
         logger = Log.getDefaultLog()
@@ -54,7 +56,7 @@ class DistributorHandler(threading.Thread):
             else:
                 props.set(str(x), str(vals[x]))
         props.set("distributor_event", "archive info")
-        hostinfo = self.sock.getsockname()
+        hostinfo = self.jsock.getsockname()
         props.set("networkAddress", hostinfo[0])
         props.set("networkPort", hostinfo[1])
 
@@ -66,85 +68,10 @@ class DistributorHandler(threading.Thread):
         event = events.Event("distributor", props)
         self.archiveTransmitter.publishEvent(event)
 
-    def putFile(self, key, name):
-        print "putFile: key = %s, name = %s " % (key, name)
-        self.condition.acquire()
-        self.dataTable[key] = name
-        self.condition.notifyAll()
-        self.condition.release()
-
-
-    def getFile(self, key):
-        print "getFile: key = %s" % key
-        name = ""
-        self.condition.acquire()
-        while True:
-            if key in self.dataTable:
-                name = self.dataTable[key]
-                print "getFile name = ",name
-                break
-            self.condition.wait()
-        self.condition.release()
-        return name
-
-    def splitReplicatorFile(self, visitID, exposureSequenceID, raft, filename):
-        sensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
-        x = 0
-        for s in sensors:
-            sensors[x] = raft+" "+s
-            x += 1
-        self.splitFile(visitID, exposureSequenceID, filename, sensors)
-
-    def splitWavefrontFile(self, visitID, exposureSequenceID, filename):
-        sensors = ["R:0,0 S:2,2", "R:0,4 S:0,2", "R:4,0 S:2,0", "R:4,4 S:0,0"]
-        self.splitFile(visitID, exposureSequenceID, filename, sensors)
-
-    def splitFile(self, visitID, exposureSequenceID, filename, sensors):
-        statinfo = os.stat(filename)
-        filesize = statinfo.st_size
-        buflen = filesize/len(sensors)
-        with open(filename, 'rb') as src:
-            for sensorInfo in sensors:
-                raft = sensorInfo.split(" ")[0]
-                sensor = sensorInfo.split(" ")[1]
-                target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
-                if not os.path.exists(os.path.dirname(target)):
-                    os.makedirs(os.path.dirname(target))
-                f = open(target,'wb')
-                f.write(src.read(buflen))
-                f.close()
-                key = self.createKey(visitID, exposureSequenceID, raft, sensor)
-                self.putFile(key, target)
-
-    def transmitFile(self, key):
-        print "transmitFile: key = ",key
-        name = self.getFile(key)
-        print "transmitFile: name = ",name,"to ",self.sock.getsockname()
-        self.sock.sendFile(name)
-        print "transmitFile: done"
-
-    def oldtransmitFile(self, vals):
-        print "transmitFile: vals = ",vals
-        key = self.createKey(vals)
-        print "transmitFile: key = ",key
-        name = self.getFile(key)
-        print "transmitFile: name = ",name,"to ",self.sock.getsockname()
-        self.sock.sendFile(name)
-        print "transmitFile: done"
-
-    def createKey(self, visitID, exposureSequenceID, raft, sensor):
-        key = "%s:%s:%s_%s" % (visitID, exposureSequenceID, raft, sensor)
-        return key
+    def respond(self):
+        msg = {"msgtype":"response", "status":"alive"}
+        self.jsock.sendJSON(msg)
         
-
-    def oldcreateKey(self, vals):
-        exposureSequenceID = vals["exposureSequenceID"]
-        visitID = vals["visitID"]
-        raft = vals["raft"]
-        sensor = vals["sensor"]
-        key = "%s:%s:%s_%s" % (visitID, exposureSequenceID, raft, sensor)
-        return key
-
     def run(self):
         while True:
             # TODO:  this should probably renew a lease to the archive, so the
@@ -153,46 +80,22 @@ class DistributorHandler(threading.Thread):
     
             # receive the visit id, exposure sequence number and raft id, from
             # the replicator.
-            vals = self.sock.recvJSON()
+            vals = self.jsock.recvJSON()
             if vals ==  None:
                 self.logger.log(Log.INFO, 'received nothing')
                 return 
             msgtype = vals["msgtype"]
             print "message type = ",msgtype
             if (msgtype == "replicator job") or (msgtype == "wavefront job"):
-                # send the message we just received, along with some additional
-                # information, to the Archive DMCS.
-                if msgtype == "replicator job":
-                    self.sendToArchiveDMCS(vals) 
-            
-                    self.logger.log(Log.INFO, 'received from replicator %s' % vals)
-                    name = self.sock.recvFile()
-                    self.logger.log(Log.INFO, 'file received: %s' % name)
-                    visitID = vals["visitID"]
-                    exposureSequenceID = vals["exposureSequenceID"]
-                # - here
-                    raft = vals["raft"]
-                    self.splitReplicatorFile(visitID, exposureSequenceID, raft, name)
-                elif msgtype == "wavefront job":
-                    d = vals.copy()
-                    for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
-                        d["raft"] = raft
-                        self.sendToArchiveDMCS(d)
-                    name = self.sock.recvFile()
-                    self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
-                    visitID = vals["visitID"]
-                    exposureSequenceID = vals["exposureSequenceID"]
-                    self.splitWavefrontFile(visitID, exposureSequenceID, name)
-                else:
-                    print "message type unknown"
-                    return
+                handler = ReplicatorRequestHandler(self.logger, self.jsock, vals, self.dataTable, self.condition)
+                handler.handleRequest()
+                # note that we do not return, since this is an open connection
+            elif msgtype == "heartbeat":
+                self.respond()
             elif msgtype == "worker job":
-                request = vals["request"]
-                if request == "file":
-                    visitID = vals["visitID"]
-                    exposureSequenceID = vals["exposureSequenceID"]
-                    raft = vals["raft"]
-                    sensor = vals["sensor"]
-                    key = self.createKey(visitID, exposureSequenceID, raft, sensor)
-                    self.transmitFile(key)
-                    return
+                handler = WorkerRequestHandler(self.jsock, vals, self.dataTable,  self.condition)
+                handler.handleRequest()
+                return
+            else:
+                print "message type unknown"
+                return
