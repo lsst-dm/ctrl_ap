@@ -92,7 +92,6 @@ class ReplicatorRequestHandler(object):
         # TODO: get these from a config
         self.broker = "lsst8.ncsa.uiuc.edu"
         self.topic = "distributor_event"
-        eventSystem = events.EventSystem.getDefaultEventSystem()
         self.archiveTransmitter = events.EventTransmitter(self.broker, self.topic)
         # store this info locally, in case the archive asks for it again, later
 
