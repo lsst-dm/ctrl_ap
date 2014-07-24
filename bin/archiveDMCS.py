@@ -28,6 +28,7 @@ from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
 from lsst.pex.logging import Log
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+from lsst.ctrl.ap.key import Key
 import threading
 import socket
 from time import sleep
@@ -60,7 +61,8 @@ class DistributorLookupHandler(threading.Thread):
         visitID = request["visitID"]
         raft = request["raft"]
         ccd = request["ccd"]
-        key = "%s:%s:%s" % (exposureSequenceID,visitID,raft)
+        #key = "%s:%s:%s" % (exposureSequenceID,visitID,raft)
+        key = Key.create(visitID, exposureSequenceID, raft, ccd)
         # 
         #print "about to acquire condition"
         self.condition.acquire()
@@ -125,13 +127,15 @@ class EventHandler(threading.Thread):
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
+            print "ps = ",ps.toString()
             ocsEventType = ps.get("distributor_event")
             exposureSequenceID = ps.get("exposureSequenceID")
             visitID = ps.get("visitID")
             raft = ps.get("raft")
+            sensor = ps.get("sensor")
             inetaddr = ps.get("networkAddress")
             port = ps.get("networkPort")
-            key = "%s:%s:%s" % (exposureSequenceID, visitID, raft)
+            key = Key.create(visitID, exposureSequenceID, raft, sensor)
             self.logger.log(Log.INFO, "%s %s:%s" % (key, inetaddr,port))
 
             self.condition.acquire()

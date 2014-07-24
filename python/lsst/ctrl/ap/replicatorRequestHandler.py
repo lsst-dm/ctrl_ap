@@ -33,6 +33,7 @@ from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 import lsst.ctrl.events as events
 from lsst.ctrl.ap.key import Key
+from lsst.ctrl.ap.distributorInfo import DistributorInfo
 
 class ReplicatorRequestHandler(object):
     def __init__(self, logger, jsock, msg, dataTable, condition):
@@ -52,6 +53,7 @@ class ReplicatorRequestHandler(object):
             print "unknown msgtype: %s" % msgtype
 
     def handleReplicatorJob(self):
+        self.logger.log(Log.INFO, "handling request from replicator job")
         self.sendToArchiveDMCS(self.msg) # XXX
         self.logger.log(Log.INFO, 'received from replicator %s' % self.msg)
         name = self.jsock.recvFile()
@@ -92,13 +94,33 @@ class ReplicatorRequestHandler(object):
         self.topic = "distributor_event"
         eventSystem = events.EventSystem.getDefaultEventSystem()
         self.archiveTransmitter = events.EventTransmitter(self.broker, self.topic)
-        event = events.Event("distributor", props)
-        self.archiveTransmitter.publishEvent(event)
+        # store this info locally, in case the archive asks for it again, later
 
-    def putFile(self, key, name):
-        print "putFile: key = %s, name = %s " % (key, name)
+        visitID = props.get("visitID")
+        exposureSequenceID = props.get("exposureSequenceID")
+        raft = props.get("raft")
+        sensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
+        for sensor in sensors:
+            props.set("sensor", sensor)
+            key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            self.storeDistributorInfo(key, hostinfo[0], hostinfo[1])
+
+            event = events.Event("distributor", props)
+            self.archiveTransmitter.publishEvent(event)
+
+    def storeFileInfo(self, key, name):
+        print "storeFileInfo: key = %s, name = %s " % (key, name)
         self.condition.acquire()
-        self.dataTable[key] = name
+        distInfo = self.dataTable[key]
+        distInfo.setName(name)
+        self.dataTable[key] = distInfo
+        self.condition.notifyAll()
+        self.condition.release()
+
+    def storeDistributorInfo(self, key, inetaddr, port):
+        print "storeDistributorInfo: key = %s, inet = %s:%s " % (key, inetaddr, port)
+        self.condition.acquire()
+        self.dataTable[key] = DistributorInfo(inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
 
@@ -129,4 +151,4 @@ class ReplicatorRequestHandler(object):
                 f.write(src.read(buflen))
                 f.close()
                 key = Key.create(visitID, exposureSequenceID, raft, sensor)
-                self.putFile(key, target)
+                self.storeFileInfo(key, target)

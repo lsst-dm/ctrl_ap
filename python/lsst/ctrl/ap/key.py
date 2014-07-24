@@ -22,7 +22,14 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 class Key(object):
+
     @staticmethod
     def create(visitID, exposureSequenceID, raft, sensor):
-        key = "%s:%s:%s_%s" % (visitID, exposureSequenceID, raft, sensor)
+        key = "%s|%s|%s|%s" % (visitID, exposureSequenceID, raft, sensor)
         return key
+
+    @staticmethod
+    def split(key):
+        return key.split("|")
+
+    

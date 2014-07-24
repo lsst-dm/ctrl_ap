@@ -39,22 +39,26 @@ class WorkerRequestHandler(object):
         self.dataTable = dataTable
         self.condition = condition
 
-    def getFile(self, key):
-        print "getFile: key = %s" % key
+    def getFileInfo(self, key):
+        print "getFileInfo: key = %s" % key
         name = ""
         self.condition.acquire()
         while True:
             if key in self.dataTable:
-                name = self.dataTable[key]
-                print "getFile name = ",name
-                break
+                info = self.dataTable[key]
+                print "getFileInfo: key = ",key 
+                print "getFileInfo: info = ", info
+                name = info.getName()
+                if name is not None: 
+                    print "getFileInfo name = ",name
+                    break
             self.condition.wait()
         self.condition.release()
         return name
 
     def transmitFile(self, key):
         print "transmitFile: key = ",key
-        name = self.getFile(key)
+        name = self.getFileInfo(key)
         print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
         self.jsock.sendFile(name)
         print "transmitFile: done"

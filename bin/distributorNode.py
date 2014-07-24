@@ -33,6 +33,7 @@ import lsst.ctrl.events as events
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.distributorHandler import DistributorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+from lsst.ctrl.ap.key import Key
 from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 
@@ -57,20 +58,22 @@ class DistributorEventHandler(threading.Thread):
             # todo: switch in event "request"
             request = ps.get("request")
 
-            root = PropertySet()
             
             # send events for contents dataTable
             self.condition.acquire()
             print "dataTable = ",self.dataTable
             for key in self.dataTable:
-                elem = split(":")
-                root.add("exposureSequenceID", elem[0])
-                root.add("visitID", elem[1])
-                root.add("raft", elem[2])
-                net = self.dataTable[key]
-                root.add("networkAddress", net[0])
-                root.add("networkPort", net[1])
-                event = events.Event("distributor", "root")
+                root = PropertySet()
+                distInfo = Key.split(key)
+                root.add("distributor_event", "info")
+                root.add("visitID", distInfo[0])
+                root.add("exposureSequenceID", distInfo[1])
+                root.add("raft", distInfo[2])
+                root.add("sensor", distInfo[3])
+                info = self.dataTable[key]
+                root.add("networkAddress", info.getAddr())
+                root.add("networkPort", info.getPort())
+                event = events.Event("distributor", root)
                 eventSystem.publishEvent("distributor_event", event)
             self.condition.release()
                 
