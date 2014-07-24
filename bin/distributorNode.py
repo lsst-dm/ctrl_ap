@@ -29,14 +29,17 @@ import time
 import argparse
 import socket
 import threading
+import lsst.ctrl.events as events
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.distributorHandler import DistributorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.pex.logging import Log
+from lsst.daf.base import PropertySet
 
 class DistributorEventHandler(threading.Thread):
-    def __init__(self, dataTable, condition):
+    def __init__(self, logger, dataTable, condition):
         threading.Thread.__init__(self)
+        self.logger = logger
         self.dataTable = dataTable
         self.condition = condition
         self.brokerName = "lsst8.ncsa.illinois.edu"
@@ -45,24 +48,26 @@ class DistributorEventHandler(threading.Thread):
     def run(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
+        eventSystem.createTransmitter(self.brokerName, "distributor_event")
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             archiveEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = archiveEvent.getPropertySet()
-            archiveEventType = ps.get("archive_event")
 
-            eventSystem.createTransmitter(self.brokerName, "distributor_event")
-            root = PropertySet()
             # todo: switch in event "request"
+            request = ps.get("request")
+
+            root = PropertySet()
             
             # send events for contents dataTable
-            self.condition.aquire()
-            for key in dataTable:
+            self.condition.acquire()
+            print "dataTable = ",self.dataTable
+            for key in self.dataTable:
                 elem = split(":")
                 root.add("exposureSequenceID", elem[0])
                 root.add("visitID", elem[1])
                 root.add("raft", elem[2])
-                net = dataTable[key]
+                net = self.dataTable[key]
                 root.add("networkAddress", net[0])
                 root.add("networkPort", net[1])
                 event = events.Event("distributor", "root")
@@ -83,7 +88,7 @@ class DistributorNode(Node):
         condition = threading.Condition()
 
         # start handler for incoming requests from the archive
-        eventHandler = DistributorEventHandler(dataTable, condition)
+        eventHandler = DistributorEventHandler(self.logger, dataTable, condition)
         eventHandler.start()
 
         while True:
