@@ -26,6 +26,7 @@
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
+from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 
 class BaseDMCS(object):
@@ -42,6 +43,8 @@ class BaseDMCS(object):
     def handleEvents(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
+        st = Status()
+        st.publish("basedmcs", Status.start, Status.connectionWait)
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)

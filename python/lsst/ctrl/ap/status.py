@@ -40,20 +40,32 @@ class Singleton(type):
 class Status(object):
     __metaclass__ = Singleton
 
+    broker = "lsst8.ncsa.illinois.edu"
+    topic = "ap_status"
+
+    component = "component"
+    status = "status"
+    message = "message"
+    data = "data"
+
+    start = "start"
+    connectionWait = "waiting on connection"
+
+
     def __init__(self):
-        self.broker = "lsst8.ncsa.illinois.edu"
-        self.topic = "ap_status"
+        #self.broker = broker
+        #self.topic = topic
         self.eventSystem = events.EventSystem.getDefaultEventSystem()
         self.eventSystem.createTransmitter(self.broker, self.topic)
 
     def publish(self, component, status, msg):
-        m = {"component":component, "status":status, "msg":msg}
+        m = {self.component:component, self.status:status, self.message:msg}
         s = json.dumps(m)
 
         root = PropertySet()
-        root.add("data",s)
+        root.add(self.data,s)
 
-        event = events.Event("runid",root)
+        event = events.Event("status_runid",root)
         self.eventSystem.publishEvent(self.topic,event)
 
 
