@@ -34,6 +34,7 @@ from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.distributorHandler import DistributorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.key import Key
+from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 
@@ -82,9 +83,13 @@ class DistributorNode(Node):
 
     def __init__(self, port):
         super(DistributorNode, self).__init__()
-        self.createIncomingSocket(socket.gethostname(), port)
+        st = Status()
+        st.publish(st.distributorNode, st.start, st.success);
+        self.createIncomingSocket(port)
+        st.publish(st.distributorNode, st.connectionWait, st.idle, port="%s:%d" % (socket.gethostname(), port));
         logger = Log.getDefaultLog()
         self.logger = Log(logger,"DistributorNode")
+        n = self.inSock.getsockname()
 
     def activate(self):
         dataTable = {}
@@ -94,10 +99,13 @@ class DistributorNode(Node):
         eventHandler = DistributorEventHandler(self.logger, dataTable, condition)
         eventHandler.start()
 
+        st = Status()
         while True:
             self.logger.log(Log.INFO, "Waiting on connection")
             (client, (ipAddr, clientPort)) = self.inSock.accept()
-            self.logger.log(Log.INFO, "connection accepted: %s:%d" % (ipAddr, clientPort))
+            (remote,addrlist,ipaddrlist) = socket.gethostbyaddr(ipAddr)
+            self.logger.log(Log.INFO, "connection accepted: %s:%d" % (remote, clientPort))
+            st.publish(st.distributorNode, st.accept, "%s:%d" % (remote, clientPort))
             jclient = JSONSocket(client)
             dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()

@@ -40,16 +40,49 @@ class Singleton(type):
 class Status(object):
     __metaclass__ = Singleton
 
+    # broker location
     broker = "lsst8.ncsa.illinois.edu"
+    # ap status topic
     topic = "ap_status"
 
+    # JSON message element types
     component = "component"
     status = "status"
     message = "message"
+    id = "component id"
+    port ="client port"
     data = "data"
 
+    # stanard ap components
+    archiveDMCS = "archive dmcs"
+    baseDMCS = "base dmcs"
+    distributorNode = "distributor"
+    replicatorNode = "replicator node"
+    replicatorJob = "replicator job"
+    workerJob = "worker job"
+
+    # standard status types
     start = "start"
+    connect = "connecting to"
+    requestFile = "request file"
+    sendFile = "send file"
+    fileReceived = "file received"
+    receivedMsg = "received message"
+    submit = "submit"
+    perform = "perform"
+    generate = "generate"
+    update = "update"
+    issue = "issue"
+    finish = "finish"
+    create = "create"
+    lookup = "lookup"
+    retrieve = "retrieve"
+    accept = "accept from"
     connectionWait = "waiting on connection"
+    idle = "idle"
+
+    success = "success"
+
 
 
     def __init__(self):
@@ -58,8 +91,11 @@ class Status(object):
         self.eventSystem = events.EventSystem.getDefaultEventSystem()
         self.eventSystem.createTransmitter(self.broker, self.topic)
 
-    def publish(self, component, status, msg):
-        m = {self.component:component, self.status:status, self.message:msg}
+    def publish(self, component, status, msg, port=None):
+        id = "%s/%d" % (socket.gethostname(), os.getpid())
+        m = {self.component:component, self.status:status, self.message:msg, self.id:id}
+        if port is not None:
+            m[self.port] = port
         s = json.dumps(m)
 
         root = PropertySet()

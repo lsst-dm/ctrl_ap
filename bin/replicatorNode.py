@@ -32,6 +32,7 @@ import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.job import Job
 from lsst.ctrl.ap.node import Node
+from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.pex.logging import Log
@@ -40,15 +41,21 @@ class ReplicatorNode(Node):
 
     def __init__(self, distHost, distPort, repPort):
         super(ReplicatorNode, self).__init__()
-        self.createIncomingSocket("localhost", repPort)
+        self.createIncomingSocket(repPort)
         self.distHost = distHost
         self.distPort = distPort
         self.dSock = None
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "ReplicatorNode")
         self.sleepInterval = 5 # seconds
+        st = Status()
+        st.publish(st.replicatorNode, st.start, st.success)
 
     def activate(self):
+        st = Status()
+        n = self.inSock.getsockname()
+        (name, addrlist, ipaddrlist) = socket.gethostbyaddr(n[0])
+        st.publish(st.replicatorNode, st.connect, "%s:%s" % (args.distributor, args.port), port="%s:%d" % (name,n[1]))
         while self.connectToNode(args.distributor, args.port) == False:
             time.sleep(self.sleepInterval)
             pass
@@ -56,6 +63,7 @@ class ReplicatorNode(Node):
         while True:
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             print "replicator node: accepted connection"
+            st.publish(st.replicatorNode, st.accept, "%s:%s" % (ipAddr, clientPOrt))
             jsock = JSONSocket(client)
             rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
             rh.start()

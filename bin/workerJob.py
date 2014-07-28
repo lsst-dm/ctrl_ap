@@ -51,7 +51,12 @@ class WorkerJob(object):
         self.logger = Log(logger, "workerJob")
         self.logger.log(Log.INFO, "worker started")
 
+        st = Status()
+        st.publish(st.workerjob, st.start, "%s:%s:%s" % (visitID, raft, ccd))
+
     def requestDistributor(self, exposureSequenceID):
+        st = Status()
+        st.publish(st.workerjob, st.connect, "%s %s:%s" % (st.archive, self.host, self.port))
         sock = self.makeConnection(self.host, self.port)
 
         jsock = JSONSocket(sock)
@@ -83,6 +88,8 @@ class WorkerJob(object):
 
     def retrieveDistributorImage(self, host, port, exposure):
         self.logger.log(Log.INFO, "retriving image from distributor")
+        st = Status()
+        st.publish(st.workerjob, st.connect, "%s %s:%s" % (st.distributor, host, port))
         sock = self.makeConnection(host, port)
         jsock = JSONSocket(sock)
         vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
@@ -91,7 +98,9 @@ class WorkerJob(object):
         newName = os.path.join("/tmp",newName)
         if not os.path.exists(os.path.dirname(newName)):
             os.makedirs(os.path.dirname(newName))
+        st.publish(st.workerjob, st.requestFile, name)
         name = jsock.recvFile(receiveTo=newName)
+        st.publish(st.workerjob, st.fileReceived, name)
         self.logger.log(Log.INFO, "file received = %s" % name)
         return name, "telemetry"
         
@@ -100,11 +109,12 @@ class WorkerJob(object):
             distHost, distPort = self.requestDistributor(exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
 
-        self.logger.log(Log.INFO, "Perform alert production:")
-        self.logger.log(Log.INFO, "generating DIASources")
-        self.logger.log(Log.INFO, "updating  DIAObjects")
-        self.logger.log(Log.INFO, "issuing alerts")
-        self.logger.log(Log.INFO, "worker completed")
+        st = Status()
+        st.publish(st.workerjob, st.perform, "alert production")
+        st.publish(st.workerjob, st.generate, "DIASources")
+        st.publish(st.workerjob, st.update, "DIAObjects")
+        st.publish(st.workerjob, st.issue, "alerts")
+        st.publish(st.workerjob, st.finish, st.success)
         sys.exit(0)
 
 if __name__ == "__main__":

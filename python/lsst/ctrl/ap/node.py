@@ -41,7 +41,8 @@ class Node(object):
         self.logger = Log.getDefaultLog()
 
 
-    def createIncomingSocket(self, host, port):
+    def createIncomingSocket(self, port):
+        host = socket.gethostname()
         inSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.logger.log(Log.INFO, "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))

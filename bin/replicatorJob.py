@@ -32,6 +32,7 @@ import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 
@@ -52,6 +53,8 @@ class ReplicatorJob(object):
 
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "replicatorJob")
+        st = Status()
+        st.publish(st.replicatorjob, st.start, "%s/%s/%s" % (expectedVisitID, expectedExpSeqID, self.raft)
         
 
     def connectToReplicator(self):
@@ -67,6 +70,8 @@ class ReplicatorJob(object):
             self.logger.log(Log.INFO, "I'm on host: %s" % socket.gethostname())
             return False
         self.rSock = JSONSocket(rSock)
+        st = Status()
+        st.publish(st.replicatorjob, st.connect, st.replicatorNode)
         return True
 
     def sendInfoToReplicator(self):
@@ -79,6 +84,8 @@ class ReplicatorJob(object):
         vals = {"msgtype":"replicator job", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
+        st = Status()
+        st.publish(st.replicatorjob, st.issue, "%s/%s/%s" % (expectedVisitID, expectedExpSeqID, self.raft)
 
     def execute(self, imageID, visitID, exposureSequenceID):
         self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
@@ -86,6 +93,8 @@ class ReplicatorJob(object):
         # artificial wait to simulate some processing going on.
         time.sleep(2)
 
+        st = Status()
+        st.publish(st.replicatorjob, st.create, f.name)
         # write a random binary file to disk
         tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
         tmp = os.path.join("/tmp",tmp)
@@ -97,6 +106,7 @@ class ReplicatorJob(object):
         # send the replicator node the name of the file
         vals = {"filename" : f.name}
         self.rSock.sendJSON(vals)
+        st.publish(st.replicatorjob, st.issue, f.name)
 
     def start(self):
         self.sendInfoToReplicator()

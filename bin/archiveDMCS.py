@@ -29,6 +29,7 @@ from lsst.ctrl.ap import jobManager
 from lsst.pex.logging import Log
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.key import Key
+from lsst.ctrl.ap.status import Status
 import threading
 import socket
 from time import sleep
@@ -65,6 +66,8 @@ class DistributorLookupHandler(threading.Thread):
         key = Key.create(visitID, exposureSequenceID, raft, ccd)
         # 
         #print "about to acquire condition"
+        st = Status()
+        st.publish(st.archiveDMCS, st.lookup, "%s/%s/%s,%s" % (visitID, exposureSequenceID, raft, ccd))
         self.condition.acquire()
         while True:
             if key in self.dataTable:
@@ -74,6 +77,7 @@ class DistributorLookupHandler(threading.Thread):
             # check again
             self.condition.wait()
         self.condition.release()
+        st.publish(st.archiveDMCS, st.retrieved, "%s/%s/%s,%s" % (visitID, exposureSequenceID, raft, ccd))
         return data
 
 class ArchiveConnectionHandler(threading.Thread):
@@ -89,9 +93,11 @@ class ArchiveConnectionHandler(threading.Thread):
         port = 9595
         serverSock.bind((host,port))
         serverSock.listen(5)
+        st = Status()
         while True:
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
             # spawn a thread to handle this connection
+            st.publish(st.archiveDMCS, st.accept, "%s:%s" % (ipAddr, clientPort0))
             dist = DistributorLookupHandler(self.dataTable, self.condition, clientSock)
             dist.start()
             # TODO: should do cleanup here
@@ -151,6 +157,8 @@ class ArchiveDMCS(object):
         self.eventTopic = "distributor_event"
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "ArchiveDMCS")
+        st = Status()
+        st.publish(st.archiveDMCS, st.start, "starting connection handlers")
 
 
 if __name__ == "__main__":

@@ -46,5 +46,7 @@ if __name__ == "__main__":
         ps = event.getPropertySet()
         data = ps.get(Status.data)
         values = json.loads(data)
-        print "%d|%s|%s|%s" % (milli, values[Status.component], values[Status.status], values[Status.message])
+        values["time"] = milli
+        data = json.dumps(values)
+        print data
         sys.stdout.flush()
