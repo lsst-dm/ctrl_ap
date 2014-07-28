@@ -90,10 +90,10 @@ class Status(object):
         #self.topic = topic
         self.eventSystem = events.EventSystem.getDefaultEventSystem()
         self.eventSystem.createTransmitter(self.broker, self.topic)
+        self.process = "%s/%d" % (socket.gethostname(), os.getpid())
 
     def publish(self, component, status, msg, port=None):
-        id = "%s/%d" % (socket.gethostname(), os.getpid())
-        m = {self.component:component, self.status:status, self.message:msg, self.id:id}
+        m = {self.component:component, self.status:status, self.message:msg, self.id:self.process}
         if port is not None:
             m[self.port] = port
         s = json.dumps(m)
@@ -103,6 +103,7 @@ class Status(object):
 
         event = events.Event("status_runid",root)
         self.eventSystem.publishEvent(self.topic,event)
+
 
 
 if __name__ == "__main__":
