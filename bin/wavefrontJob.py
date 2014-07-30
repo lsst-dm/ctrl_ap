@@ -55,15 +55,16 @@ class WavefrontJob(object):
 
     def connectToReplicator(self):
         rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % ("localhost", self.replicatorPort))
+        host = socket.gethostname()
+        self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % (host, self.replicatorPort))
         try:
-            rSock.connect(("localhost", self.replicatorPort))
+            rSock.connect((host, self.replicatorPort))
         except socket.gaierror, err:
             self.logger.log(Log.INFO, "address problem?  %s " % err)
             return False
         except socket.error, err:
             self.logger.log(Log.INFO, "Connection problem: %s" % err)
-            self.logger.log(Log.INFO, "I'm on host: %s" % socket.gethostname())
+            self.logger.log(Log.INFO, "I'm on host: %s" % host)
             return False
         self.rSock = JSONSocket(rSock)
         return True

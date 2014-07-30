@@ -69,7 +69,7 @@ class JobManager(object):
 
     def submitAllReplicatorJobs(self, rPortList, visitID, exposureSequenceID):
         status = Status()
-        status.publish(status.basedmcs, status.submit, status.replicatorJobs)
+        status.publish(status.baseDMCS, status.submit, status.replicatorJobs)
         ad = self.getClassAd(self.replicatorJobPath)
         # 21 jobs
         raft = 1
@@ -125,7 +125,7 @@ class JobManager(object):
     def submitWorkerJobs(self, visitID, numExposures, boresightPointing, filterId):
         print "submit worker jobs called"
         status = Status()
-        status.publish(status.basedmcs, status.submit, status.workerJobs)
+        status.publish(status.baseDMCS, status.submit, status.workerJobs)
         ad = self.getClassAd(self.workerJobPath)
 	    # start 50 worker jobs
         # TODO: change hardcoded archive and port

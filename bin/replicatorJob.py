@@ -54,24 +54,27 @@ class ReplicatorJob(object):
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "replicatorJob")
         st = Status()
-        st.publish(st.replicatorjob, st.start, "%s/%s/%s" % (expectedVisitID, expectedExpSeqID, self.raft)
+        vals = {"startup args":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":self.raft}}
+        st.publish(st.replicatorJob, st.start, vals)
         
 
     def connectToReplicator(self):
         rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % ("localhost", self.replicatorPort))
+        host = socket.gethostname()
+        st = Status()
+        serv = {st.server:{st.host:host, st.port:self.replicatorPort}}
+        st.publish(st.replicatorJob, st.connect, serv)
+        self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % (host, self.replicatorPort))
         try:
-            rSock.connect(("localhost", self.replicatorPort))
+            rSock.connect((host, self.replicatorPort))
         except socket.gaierror, err:
             self.logger.log(Log.INFO, "address problem?  %s " % err)
             return False
         except socket.error, err:
             self.logger.log(Log.INFO, "Connection problem: %s" % err)
-            self.logger.log(Log.INFO, "I'm on host: %s" % socket.gethostname())
+            self.logger.log(Log.INFO, "I'm on host: %s" % host)
             return False
         self.rSock = JSONSocket(rSock)
-        st = Status()
-        st.publish(st.replicatorjob, st.connect, st.replicatorNode)
         return True
 
     def sendInfoToReplicator(self):
@@ -85,28 +88,30 @@ class ReplicatorJob(object):
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
         st = Status()
-        st.publish(st.replicatorjob, st.issue, "%s/%s/%s" % (expectedVisitID, expectedExpSeqID, self.raft)
+        data = {st.data:{"visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}}
+        st.publish(st.replicatorJob, st.pub, data)
 
     def execute(self, imageID, visitID, exposureSequenceID):
         self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
         time.sleep(2)
-
+        data = {"data":{"visitID":visitID,"exposureSequenceID":exposureSequenceID,"raft":self.raft}}
         st = Status()
-        st.publish(st.replicatorjob, st.create, f.name)
+        st.publish(st.replicatorJob, st.read, data)
+
         # write a random binary file to disk
         tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
         tmp = os.path.join("/tmp",tmp)
         f = open(tmp, "wb")
-        f.write(os.urandom(1024*200*9)) # nine 200k images
+        f.write(os.urandom(1024*200*9)) # nine 200k images into one file
         f.close()
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
 
         # send the replicator node the name of the file
         vals = {"filename" : f.name}
         self.rSock.sendJSON(vals)
-        st.publish(st.replicatorjob, st.issue, f.name)
+        st.publish(st.replicatorJob, st.pub, f.name)
 
     def start(self):
         self.sendInfoToReplicator()
@@ -133,6 +138,8 @@ class ReplicatorJob(object):
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
                 self.logger.log(Log.INFO, "got expected info.  Getting image")
                 self.execute(imageID, visitID, exposureSequenceID)
+                st = Status()
+                st.publish(st.replicatorJob, st.finish, st.success)
                 sys.exit(0)
 
 if __name__ == "__main__":

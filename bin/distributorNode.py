@@ -83,13 +83,14 @@ class DistributorNode(Node):
 
     def __init__(self, port):
         super(DistributorNode, self).__init__()
+        self.inboundPort = port
         st = Status()
-        st.publish(st.distributorNode, st.start, st.success);
-        self.createIncomingSocket(port)
-        st.publish(st.distributorNode, st.connectionWait, st.idle, port="%s:%d" % (socket.gethostname(), port));
+        st.publish(st.distributorNode, st.start)
+        self.createIncomingSocket(self.inboundPort)
+        server = {st.server:{st.host:socket.gethostname(),st.port:self.inboundPort}}
+        st.publish(st.distributorNode, st.connectionWait, server)
         logger = Log.getDefaultLog()
         self.logger = Log(logger,"DistributorNode")
-        n = self.inSock.getsockname()
 
     def activate(self):
         dataTable = {}
@@ -105,7 +106,10 @@ class DistributorNode(Node):
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             (remote,addrlist,ipaddrlist) = socket.gethostbyaddr(ipAddr)
             self.logger.log(Log.INFO, "connection accepted: %s:%d" % (remote, clientPort))
-            st.publish(st.distributorNode, st.accept, "%s:%d" % (remote, clientPort))
+            serverInfo = {st.host:socket.gethostname(), st.port:self.inboundPort}
+            clientInfo = {st.host:remote,st.port:clientPort}
+            connection = {"connection":{st.server:serverInfo, st.client:clientInfo}}
+            st.publish(st.distributorNode, st.accept, connection)
             jclient = JSONSocket(client)
             dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()

@@ -49,22 +49,20 @@ class ReplicatorNode(Node):
         self.logger = Log(logger, "ReplicatorNode")
         self.sleepInterval = 5 # seconds
         st = Status()
-        st.publish(st.replicatorNode, st.start, st.success)
+        st.publish(st.replicatorNode, st.start)
 
     def activate(self):
         st = Status()
-        n = self.inSock.getsockname()
-        (name, addrlist, ipaddrlist) = socket.gethostbyaddr(n[0])
-        st.publish(st.replicatorNode, st.connect, "%s:%s" % (args.distributor, args.port), port="%s:%d" % (name,n[1]))
-        while self.connectToNode(args.distributor, args.port) == False:
+        while self.connectToNode(Status.replicatorNode, args.distributor, args.port) == False:
             time.sleep(self.sleepInterval)
             pass
         self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
         while True:
-            (client, (ipAddr, clientPort)) = self.inSock.accept()
+            (clientSock, (ipAddr, clientPort)) = self.inSock.accept()
             print "replicator node: accepted connection"
-            st.publish(st.replicatorNode, st.accept, "%s:%s" % (ipAddr, clientPOrt))
-            jsock = JSONSocket(client)
+            client = {"client":{st.host:ipAddr, st.port:clientPort}}
+            st.publish(st.replicatorNode, st.accept, client)
+            jsock = JSONSocket(clientSock)
             rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
             rh.start()
 

@@ -59,11 +59,19 @@ class Status(object):
     distributorNode = "distributor"
     replicatorNode = "replicator node"
     replicatorJob = "replicator job"
+    replicatorJobs = "replicator jobs"
     workerJob = "worker job"
+    workerJobs = "worker jobs"
+
+    # part deux:
+    server = "server"
+    client = "client"
+    host = "host"
+    port = "port"
 
     # standard status types
     start = "start"
-    connect = "connecting to"
+    connect = "connect"
     requestFile = "request file"
     sendFile = "send file"
     fileReceived = "file received"
@@ -72,7 +80,8 @@ class Status(object):
     perform = "perform"
     generate = "generate"
     update = "update"
-    issue = "issue"
+    pub = "publish"
+    read = "read"
     finish = "finish"
     create = "create"
     lookup = "lookup"
@@ -80,6 +89,10 @@ class Status(object):
     accept = "accept from"
     connectionWait = "waiting on connection"
     idle = "idle"
+    listen = "listen"
+    infoReceived ="information received"
+    retrieved = "retrieved"
+    issue = "issue"
 
     success = "success"
 
@@ -90,12 +103,12 @@ class Status(object):
         #self.topic = topic
         self.eventSystem = events.EventSystem.getDefaultEventSystem()
         self.eventSystem.createTransmitter(self.broker, self.topic)
-        self.process = "%s/%d" % (socket.gethostname(), os.getpid())
+        self.process = "%s/%d"% (socket.gethostname(), os.getpid())
 
-    def publish(self, component, status, msg, port=None):
-        m = {self.component:component, self.status:status, self.message:msg, self.id:self.process}
-        if port is not None:
-            m[self.port] = port
+    def publishMessage(self, component, status, msg=None):
+        m = {self.component:component, self.status:status, self.id:self.process}
+        if msg is not None:
+            m[self.message] = msg
         s = json.dumps(m)
 
         root = PropertySet()
@@ -104,8 +117,37 @@ class Status(object):
         event = events.Event("status_runid",root)
         self.eventSystem.publishEvent(self.topic,event)
 
+    def publishDict(self, component, status, d):
+        m = {self.component:component, self.status:status, self.id:self.process}
+        for key, value in d.iteritems():
+            m[key] = value
+        s = json.dumps(m)
+
+        root = PropertySet()
+        root.add(self.data,s)
+
+        event = events.Event("status_runid",root)
+        self.eventSystem.publishEvent(self.topic,event)
+
+    def publish(self, component, status, data=None):
+        if data is None:
+            self.publishMessage(component, status)
+        elif type(data) == str:
+            self.publishMessage(component, status, data)
+        elif type(data) == dict:
+            self.publishDict(component, status, data)
+        else:
+            print "publish: unknown type"
 
 
 if __name__ == "__main__":
         s = Status()
-        s.publish("status.py", "ok", "Hello, World!")
+        s.publish("status.py", "start", "Hello, World!")
+        client = {"host":"hostname","port":22}
+        s.publish("status.py", "connection", client)
+        topic = {"topic":"whatthe"}
+        s.publish("status.py", "listening", topic)
+
+        server = {"host":"hostname2","port":23332}
+        connection = {"connection":{"client":client, "server":server}}
+        s.publish("status.py","connect", connection)

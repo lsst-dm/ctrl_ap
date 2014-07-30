@@ -44,14 +44,15 @@ class BaseDMCS(object):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         st = Status()
-        st.publish(st.baseDMCS, st.start, Status.connectionWait)
+        st.publish(st.baseDMCS, st.start)
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
+            st.publish(st.baseDMCS, st.listen, {"topic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
             self.logger.log(Log.INFO, ocsEventType)
-            st.publish(st.baseDMCS, s.treceived, ocsEventType)
+            st.publish(st.baseDMCS, st.receivedMsg, ocsEventType)
             if ocsEventType == "startIntegration":
                 jm = jobManager.JobManager()
                 visitID = ps.get("visitID")

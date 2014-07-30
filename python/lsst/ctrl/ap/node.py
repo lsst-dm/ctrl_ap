@@ -29,6 +29,7 @@ import sys
 import socket
 import time
 import lsst.ctrl.events as events
+from lsst.ctrl.ap.status import Status
 from lsst.daf.base import PropertySet
 from lsst.pex.logging import Log
 from lsst.ctrl.ap.jsonSocket import JSONSocket
@@ -51,8 +52,24 @@ class Node(object):
         self.logger.log(Log.INFO, "done creating socket")
         self.inSock = JSONSocket(inSock)
 
-    def connectToNode(self, host, port):
+    def connectToNode(self, component, host, port):
         outSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # this is to get the outbound port assigned
+        #outSock.listen(5)
+
+        # publish status message
+        st = Status()
+        n = outSock.getsockname()
+        print "n = ",n
+        name = socket.gethostname()
+        serverInfo = {st.host:host, st.port:port}
+        # xxx - this only gives us port # 0.
+        #clientInfo = {st.host:name, st.port:n[1]}
+        #connection = {st.client:clientInfo, st.server:serverInfo}
+        connection = {st.server:serverInfo}
+        st.publish(component, st.connect, connection)
+
         self.logger.log(Log.INFO, "connecting to node %s:%d" % (host, port))
         try:
             outSock.connect((host, port))
@@ -64,6 +81,10 @@ class Node(object):
             outSock = None
             return False
         self.outSock = JSONSocket(outSock)
+
+
+        # xxx - sending Status AFTER the connection is made has
+        # given out of order messages on the status receiver.
         return True
 
     def process(self):

@@ -32,6 +32,7 @@ import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 
@@ -52,11 +53,13 @@ class WorkerJob(object):
         self.logger.log(Log.INFO, "worker started")
 
         st = Status()
-        st.publish(st.workerjob, st.start, "%s:%s:%s" % (visitID, raft, ccd))
+        data = {"data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
+        st.publish(st.workerJob, st.start, data)
 
     def requestDistributor(self, exposureSequenceID):
         st = Status()
-        st.publish(st.workerjob, st.connect, "%s %s:%s" % (st.archive, self.host, self.port))
+        server = {st.server:{st.host:self.host,st.port:self.port}}
+        st.publish(st.workerJob, st.connect, server)
         sock = self.makeConnection(self.host, self.port)
 
         jsock = JSONSocket(sock)
@@ -68,10 +71,14 @@ class WorkerJob(object):
 
         jsock.sendJSON(vals)
 
+        data = {st.data:{"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}}
+        st.publish(st.workerJob, st.pub, data)
         # wait for a response from the Archive DMCS, which is the host and port
         resp = jsock.recvJSON()
         self.logger.log(Log.INFO, "worker from response received")
         
+        info = {st.server:{st.host:resp["inetaddr"], st.port:resp["port"]}}
+        st.publish(st.workerJob, st.infoReceived, data)
         return resp["inetaddr"],resp["port"]
         
     def makeConnection(self, host, port):
@@ -89,18 +96,22 @@ class WorkerJob(object):
     def retrieveDistributorImage(self, host, port, exposure):
         self.logger.log(Log.INFO, "retriving image from distributor")
         st = Status()
-        st.publish(st.workerjob, st.connect, "%s %s:%s" % (st.distributor, host, port))
+        connection = {st.server:{st.host:host, st.port:port}}
+        st.publish(st.workerJob, st.connect, connection)
         sock = self.makeConnection(host, port)
         jsock = JSONSocket(sock)
         vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
         jsock.sendJSON(vals)
+        data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
+        st.publish(st.workerJob, st.retrieve, data)
         newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
         newName = os.path.join("/tmp",newName)
         if not os.path.exists(os.path.dirname(newName)):
             os.makedirs(os.path.dirname(newName))
-        st.publish(st.workerjob, st.requestFile, name)
+        #st.publish(st.workerJob, st.requestFile, newName)
         name = jsock.recvFile(receiveTo=newName)
-        st.publish(st.workerjob, st.fileReceived, name)
+        nameInfo = {"file":name}
+        st.publish(st.workerJob, st.fileReceived, nameInfo)
         self.logger.log(Log.INFO, "file received = %s" % name)
         return name, "telemetry"
         
@@ -110,11 +121,11 @@ class WorkerJob(object):
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
 
         st = Status()
-        st.publish(st.workerjob, st.perform, "alert production")
-        st.publish(st.workerjob, st.generate, "DIASources")
-        st.publish(st.workerjob, st.update, "DIAObjects")
-        st.publish(st.workerjob, st.issue, "alerts")
-        st.publish(st.workerjob, st.finish, st.success)
+        st.publish(st.workerJob, st.perform, "alert production")
+        st.publish(st.workerJob, st.generate, "DIASources")
+        st.publish(st.workerJob, st.update, "DIAObjects")
+        st.publish(st.workerJob, st.issue, "alerts")
+        st.publish(st.workerJob, st.finish, st.success)
         sys.exit(0)
 
 if __name__ == "__main__":

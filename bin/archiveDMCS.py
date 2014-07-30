@@ -67,7 +67,8 @@ class DistributorLookupHandler(threading.Thread):
         # 
         #print "about to acquire condition"
         st = Status()
-        st.publish(st.archiveDMCS, st.lookup, "%s/%s/%s,%s" % (visitID, exposureSequenceID, raft, ccd))
+        request = {st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":ccd}}
+        st.publish(st.archiveDMCS, st.lookup, request)
         self.condition.acquire()
         while True:
             if key in self.dataTable:
@@ -77,7 +78,7 @@ class DistributorLookupHandler(threading.Thread):
             # check again
             self.condition.wait()
         self.condition.release()
-        st.publish(st.archiveDMCS, st.retrieved, "%s/%s/%s,%s" % (visitID, exposureSequenceID, raft, ccd))
+        st.publish(st.archiveDMCS, st.retrieved, request)
         return data
 
 class ArchiveConnectionHandler(threading.Thread):
@@ -97,7 +98,8 @@ class ArchiveConnectionHandler(threading.Thread):
         while True:
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
             # spawn a thread to handle this connection
-            st.publish(st.archiveDMCS, st.accept, "%s:%s" % (ipAddr, clientPort0))
+            clientInfo = {st.client:{st.host:ipAddr,st.port:clientPort}}
+            st.publish(st.archiveDMCS, st.accept, clientInfo)
             dist = DistributorLookupHandler(self.dataTable, self.condition, clientSock)
             dist.start()
             # TODO: should do cleanup here
@@ -129,8 +131,10 @@ class EventHandler(threading.Thread):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         self.requestDistributors()
+        st = Status()
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
+            st.publish(st.archiveDMCS, st.listen, {"topic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             print "ps = ",ps.toString()
@@ -143,6 +147,10 @@ class EventHandler(threading.Thread):
             port = ps.get("networkPort")
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
             self.logger.log(Log.INFO, "%s %s:%s" % (key, inetaddr,port))
+            data = {"endpoint":{st.host:inetaddr,st.port:port},
+                    st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}}
+
+            st.publish(st.archiveDMCS, st.receivedMsg, data)
 
             self.condition.acquire()
             self.dataTable[key] = (inetaddr, port)
@@ -158,7 +166,7 @@ class ArchiveDMCS(object):
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "ArchiveDMCS")
         st = Status()
-        st.publish(st.archiveDMCS, st.start, "starting connection handlers")
+        st.publish(st.archiveDMCS, st.start)
 
 
 if __name__ == "__main__":
