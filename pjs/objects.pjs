@@ -1,24 +1,35 @@
+class Addressable {
+    Addressable() {
+    }
 
-class Box {
+    void processMessage(JSONObject jobj) {
+        println(jobj.time);
+    }
+}
+
+class Box extends Addressable {
     float xpos, ypos;
-    int r, g, b;
+    Color color;
     int sizeX, sizeY;
     int alpha = 255;
 
 
     Box(float x, float y, Color color, int size) {
+        super();
         xpos = x;
         ypos = y;
-        r = color.r;
-        g = color.g;
-        b = color.b;
         sizeX = size;
         sizeY = size;
+        this.color = color;
+    }
+
+    void setColor(Color color) {
+        this.color = color;
     }
 
     void update() {
         stroke(0);
-        fill(r,g,b,alpha);
+        fill(color.r, color.g, color.b, alpha);
         rect(xpos,ypos,sizeX,sizeY);
     }
     
@@ -40,13 +51,13 @@ class LabeledBox extends Box {
 
 class BaseDMCS extends LabeledBox {
     BaseDMCS(float x, float y) {
-        super(x, y, Color.yellow(), 90, "BaseDMCS");
+        super(x, y, Color.green(), 90, "BaseDMCS");
     }
 }
 
 class ArchiveDMCS extends LabeledBox {
     ArchiveDMCS(float x, float y) {
-        super(x, y, Color.yellow(), 90, "ArchiveDMCS");
+        super(x, y, Color.green(), 90, "ArchiveDMCS");
     }
 }
 
@@ -62,7 +73,7 @@ class LSSTCamera extends LabeledBox {
         smooth();
         stroke(0);
         fill(255);
-        arc(xpos,ypos, 150,150, start*PI/180, finish*PI/180);
+        arc(xpos+20,ypos+20, 150,150, start*PI/180, finish*PI/180);
         super.update()
     }
 

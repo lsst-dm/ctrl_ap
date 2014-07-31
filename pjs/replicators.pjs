@@ -1,0 +1,65 @@
+class Replicator extends Box {
+    String raft;
+    int num;
+    Bool arrow;
+    Replicator(int num, float x, float y) {
+        super(x, y, Color.lightGreen(), 20);
+        raft = "R1,1";
+        this.num = num;
+        arrow = true;
+    }
+
+    void update() {
+        super.update();
+        stroke(0);
+        fill(0);
+        if (this.num < 10)
+            text(""+this.num, xpos+8, ypos+15);
+        else
+            text(""+this.num, xpos+3, ypos+15);
+        if (raft != null) {
+            stroke(0);
+            fill(255,255,255);
+            rect(xpos-35,ypos,30,20);
+            fill(0);
+            text(raft, xpos-33, ypos+15);
+        }
+        if (arrow) {
+            start = 170;
+            finish = 190;
+            smooth();
+            fill(0);
+            arc(xpos+100, ypos+11, 50, 50, start*PI/180, finish*PI/180);
+            rect(xpos+20, ypos+9, 60, 3);
+        }
+    }
+}
+
+class ReplicatorGroup {
+
+
+    float xpos, ypos;
+    Replicator[] replicators;
+
+    ReplicatorGroup(float x, float y) {
+        xpos = x;
+        ypost = y;
+
+        replicators = new Replicator[22];
+
+        int incX = 23;
+        int incY = 23;
+        for (int i = 0; i < 22; i++) {
+            Replicator rep = new Replicator(i, x, (i*incY)+y);
+            replicators[i] = rep;
+        }
+    }
+
+    void update() {
+        stroke(0);
+        fill(0);
+        text("replicators", xpos-35, ypos+20);
+        for (int i = 0; i < replicators.length; i++)
+            replicators[i].update();
+    }
+}
