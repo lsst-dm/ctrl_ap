@@ -1,15 +1,36 @@
 class Addressable {
+    Color color;
+    String componentID;
+
     Addressable() {
+        this.color = null;
+        this.componentID = null;
+    }
+
+    void setComponentID(String componentID) {
+        this.componentID = componentID;
+    }
+    void getComponentID() {
+        return this.componentID;
+    }
+
+    void setColor(Color color) {
+        this.color = color;
+    }
+
+    void update() {
     }
 
     void processMessage(JSONObject jobj) {
-        println(jobj.time);
+        if (jobj.status.equals("start")) {
+            setColor(Color.green());
+            update();
+        }
     }
 }
 
 class Box extends Addressable {
     float xpos, ypos;
-    Color color;
     int sizeX, sizeY;
     int alpha = 255;
 
@@ -23,11 +44,8 @@ class Box extends Addressable {
         this.color = color;
     }
 
-    void setColor(Color color) {
-        this.color = color;
-    }
-
     void update() {
+        super.update();
         stroke(0);
         fill(color.r, color.g, color.b, alpha);
         rect(xpos,ypos,sizeX,sizeY);
@@ -51,20 +69,20 @@ class LabeledBox extends Box {
 
 class BaseDMCS extends LabeledBox {
     BaseDMCS(float x, float y) {
-        super(x, y, Color.green(), 90, "BaseDMCS");
+        super(x, y, Color.white(), 90, "BaseDMCS");
     }
 }
 
 class ArchiveDMCS extends LabeledBox {
     ArchiveDMCS(float x, float y) {
-        super(x, y, Color.green(), 90, "ArchiveDMCS");
+        super(x, y, Color.white(), 90, "ArchiveDMCS");
     }
 }
 
 
 class LSSTCamera extends LabeledBox {
     LSSTCamera(float x, float y) {
-        super(x, y, Color.white(), 80, "   Camera");
+        super(x, y, Color.green(), 80, "   Camera");
     }
 
     void update() {

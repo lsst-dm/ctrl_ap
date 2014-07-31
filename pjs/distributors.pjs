@@ -1,7 +1,7 @@
 class Distributor extends Box {
     int num;
     Distributor(int num, float x, float y) {
-        super(x, y, Color.lightGreen(), 20);
+        super(x, y, Color.white(), 20);
         this.num = num;
     }
 
@@ -19,8 +19,10 @@ class Distributor extends Box {
 class DistributorGroup extends Addressable {
 
 
+    int nextUnnamedDistributor;
     float xpos, ypos;
     Distributor[] distributors;
+    HashMap map;
 
     DistributorGroup(float x, float y) {
         super();
@@ -35,6 +37,8 @@ class DistributorGroup extends Addressable {
             Distributor dist = new Distributor(i, x, (i*incY)+y);
             distributors[i] = dist;
         }
+        map = new HashMap();
+        nextUnnamedDistributor = 0;
     }
 
     void update() {
@@ -43,5 +47,28 @@ class DistributorGroup extends Addressable {
         text("Distributors", xpos, ypos+20);
         for (int i = 0; i < distributors.length; i++)
             distributors[i].update();
+    }
+    void lookupDistributor(String id) {
+        if (map.containsKey(id)) {
+            return map.get(id);
+        } else
+            return null;
+    }
+
+    void assign(String id) {
+        Distributor dist = distributors[nextUnnamedDistributor];
+        dist.setComponentID(id);
+        nextUnnamedDistributor++;
+        return dist;
+    }
+
+    void processMessage(JSONObject jobj) {
+        String id = jobj.componentID;
+        String status = jobj.status;
+        Distributor dist = lookupDistributor(id);
+        if (dist == null) {
+            dist = assign(id);
+        }
+        dist.processMessage(jobj);
     }
 }

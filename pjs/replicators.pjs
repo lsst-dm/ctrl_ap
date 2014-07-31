@@ -3,10 +3,10 @@ class Replicator extends Box {
     int num;
     Bool arrow;
     Replicator(int num, float x, float y) {
-        super(x, y, Color.lightGreen(), 20);
-        raft = "R1,1";
+        super(x, y, Color.white(), 20);
+        raft = null;
         this.num = num;
-        arrow = true;
+        arrow = false;
     }
 
     void update() {
