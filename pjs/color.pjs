@@ -1,0 +1,19 @@
+class Color {
+    int r;
+    int g;
+    int b;
+
+    Color(int r, int g, int b) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+    }
+
+    static Color yellow() {
+        return new Color(255,255,0);
+    }
+
+    static Color white() {
+        return new Color(255,255,255);
+    }
+}

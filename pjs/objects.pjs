@@ -1,0 +1,69 @@
+
+class Box {
+    float xpos, ypos;
+    int r, g, b;
+    int sizeX, sizeY;
+    int alpha = 255;
+
+
+    Box(float x, float y, Color color, int size) {
+        xpos = x;
+        ypos = y;
+        r = color.r;
+        g = color.g;
+        b = color.b;
+        sizeX = size;
+        sizeY = size;
+    }
+
+    void update() {
+        stroke(0);
+        fill(r,g,b,alpha);
+        rect(xpos,ypos,sizeX,sizeY);
+    }
+    
+}
+
+class LabeledBox extends Box {
+    String label;
+
+    LabeledBox(float x, float y, Color color, int size, String lab) {
+        super(x, y, color, size);
+        label = lab;
+    }
+    void update() {
+        super.update();
+        fill(0);
+        text(label, xpos+10, ypos+15);
+    }
+}
+
+class BaseDMCS extends LabeledBox {
+    BaseDMCS(float x, float y) {
+        super(x, y, Color.yellow(), 90, "BaseDMCS");
+    }
+}
+
+class ArchiveDMCS extends LabeledBox {
+    ArchiveDMCS(float x, float y) {
+        super(x, y, Color.yellow(), 90, "ArchiveDMCS");
+    }
+}
+
+
+class LSSTCamera extends LabeledBox {
+    LSSTCamera(float x, float y) {
+        super(x, y, Color.white(), 80, "   Camera");
+    }
+
+    void update() {
+        start = 190;
+        finish = 225;
+        smooth();
+        stroke(0);
+        fill(255);
+        arc(xpos,ypos, 150,150, start*PI/180, finish*PI/180);
+        super.update()
+    }
+
+}

@@ -1,0 +1,22 @@
+void setup() {
+    int width = 1000;
+    int height = 500;
+    size(width, height);
+
+    BaseDMCS baseDMCS = new BaseDMCS(70,height-100);
+    baseDMCS.update();
+
+    LSSTCamera lsstCamera = new LSSTCamera(90,250);
+    lsstCamera.update();
+
+    ArchiveDMCS archiveDMCS = new ArchiveDMCS(width-170,height-100);
+    archiveDMCS.update();
+}
+
+void doit(obj_ar) {
+        println("yee ha!");
+        println(obj_ar[0].component);
+        println(obj_ar[1].component);
+        println(obj_ar[2].component);
+        println(obj_ar[3].component);
+}

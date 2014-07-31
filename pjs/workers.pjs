@@ -1,0 +1,17 @@
+class Worker extends Box {
+    Worker(float x, float y) {
+        super(x, y, 40, "");
+    }
+}
+
+class WorkerCloud {
+    float xpos, ypos;
+    WorkerCloud(float x, float y) {
+        xpos = x;
+        ypost = y;
+
+        for (int i; i < 60; i++) {
+        }
+    }
+
+}
