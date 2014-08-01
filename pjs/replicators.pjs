@@ -32,6 +32,10 @@ class Replicator extends Box {
         return this.port;
     }
 
+    void setRaft(String raft) {
+        this.raft = raft;
+    }
+
     void setDistributorPort(int port) {
         this.distributorPort = port;
     }
@@ -124,7 +128,7 @@ class ReplicatorGroup extends Addressable {
             replicators[i].update();
     }
 
-    Replicator matchPort(int port) {
+    Replicator matchDistributorPort(int port) {
         for (int i = 0; i < 22; i++) {
             Replicator rep = replicators[i];
             if (rep.getDistributorPort() == port)
@@ -134,8 +138,19 @@ class ReplicatorGroup extends Addressable {
         return null;
     }
 
+    Replicator matchReplicatorNode(String host, int port) {
+        for (int i = 0; i < 22; i++) {
+            Replicator rep = replicators[i];
+            println("match: port = "+rep.getPort()+", host = "+rep.getHost());
+            if ((rep.getPort() == port) && rep.getHost().equals(host))
+                return rep;
+        }
+        println("rep: matchPort: no match");
+        return null;
+    }
+
     void assign(String id, String distributorHost, int distributorPort) {
-        Replicator rep = matchPort(distributorPort);
+        Replicator rep = matchDistributorPort(distributorPort);
         rep.setDistributorHost(distributorHost);
         rep.setComponentID(id);
         map.put(id, rep);
@@ -143,12 +158,11 @@ class ReplicatorGroup extends Addressable {
         return rep;
     }
 
-    void processMessage(JSONObject jobj) {
+    void handleNode(JSONObject jobj) {
         String status = jobj.status;
-        String component = jobj.component;
-        Replicator rep = null;
-        if (status.equals("start") && component.equals("replicator node")) {
-            String id = jobj.componentID;
+        String id = jobj.componentID;
+        Replicator rep = lookupID(id);
+        if (status.equals("start")) {
             Replicator rep = lookupID(id);
             if (rep == null) {
                 String distributorHost = jobj.distributor.host;
@@ -160,6 +174,34 @@ class ReplicatorGroup extends Addressable {
                 rep.setPort(port);
                 Bool handled = rep.processMessage(jobj);
             }
+            return;
+        }
+        if (status.equals("connect")) {
+            Bool handled = rep.processMessage(jobj);
+            return;
+        }
+    }
+
+    void handleJob(JSONObject jobj) {
+        String status = jobj.status;
+        String id = jobj.componentID;
+        if (status.equals("start")) {
+            String host = jobj.replicatorHost;
+            int port = jobj.replicatorPort;
+            println("host = "+host+", port = "+port);
+            Replicator rep = matchReplicatorNode(host, port);
+            rep.setRaft(jobj.startupArgs.raft);
+            rep.update();
+        }
+    }
+
+    void processMessage(JSONObject jobj) {
+        String component = jobj.component;
+        Replicator rep = null;
+        if (component.equals("replicator node")) {
+            handleNode(jobj);
+        } else if (component.equals("replicator job")) {
+            handleJob(jobj);
         }
     }
 
