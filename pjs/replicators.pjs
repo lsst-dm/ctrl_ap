@@ -33,6 +33,18 @@ class Replicator extends Box {
             rect(xpos+20, ypos+9, 60, 3);
         }
     }
+
+    Bool processMessage(JSONObject jobj) {
+        if (super.processMessage(jobj))
+            return true;
+        String status = jobj.status;
+        if (status.equals("connect")) {
+            arrow = true;
+            update();
+            return true;
+        }
+        return false;
+    }
 }
 
 class ReplicatorGroup extends Addressable {
@@ -81,7 +93,7 @@ class ReplicatorGroup extends Addressable {
         if (rep == null) {
             rep = assign(id);
         }
-        rep.processMessage(jobj);
+        Bool handled = rep.processMessage(jobj);
     }
 
 }

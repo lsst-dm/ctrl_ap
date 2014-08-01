@@ -32,10 +32,13 @@ class Addressable {
     }
 
     void processMessage(JSONObject jobj) {
-        if (jobj.status.equals("start")) {
+        String status = jobj.status;
+        if (status.equals("start")) {
             setColor(Color.green());
             update();
+            return true;
         }
+        return false;
     }
 }
 

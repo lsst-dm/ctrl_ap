@@ -14,6 +14,12 @@ class Distributor extends Box {
         else
             text(""+this.num, xpos+3, ypos+15);
     }
+
+    void processMessage(JSONObject jobj) {
+        if (super.processMessage(jobj))
+            return true;
+        return false;
+    }
 }
 
 class DistributorGroup extends Addressable {
@@ -66,6 +72,6 @@ class DistributorGroup extends Addressable {
             println("didn't find it")
             dist = assign(id);
         }
-        dist.processMessage(jobj);
+        Bool handled = dist.processMessage(jobj);
     }
 }
