@@ -85,10 +85,9 @@ class DistributorNode(Node):
         super(DistributorNode, self).__init__()
         self.inboundPort = port
         st = Status()
-        st.publish(st.distributorNode, st.start)
         self.createIncomingSocket(self.inboundPort)
         server = {st.server:{st.host:socket.gethostname(),st.port:self.inboundPort}}
-        st.publish(st.distributorNode, st.connectionWait, server)
+        st.publish(st.distributorNode, st.start, server)
         logger = Log.getDefaultLog()
         self.logger = Log(logger,"DistributorNode")
 

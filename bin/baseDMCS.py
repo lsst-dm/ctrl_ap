@@ -52,7 +52,6 @@ class BaseDMCS(object):
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
             self.logger.log(Log.INFO, ocsEventType)
-            st.publish(st.baseDMCS, st.receivedMsg, ocsEventType)
             if ocsEventType == "startIntegration":
                 jm = jobManager.JobManager()
                 visitID = ps.get("visitID")
@@ -63,6 +62,8 @@ class BaseDMCS(object):
                 exposures = ps.get("exposures")
                 boresight = ps.get("boresight")
                 filterID = ps.get("filterID")
+                data = {"visitID":visitID, "exposures":exposures, "boresight":boresight, "filterID":filterID}
+                st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
                 jm = jobManager.JobManager()
                 jm.submitWorkerJobs(visitID, exposures, boresight, filterID)
 

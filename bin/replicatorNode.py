@@ -49,7 +49,7 @@ class ReplicatorNode(Node):
         self.logger = Log(logger, "ReplicatorNode")
         self.sleepInterval = 5 # seconds
         st = Status()
-        st.publish(st.replicatorNode, st.start)
+        st.publish(st.replicatorNode, st.start, {"server":{"host":socket.gethostname(), "port":repPort}})
 
     def activate(self):
         st = Status()
