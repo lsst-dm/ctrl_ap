@@ -35,9 +35,10 @@ class Replicator extends Box {
     }
 }
 
-class ReplicatorGroup {
+class ReplicatorGroup extends Addressable {
 
 
+    int nextUnnamedReplicator;
     float xpos, ypos;
     Replicator[] replicators;
 
@@ -53,6 +54,8 @@ class ReplicatorGroup {
             Replicator rep = new Replicator(i, x, (i*incY)+y);
             replicators[i] = rep;
         }
+
+        nextUnnamedReplicator = 0;
     }
 
     void update() {
@@ -62,4 +65,23 @@ class ReplicatorGroup {
         for (int i = 0; i < replicators.length; i++)
             replicators[i].update();
     }
+
+    void assign(String id) {
+        Replicator rep = replicators[nextUnnamedReplicator];
+        rep.setComponentID(id);
+        map.put(id, rep);
+        nextUnnamedReplicator++;
+        return rep;
+    }
+
+    void processMessage(JSONObject jobj) {
+        String id = jobj.componentID;
+        String status = jobj.status;
+        Replicator rep = lookupID(id);
+        if (rep == null) {
+            rep = assign(id);
+        }
+        rep.processMessage(jobj);
+    }
+
 }

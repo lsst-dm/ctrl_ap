@@ -17,22 +17,22 @@ DistributorGroup distributorGroup;
 
 void draw() {
     
-    if (objs == null || counter > 5)
+    if (objs == null) // || counter > 500)
         return;
-    if (millis() > (lastMillis+milliDelta)) {
+    rightNow = millis();
+    if (rightNow >= (lastMillis+milliDelta)) {
         println("draw");
         JSONObject jobj = objs[counter];
         String component = jobj.component;
         println("component = |"+component+"|");
         if (component.equals("base dmcs")) {
-            println("here 1");
             baseDMCS.processMessage(jobj);
         } else if (component.equals("archive dmcs")) {
-            println("here 2");
             archiveDMCS.processMessage(jobj);
         } else if (component.equals("distributor")) {
-            println("here 3");
             distributorGroup.processMessage(jobj);
+        } else if (component.equals("replicator node")) {
+            replicatorGroup.processMessage(jobj);
         } else {
             println("wtf?");
         }

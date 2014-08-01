@@ -1,15 +1,18 @@
 class Addressable {
     Color color;
     String componentID;
+    HashMap map;
 
     Addressable() {
         this.color = null;
         this.componentID = null;
+        this.map = new HashMap();
     }
 
     void setComponentID(String componentID) {
         this.componentID = componentID;
     }
+
     void getComponentID() {
         return this.componentID;
     }
@@ -19,6 +22,13 @@ class Addressable {
     }
 
     void update() {
+    }
+
+    void lookupID(String id) {
+        if (map.containsKey(id)) {
+            return map.get(id);
+        } else
+            return null;
     }
 
     void processMessage(JSONObject jobj) {

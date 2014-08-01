@@ -22,7 +22,6 @@ class DistributorGroup extends Addressable {
     int nextUnnamedDistributor;
     float xpos, ypos;
     Distributor[] distributors;
-    HashMap map;
 
     DistributorGroup(float x, float y) {
         super();
@@ -37,7 +36,7 @@ class DistributorGroup extends Addressable {
             Distributor dist = new Distributor(i, x, (i*incY)+y);
             distributors[i] = dist;
         }
-        map = new HashMap();
+
         nextUnnamedDistributor = 0;
     }
 
@@ -48,16 +47,12 @@ class DistributorGroup extends Addressable {
         for (int i = 0; i < distributors.length; i++)
             distributors[i].update();
     }
-    void lookupDistributor(String id) {
-        if (map.containsKey(id)) {
-            return map.get(id);
-        } else
-            return null;
-    }
 
     void assign(String id) {
+        println("next distributor = "+nextUnnamedDistributor);
         Distributor dist = distributors[nextUnnamedDistributor];
         dist.setComponentID(id);
+        map.put(id,dist);
         nextUnnamedDistributor++;
         return dist;
     }
@@ -65,8 +60,10 @@ class DistributorGroup extends Addressable {
     void processMessage(JSONObject jobj) {
         String id = jobj.componentID;
         String status = jobj.status;
-        Distributor dist = lookupDistributor(id);
+        println(nextUnnamedDistributor+": lookup up id = "+id);
+        Distributor dist = lookupID(id);
         if (dist == null) {
+            println("didn't find it")
             dist = assign(id);
         }
         dist.processMessage(jobj);

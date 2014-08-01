@@ -49,11 +49,11 @@ class Status(object):
     component = "component"
     status = "status"
     message = "message"
-    id = "component id"
-    port ="client port"
+    id = "componentID"
+    port ="clientPort"
     data = "data"
 
-    # stanard ap components
+    # standard ap components
     archiveDMCS = "archive dmcs"
     baseDMCS = "base dmcs"
     distributorNode = "distributor"
