@@ -1,5 +1,9 @@
 class Distributor extends Box {
     int num;
+    String host;
+    int port;
+    int incomingPort;
+
     Distributor(int num, float x, float y) {
         super(x, y, Color.white(), 20);
         this.num = num;
@@ -20,6 +24,32 @@ class Distributor extends Box {
             return true;
         return false;
     }
+
+    void setHost(String host) {
+        this.host = host;
+    }
+
+    String getHost() {
+        return this.host;
+    }
+
+    void setPort(int port) {
+        this.port = port;
+    }
+
+    String getPort() {
+        return this.port;
+    }
+
+    void setIncomingPort(int port) {
+        println("set port:"+port);
+        this.incomingPort = port;
+    }
+
+    int getIncomingPort() {
+        return this.incomingPort;
+    }
+
 }
 
 class DistributorGroup extends Addressable {
@@ -38,8 +68,10 @@ class DistributorGroup extends Addressable {
 
         int incX = 23;
         int incY = 23;
+        int distributorPortNumber = 9000;
         for (int i = 0; i < 22; i++) {
             Distributor dist = new Distributor(i, x, (i*incY)+y);
+            dist.setIncomingPort(distributorPortNumber++);
             distributors[i] = dist;
         }
 
@@ -54,9 +86,18 @@ class DistributorGroup extends Addressable {
             distributors[i].update();
     }
 
-    void assign(String id) {
-        println("next distributor = "+nextUnnamedDistributor);
-        Distributor dist = distributors[nextUnnamedDistributor];
+    Distributor matchPort(int port) {
+        for (int i = 0; i < 22; i++) {
+            Distributor dist = distributors[i];
+            if (dist.getIncomingPort() == port)
+                return dist;
+        }
+        println("matchPort: no match");
+        return null;
+    }
+
+    void assign(String id, int port) {
+        Distributor dist = matchPort(port);
         dist.setComponentID(id);
         map.put(id,dist);
         nextUnnamedDistributor++;
@@ -65,13 +106,16 @@ class DistributorGroup extends Addressable {
 
     void processMessage(JSONObject jobj) {
         String id = jobj.componentID;
-        String status = jobj.status;
-        println(nextUnnamedDistributor+": lookup up id = "+id);
+        println("distributor: lookup up id = "+id);
         Distributor dist = lookupID(id);
         if (dist == null) {
-            println("didn't find it")
-            dist = assign(id);
+            println("didn't find it");
+            String host = jobj.server.host;
+            int port = jobj.server.port;
+            dist = assign(id, port);
+            dist.setHost(host);
+            dist.setPort(port);
+            Bool handled = dist.processMessage(jobj);
         }
-        Bool handled = dist.processMessage(jobj);
     }
 }

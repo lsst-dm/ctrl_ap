@@ -24,7 +24,7 @@ void draw() {
         println("draw");
         JSONObject jobj = objs[counter];
         String component = jobj.component;
-        println("component = |"+component+"|");
+        println("component = |"+component+"|status = "+jobj.status);
         if (component.equals("base dmcs")) {
             baseDMCS.processMessage(jobj);
         } else if (component.equals("archive dmcs")) {
@@ -32,6 +32,8 @@ void draw() {
         } else if (component.equals("distributor")) {
             distributorGroup.processMessage(jobj);
         } else if (component.equals("replicator node")) {
+            replicatorGroup.processMessage(jobj);
+        } else if (component.equals("replicator job")) {
             replicatorGroup.processMessage(jobj);
         } else {
             println("wtf?");

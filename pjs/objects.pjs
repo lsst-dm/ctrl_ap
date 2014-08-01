@@ -31,7 +31,7 @@ class Addressable {
             return null;
     }
 
-    void processMessage(JSONObject jobj) {
+    Bool processMessage(JSONObject jobj) {
         String status = jobj.status;
         if (status.equals("start")) {
             setColor(Color.green());
