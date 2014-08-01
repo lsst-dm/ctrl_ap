@@ -54,7 +54,7 @@ class ReplicatorJob(object):
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "replicatorJob")
         st = Status()
-        vals = {"replicator host":socket.gethostname(), "replicator port":self.replicatorPort, "startup args":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":self.raft}}
+        vals = {"replicatorHost":socket.gethostname(), "replicatorPort":self.replicatorPort, "startupArgs":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":self.raft}}
         st.publish(st.replicatorJob, st.start, vals)
         
 

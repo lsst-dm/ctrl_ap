@@ -58,6 +58,7 @@ class Status(object):
     baseDMCS = "base dmcs"
     distributorNode = "distributor"
     replicatorNode = "replicator node"
+    wavefrontJob = "wavefront job"
     replicatorJob = "replicator job"
     replicatorJobs = "replicator jobs"
     workerJob = "worker job"

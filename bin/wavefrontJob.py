@@ -32,6 +32,7 @@ import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 
@@ -51,11 +52,17 @@ class WavefrontJob(object):
 
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "wavefrontJob")
+        vals = {"replicatorHost":socket.gethostname(), "replicatorPort":self.replicatorPort, "startupArgs":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":"wave"}}
+        st = Status()
+        st.publish(st.wavefrontJob, st.start, vals)
         
 
     def connectToReplicator(self):
         rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host = socket.gethostname()
+        st = Status()
+        serv = {st.server:{st.host:host, st.port:self.replicatorPort}}
+        st.publish(st.wavefrontJob, st.connect, serv)
         self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % (host, self.replicatorPort))
         try:
             rSock.connect((host, self.replicatorPort))
@@ -79,12 +86,18 @@ class WavefrontJob(object):
         vals = {"msgtype":"wavefront job", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
+        st = Status()
+        data = {st.data:{"visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : raft}}
+        st.publish(st.wavefrontJob, st.pub, data)
 
     def execute(self, imageID, visitID, exposureSequenceID, raft):
         self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
         time.sleep(2)
+        data = {"data":{"visitID":visitID,"exposureSequenceID":exposureSequenceID,"raft":raft}}
+        st = Status()
+        st.publish(st.wavefrontJob, st.read, data)
 
         # write a random binary file to disk
         tmp = "%s_%s_%s_%s" % (raft, imageID, visitID, exposureSequenceID)
@@ -97,9 +110,12 @@ class WavefrontJob(object):
         # send the replicator node the name of the file
         vals = {"filename" : f.name}
         self.rSock.sendJSON(vals)
+        st.publish(st.wavefrontJob, st.pub, f.name)
+
+
 
     def start(self):
-        raft = "synthetic_raft"
+        raft = "wave"
         self.sendInfoToReplicator(raft)
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
@@ -123,6 +139,8 @@ class WavefrontJob(object):
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
                 self.logger.log(Log.INFO, "got expected info.  Getting image")
                 self.execute(imageID, visitID, exposureSequenceID, raft)
+                st = Status() 
+                st.publish(st.wavefrontJob, st.finish, st.success)
                 sys.exit(0)
 
 if __name__ == "__main__":
