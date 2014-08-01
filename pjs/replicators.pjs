@@ -202,6 +202,8 @@ class ReplicatorGroup extends Addressable {
             handleNode(jobj);
         } else if (component.equals("replicator job")) {
             handleJob(jobj);
+        } else if (component.equals("wavefront job")) {
+            handleJob(jobj);
         }
     }
 

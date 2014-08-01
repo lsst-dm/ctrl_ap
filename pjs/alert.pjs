@@ -35,8 +35,10 @@ void draw() {
             replicatorGroup.processMessage(jobj);
         } else if (component.equals("replicator job")) {
             replicatorGroup.processMessage(jobj);
+        } else if (component.equals("wavefront job")) {
+            replicatorGroup.processMessage(jobj);
         } else {
-            println("wtf?");
+            println("---");
         }
         lastMillis = millis();
         counter++;
