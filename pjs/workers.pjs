@@ -4,7 +4,7 @@ class Worker extends Box {
     }
 }
 
-class WorkerCloud {
+class WorkerGroup {
     float xpos, ypos;
     WorkerCloud(float x, float y) {
         xpos = x;

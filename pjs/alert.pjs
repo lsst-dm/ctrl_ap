@@ -14,6 +14,8 @@ ArchiveDMCS archiveDMCS;
 BaseDMCS baseDMCS;
 ReplicatorGroup replicatorGroup;
 DistributorGroup distributorGroup;
+FocalPlane exposure0;
+FocalPlane exposure1;
 
 void draw() {
     
@@ -70,6 +72,12 @@ void doit(obj_ar) {
 
     distributorGroup = new DistributorGroup(350,30);
     distributorGroup.update();
+
+    exposure0 = new FocalPlane(width-250, 50);
+    exposure0.update();
+
+    exposure1 = new FocalPlane(width-250, 300);
+    exposure1.update();
 
     lastMillis = millis();
     milliDelta = int(obj_ar[0].time);
