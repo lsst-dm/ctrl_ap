@@ -82,13 +82,13 @@ class LabeledBox extends Box {
 
 class BaseDMCS extends LabeledBox {
     BaseDMCS(float x, float y) {
-        super(x, y, Color.white(), 90, "BaseDMCS");
+        super(x, y, Color.white(), 90, "Base DMCS");
     }
 }
 
 class ArchiveDMCS extends LabeledBox {
     ArchiveDMCS(float x, float y) {
-        super(x, y, Color.white(), 90, "ArchiveDMCS");
+        super(x, y, Color.white(), 90, "Archive DMCS");
     }
 }
 

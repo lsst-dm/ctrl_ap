@@ -1,14 +1,30 @@
 class Sensor extends Box {
     String name;
-    static int size = 15;
+    static int size = 25;
+    int num;
 
     Sensor(String name, float x, float y) {
         super(x, y, Color.white(), size);
         this.name = name;
+        this.num = 149;
+    }
+
+    void setWorkerNumber(int num) {
+        this.num = num;
     }
 
     void update() {
         super.update();
+        if (this.num >= 0) {
+            stroke(0);
+            fill(0);
+            if (this.num < 10)
+                text(""+this.num,xpos+8,ypos+17);
+            else if (this.num < 100)
+                text(""+this.num,xpos+5,ypos+17);
+            else
+                text(""+this.num,xpos+1,ypos+17);
+        }
     }
 
 }
@@ -19,6 +35,7 @@ class Raft {
     Raft(String name, float x, float y) {
         this.name = name;
        
+        // TODO: do the right thing and make this a loop
         sensors[0] = new Sensor("S:0,0", x, y);
         sensors[1] = new Sensor("S:1,0", x+Sensor.size, y);
         sensors[2] = new Sensor("S:2,0", x+Sensor.size*2, y);
@@ -36,6 +53,7 @@ class Raft {
             sensor.update();
         }
     }
+
 }
 
 class FocalPlane extends Addressable {
@@ -43,41 +61,56 @@ class FocalPlane extends Addressable {
     int gap = 5;
     FocalPlane(String label, float x, float y) {
         int size = Sensor.size*3;
-        rafts[0] = new Raft("R:1,0", x+size+5,y);
-        rafts[1] = new Raft("R:2,0", x+size*2+10, y);
-        rafts[2] = new Raft("R:3,0", x+size*3+15, y);
+        // TODO: do the right thing and make this a set of loops
+        rafts[0] = new Raft("R:1,0", x+size+3,y);
+        rafts[1] = new Raft("R:2,0", x+size*2+6, y);
+        rafts[2] = new Raft("R:3,0", x+size*3+9, y);
 
         rafts[3] = new Raft("R:0,1", x, y+size+5);
-        rafts[4] = new Raft("R:1,1", x+size+5, y+size+5);
-        rafts[5] = new Raft("R:2,1", x+size*2+10, y+size+5);
-        rafts[6] = new Raft("R:3,1", x+size*3+15, y+size+5);
-        rafts[7] = new Raft("R:4,1", x+size*4+20, y+size+5);
+        rafts[4] = new Raft("R:1,1", x+size+3, y+size+3);
+        rafts[5] = new Raft("R:2,1", x+size*2+6, y+size+3);
+        rafts[6] = new Raft("R:3,1", x+size*3+9, y+size+3);
+        rafts[7] = new Raft("R:4,1", x+size*4+12, y+size+3);
 
-        rafts[8] = new Raft("R:0,2", x, y+size*2+10);
-        rafts[9] = new Raft("R:1,2", x+size+5, y+size*2+10);
-        rafts[10] = new Raft("R:2,2", x+size*2+10, y+size*2+10);
-        rafts[11] = new Raft("R:3,2", x+size*3+15, y+size*2+10);
-        rafts[12] = new Raft("R:4,2", x+size*4+20, y+size*2+10);
+        rafts[8] = new Raft("R:0,2", x, y+size*2+6);
+        rafts[9] = new Raft("R:1,2", x+size+3, y+size*2+6);
+        rafts[10] = new Raft("R:2,2", x+size*2+6, y+size*2+6);
+        rafts[11] = new Raft("R:3,2", x+size*3+9, y+size*2+6);
+        rafts[12] = new Raft("R:4,2", x+size*4+12, y+size*2+6);
 
-        rafts[13] = new Raft("R:0,3", x, y+size*3+15);
-        rafts[14] = new Raft("R:1,3", x+size+5, y+size*3+15);
-        rafts[15] = new Raft("R:2,3", x+size*2+10, y+size*3+15);
-        rafts[16] = new Raft("R:3,3", x+size*3+15, y+size*3+15);
-        rafts[17] = new Raft("R:4,3", x+size*4+20, y+size*3+15);
+        rafts[13] = new Raft("R:0,3", x, y+size*3+9);
+        rafts[14] = new Raft("R:1,3", x+size+3, y+size*3+9);
+        rafts[15] = new Raft("R:2,3", x+size*2+6, y+size*3+9);
+        rafts[16] = new Raft("R:3,3", x+size*3+9, y+size*3+9);
+        rafts[17] = new Raft("R:4,3", x+size*4+12, y+size*3+9);
 
-        rafts[18] = new Raft("R:1,4", x+size+5, y+size*4+20);
-        rafts[19] = new Raft("R:2,4", x+size*2+10, y+size*4+20);
-        rafts[20] = new Raft("R:3,4", x+size*3+15, y+size*4+20);
+        rafts[18] = new Raft("R:1,4", x+size+3, y+size*4+12);
+        rafts[19] = new Raft("R:2,4", x+size*2+6, y+size*4+12);
+        rafts[20] = new Raft("R:3,4", x+size*3+9, y+size*4+12);
 
         stroke(0);
         fill(0);
-        text(label, x+size*2+5, y+size*6);
+        text(label, x+size*2+5, y+size*5+25);
+
+        testfill();
     }
 
     void update() {
         for (int i = 0; i < 21; i++) {
             Raft raft1 = rafts[i];
             raft1.update();
+        }
+    }
+
+
+    void testfill() {
+        int x = 1;
+        for (int i = 0; i < 21; i++) {
+            Raft raft = rafts[i];
+            for (int j = 0; j < 9; j++) {
+                Sensor sensor = raft.sensors[j];
+                sensor.num = x++;
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 void setup() {
     int width = 1000;
-    int height = 800;
+    int height = 900;
     size(width, height);
 }
 
@@ -73,10 +73,10 @@ void doit(obj_ar) {
     distributorGroup = new DistributorGroup(350,30);
     distributorGroup.update();
 
-    exposure0 = new FocalPlane("Exposure 0", width-300, 50);
+    exposure0 = new FocalPlane("Exposure 0", 500, 10);
     exposure0.update();
 
-    exposure1 = new FocalPlane("Exposure 1", width-300, 350);
+    exposure1 = new FocalPlane("Exposure 1", 500, 420);
     exposure1.update();
 
     lastMillis = millis();
