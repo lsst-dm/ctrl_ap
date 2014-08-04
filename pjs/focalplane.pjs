@@ -68,6 +68,17 @@ class Raft {
         exit();
     }
 
+    void assignColor(Sensor sensor, color) {
+        for (int i = 0; i < 9; i++) {
+            Sensor s = sensors[i];
+            if (s.name.equals(sensor)) {
+                s.setColor(color);
+                s.update();
+                return;
+            }
+        }
+    }
+
 }
 
 class WavefrontRaft extends Raft {
@@ -86,6 +97,13 @@ class WavefrontRaft extends Raft {
     void assignWorkerID(Sensor s, int workerID) {
         if (sensor.name.equals(s)) {
             sensor.assignWorkerID(workerID);
+            sensor.update();
+        }
+    }
+
+    void assignColor(Sensor s, Color color) {
+        if (sensor.name.equals(s)) {
+            sensor.setColor(color);
             sensor.update();
         }
     }
@@ -165,20 +183,81 @@ class FocalPlane extends Addressable {
         exit();
     }
 
-    void processMessage(JSONObject jobj) {
-        if (jobj.component.equals("worker job") && jobj.status.equals("start")) {
-            Raft raft = jobj.data.raft;
-            Sensor sensor = jobj.data.sensor;
-            int workerID = jobj.workerID;
-            assignWorkerID(raft, sensor, workerID);
-            return;
+    void setStatus(JSONObject jobj, String status) {
+        Color color = Color.white();
+        if (status.equals("retrieve"))
+            color = Color.green();
+        assignColor(jobj, color);
+    }
+
+    void assignColor(JSONObject jobj, String color) {
+        Raft raft = jobj.raft;
+        Sensor sensor = jobj.sensor;
+        for (int i = 0; i < 25; i++) {
+            Raft r = rafts[i];
+            if (r.name.equals(raft)) {
+                r.assignColor(sensor, color);
+                return;
+            }
         }
-        if (jobj.component.equals("wavefront sensor job") && jobj.status.equals("start")) {
-            Raft raft = jobj.data.raft;
-            Sensor sensor = jobj.data.sensor;
-            int workerID = jobj.workerID;
-            assignWorkerID(raft, sensor, workerID);
-            return;
+    }
+
+    void processMessage(JSONObject jobj) {
+        if (jobj.component.equals("worker job")) {
+            String status = jobj.status;
+            if (status.equals("start")) {
+                Raft raft = jobj.data.raft;
+                Sensor sensor = jobj.data.sensor;
+                int workerID = jobj.workerID;
+                assignWorkerID(raft, sensor, workerID);
+                return;
+            }
+            if (status.equals("retrieve")) {
+                setStatus(jobj, status);
+                return;
+            }
+        }
+        if (jobj.component.equals("wavefront sensor job")) {
+            if (jobj.status.equals("start")) {
+                Raft raft = jobj.data.raft;
+                Sensor sensor = jobj.data.sensor;
+                int workerID = jobj.workerID;
+                assignWorkerID(raft, sensor, workerID);
+                return;
+            }
+            if (status.equals("retrieve")) {
+                setStatus(jobj, status);
+                return;
+            }
+        }
+    }
+}
+
+class FocalPlaneGroup extends Addressable {
+    FocalPlane exposure0;
+    FocalPlane exposure1;
+
+    FocalPlaneGroup(float x, float y) {
+        exposure0 = new FocalPlane("Exposure 0", x, y);
+        exposure1 = new FocalPlane("Exposure 1", x, y+410);
+    }
+
+    void update() {
+        exposure0.update();
+        exposure1.update();
+    }
+
+    void processMessage(JSONObject jobj) {
+        String status = jobj.status;
+        if (status.equals("start")) {
+            exposure0.processMessage(jobj);
+            exposure1.processMessage(jobj);
+        }
+        if (status.equals("retrieve")) {
+            if (jobj.exposureSequenceID == 0)
+                exposure0.processMessage(jobj);
+            else if (jobj.exposureSequenceID == 1)
+                exposure1.processMessage(jobj);
         }
     }
 }

@@ -14,8 +14,7 @@ ArchiveDMCS archiveDMCS;
 BaseDMCS baseDMCS;
 ReplicatorGroup replicatorGroup;
 DistributorGroup distributorGroup;
-FocalPlane exposure0;
-FocalPlane exposure1;
+FocalPlaneGroup  focalPlaneGroup;
 
 void draw() {
     
@@ -40,9 +39,9 @@ void draw() {
         } else if (component.equals("wavefront job")) {
             replicatorGroup.processMessage(jobj);
         } else if (component.equals("worker job")) {
-            exposure0.processMessage(jobj);
+            focalPlaneGroup.processMessage(jobj);
         } else if (component.equals("wavefront sensor job")) {
-            exposure0.processMessage(jobj);
+            focalPlaneGroup.processMessage(jobj);
         } else {
             println("---");
         }
@@ -77,11 +76,8 @@ void doit(obj_ar) {
     distributorGroup = new DistributorGroup(350,30);
     distributorGroup.update();
 
-    exposure0 = new FocalPlane("Exposure 0", 500, 10);
-    exposure0.update();
-
-    exposure1 = new FocalPlane("Exposure 1", 500, 420);
-    exposure1.update();
+    focalPlaneGroup = new FocalPlaneGroup(500, 10);
+    focalPlaneGroup.update();
 
     lastMillis = millis();
     milliDelta = int(obj_ar[0].time);

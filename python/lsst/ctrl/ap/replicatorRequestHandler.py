@@ -34,6 +34,7 @@ from lsst.daf.base import PropertySet
 import lsst.ctrl.events as events
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.distributorInfo import DistributorInfo
+from lsst.ctrl.ap.status import Status
 
 class ReplicatorRequestHandler(object):
     def __init__(self, logger, jsock, msg, dataTable, condition):
@@ -54,6 +55,8 @@ class ReplicatorRequestHandler(object):
 
     def handleReplicatorJob(self):
         self.logger.log(Log.INFO, "handling request from replicator job")
+        st = Status()
+        st.publish(st.distributor,st.received,self.msg)
         self.sendToArchiveDMCS(self.msg) # XXX
         self.logger.log(Log.INFO, 'received from replicator %s' % self.msg)
         name = self.jsock.recvFile()
@@ -65,6 +68,8 @@ class ReplicatorRequestHandler(object):
 
     def handleWavefrontJob(self):
         d = self.msg.copy()
+        st = Status()
+        st.publish(st.distributor,st.received, d)
         for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
             d["raft"] = raft
             self.sendToArchiveDMCS(d)
