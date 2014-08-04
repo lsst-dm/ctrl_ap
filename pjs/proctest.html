@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script type="text/javascript" src="processing.min.js"></script>
+
+<canvas id="alertcanvas" data-processing-sources="alert.pjs color.pjs objects.pjs replicators.pjs distributors.pjs focalplane.pjs"></canvas>
+
+<script type="text/javascript">
+
+
+/*
+all this happy hoo ha at the beginning is because there async loading
+of the canvas and the http request.  The canvas has to indicate that it is
+loaded before the http request can happen, and then the http request has
+to complete before we can rifle the data from that into Processing
+*/
+
+var xmlhttp = new XMLHttpRequest();
+var pjs;
+var tId,pjs,cnt=0;
+$(document).ready(function() {
+  pjs = Processing.getInstanceById("alertcanvas");
+  //console.log(cnt+':'+pjs);
+  if (!pjs) tId=setInterval(function() {
+    pjs = Processing.getInstanceById("alertcanvas");
+    //console.log(cnt+':'+pjs);
+    if (pjs) {
+        clearInterval(tId);
+        xmlhttp.onreadystatechange=function() {
+            if (xmlhttp.readyState == 4) {
+                if (xmlhttp.status == 200) {
+	
+        	        var obj = JSON.parse(this.responseText);
+                    pjs.doit(obj);
+                } else {
+                    console.log("Error", xmlhttp.statusText);
+                }
+            }
+        }
+        xmlhttp.open("GET","http://lsst-web.ncsa.illinois.edu/~srp/timelines/test.json", true);
+        xmlhttp.send();
+    }
+  },500);
+})
+
+</script>
+</head>
+<body>
+
+</body>
+</html>
