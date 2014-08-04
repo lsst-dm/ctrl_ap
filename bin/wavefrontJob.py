@@ -52,7 +52,17 @@ class WavefrontJob(object):
 
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "wavefrontJob")
-        vals = {"replicatorHost":socket.gethostname(), "replicatorPort":self.replicatorPort, "startupArgs":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":"wave"}}
+        # We don't know  which slot or host we're
+        # running in on condor before it's assigned.
+        # This is a hack to use the slot number and
+        # the host number to get that info.
+        slotsPerHost = 13
+        jobnum = os.getenv("_CONDOR_SLOT","slot0");
+        thishost = socket.gethostname();
+        hostnum = int(thishost[len("lsst-run"):][:-len(".ncsa.illinois.edu")])
+        workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])+1
+
+        vals = {"workerID":workerID, "replicatorHost":socket.gethostname(), "replicatorPort":self.replicatorPort, "startupArgs":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":"wave"}}
         st = Status()
         st.publish(st.wavefrontJob, st.start, vals)
         

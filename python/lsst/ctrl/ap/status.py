@@ -59,6 +59,7 @@ class Status(object):
     distributorNode = "distributor"
     replicatorNode = "replicator node"
     wavefrontJob = "wavefront job"
+    wavefrontSensorJob = "wavefront sensor job"
     replicatorJob = "replicator job"
     replicatorJobs = "replicator jobs"
     workerJob = "worker job"

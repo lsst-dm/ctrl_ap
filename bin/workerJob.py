@@ -52,8 +52,18 @@ class WorkerJob(object):
         self.logger = Log(logger, "workerJob")
         self.logger.log(Log.INFO, "worker started")
 
+        # We don't know  which slot or host we're
+        # running in on condor before it's assigned.
+        # This is a hack to use the slot number and
+        # the host number to get that info.
+        slotsPerHost = 13
+        jobnum = os.getenv("_CONDOR_SLOT","slot0");
+        thishost = socket.gethostname();
+        hostnum = int(thishost[len("lsst-run"):][:-len(".ncsa.illinois.edu")])
+        workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])+1
+
         st = Status()
-        data = {"data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
+        data = {"workerID":workerID, "data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
         st.publish(st.workerJob, st.start, data)
 
     def requestDistributor(self, exposureSequenceID):
@@ -77,7 +87,6 @@ class WorkerJob(object):
         resp = jsock.recvJSON()
         self.logger.log(Log.INFO, "worker from response received")
         
-        info = {st.server:{st.host:resp["inetaddr"], st.port:resp["port"]}}
         st.publish(st.workerJob, st.infoReceived, data)
         return resp["inetaddr"],resp["port"]
         
@@ -110,8 +119,8 @@ class WorkerJob(object):
             os.makedirs(os.path.dirname(newName))
         #st.publish(st.workerJob, st.requestFile, newName)
         name = jsock.recvFile(receiveTo=newName)
-        nameInfo = {"file":name}
-        st.publish(st.workerJob, st.fileReceived, nameInfo)
+        data["file"] = name;
+        st.publish(st.workerJob, st.fileReceived, data)
         self.logger.log(Log.INFO, "file received = %s" % name)
         return name, "telemetry"
         

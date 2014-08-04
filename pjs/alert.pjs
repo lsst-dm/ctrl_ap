@@ -39,6 +39,10 @@ void draw() {
             replicatorGroup.processMessage(jobj);
         } else if (component.equals("wavefront job")) {
             replicatorGroup.processMessage(jobj);
+        } else if (component.equals("worker job")) {
+            exposure0.processMessage(jobj);
+        } else if (component.equals("wavefront sensor job")) {
+            exposure0.processMessage(jobj);
         } else {
             println("---");
         }

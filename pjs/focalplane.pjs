@@ -1,29 +1,29 @@
 class Sensor extends Box {
     String name;
     static int size = 25;
-    int num;
+    int workerID;
 
     Sensor(String name, float x, float y) {
         super(x, y, Color.white(), size);
         this.name = name;
-        this.num = 149;
+        this.workerID = -1;
     }
 
-    void setWorkerNumber(int num) {
-        this.num = num;
+    void assignWorkerID(int workerID) {
+        this.workerID = workerID;
     }
 
     void update() {
         super.update();
-        if (this.num >= 0) {
+        if (this.workerID >= 0) {
             stroke(0);
             fill(0);
-            if (this.num < 10)
-                text(""+this.num,xpos+8,ypos+17);
-            else if (this.num < 100)
-                text(""+this.num,xpos+5,ypos+17);
+            if (this.workerID < 10)
+                text(""+this.workerID, xpos+8, ypos+18);
+            else if (this.workerID < 100)
+                text(""+this.workerID, xpos+5, ypos+18);
             else
-                text(""+this.num,xpos+1,ypos+17);
+                text(""+this.workerID, xpos+1, ypos+18);
         }
     }
 
@@ -54,10 +54,45 @@ class Raft {
         }
     }
 
+    void assignWorkerID(Sensor sensor, int workerID) {
+        for (int i = 0; i < 9; i++) {
+            Sensor s = sensors[i];
+            if (s.name.equals(sensor)) {
+                s.assignWorkerID(workerID);
+                s.update();
+                print("raft = "+this.name+", sensor = "+sensor+", workerID = "+workerID);
+                return;
+            }
+        }
+        println("1 failed: sensor = "+sensor+", workerID = "+workerID);
+        exit();
+    }
+
+}
+
+class WavefrontRaft extends Raft {
+    Sensor sensor;
+    String name;
+
+    WavefrontRaft(String name, String sensorName, float x, float y) {
+        this.name = name;
+        sensor = new Sensor(sensorName, x, y);
+    }
+
+    void update() {
+        sensor.update();
+    }
+
+    void assignWorkerID(Sensor s, int workerID) {
+        if (sensor.name.equals(s)) {
+            sensor.assignWorkerID(workerID);
+            sensor.update();
+        }
+    }
 }
 
 class FocalPlane extends Addressable {
-    Raft[] rafts = new Raft[21];
+    Raft[] rafts = new Raft[25];
     int gap = 5;
     FocalPlane(String label, float x, float y) {
         int size = Sensor.size*3;
@@ -66,7 +101,7 @@ class FocalPlane extends Addressable {
         rafts[1] = new Raft("R:2,0", x+size*2+6, y);
         rafts[2] = new Raft("R:3,0", x+size*3+9, y);
 
-        rafts[3] = new Raft("R:0,1", x, y+size+5);
+        rafts[3] = new Raft("R:0,1", x, y+size+3);
         rafts[4] = new Raft("R:1,1", x+size+3, y+size+3);
         rafts[5] = new Raft("R:2,1", x+size*2+6, y+size+3);
         rafts[6] = new Raft("R:3,1", x+size*3+9, y+size+3);
@@ -88,15 +123,19 @@ class FocalPlane extends Addressable {
         rafts[19] = new Raft("R:2,4", x+size*2+6, y+size*4+12);
         rafts[20] = new Raft("R:3,4", x+size*3+9, y+size*4+12);
 
+        rafts[21] = new WavefrontRaft("R:0,0", "S:2,2", x+Sensor.size*2, y+Sensor.size*2);
+        rafts[22] = new WavefrontRaft("R:4,0", "S:2,0", x+size*4+12, y+Sensor.size*2);
+        rafts[23] = new WavefrontRaft("R:0,4", "S:0,2", x+Sensor.size*2, y+size*4+12);
+        rafts[24] = new WavefrontRaft("R:4,4", "S:0,0", x+size*4+12, y+size*4+12);
+
         stroke(0);
         fill(0);
-        text(label, x+size*2+5, y+size*5+25);
+        text(label, x+size*2+10, y+size*5+25);
 
-        testfill();
     }
 
     void update() {
-        for (int i = 0; i < 21; i++) {
+        for (int i = 0; i < 25; i++) {
             Raft raft1 = rafts[i];
             raft1.update();
         }
@@ -109,8 +148,37 @@ class FocalPlane extends Addressable {
             Raft raft = rafts[i];
             for (int j = 0; j < 9; j++) {
                 Sensor sensor = raft.sensors[j];
-                sensor.num = x++;
+                sensor.workerID = x++;
             }
+        }
+    }
+
+    void assignWorkerID(Raft raft, Sensor sensor, int workerID) {
+        for (int i = 0; i < 25; i++) {
+            Raft r = rafts[i];
+            if (r.name.equals(raft)) {
+                r.assignWorkerID(sensor, workerID);
+                return;
+            }
+        }
+        println("2 failed: raft = "+raft+", sensor = "+sensor+", workerID = "+workerID);
+        exit();
+    }
+
+    void processMessage(JSONObject jobj) {
+        if (jobj.component.equals("worker job") && jobj.status.equals("start")) {
+            Raft raft = jobj.data.raft;
+            Sensor sensor = jobj.data.sensor;
+            int workerID = jobj.workerID;
+            assignWorkerID(raft, sensor, workerID);
+            return;
+        }
+        if (jobj.component.equals("wavefront sensor job") && jobj.status.equals("start")) {
+            Raft raft = jobj.data.raft;
+            Sensor sensor = jobj.data.sensor;
+            int workerID = jobj.workerID;
+            assignWorkerID(raft, sensor, workerID);
+            return;
         }
     }
 }

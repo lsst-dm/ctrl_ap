@@ -127,11 +127,11 @@ class JobManager(object):
         status = Status()
         status.publish(status.baseDMCS, status.submit, status.workerJobs)
         ad = self.getClassAd(self.workerJobPath)
-	    # start 50 worker jobs
+	    # start 165 worker jobs
         # TODO: change hardcoded archive and port
         archiveHost = "lsst-arch.ncsa.illinois.edu"
         archivePort = 9595
-        for x in range(1,57):
+        for x in range(1,166):
             ccd = self.encodeToCcdID(x)
             sub, raft = self.calculateRaftInfoFromCcd(x)
             sRaft = self.encodeToRaft(raft)

@@ -32,6 +32,7 @@ import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 
@@ -51,6 +52,21 @@ class WavefrontSensorJob(object):
         self.logger = Log(logger, "wavefrontSensorJob")
         self.logger.log(Log.INFO, "wavefront sensor worker started")
 
+
+        # We don't know  which slot or host we're
+        # running in on condor before it's assigned.
+        # This is a hack to use the slot number and
+        # the host number to get that info.
+        slotsPerHost = 13
+        jobnum = os.getenv("_CONDOR_SLOT","slot0");
+        thishost = socket.gethostname();
+        hostnum = int(thishost[len("lsst-run"):][:-len(".ncsa.illinois.edu")])
+        workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])+1
+
+        st = Status()
+        data = {"workerID":workerID, "data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
+        st.publish(st.wavefrontSensorJob, st.start, data)
+
     def requestDistributor(self, exposureSequenceID):
         sock = self.makeConnection(self.host, self.port)
 
@@ -64,10 +80,15 @@ class WavefrontSensorJob(object):
 
         jsock.sendJSON(vals)
 
+        st = Status()
+        data = {st.data:{"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}}
+        st.publish(st.wavefrontSensorJob, st.pub, data)
+
         # wait for a response from the Archive DMCS, which is the host and port
         resp = jsock.recvJSON()
         self.logger.log(Log.INFO, "worker from response received")
-        
+
+        st.publish(st.wavefrontSensorJob, st.infoReceived, data)
         return resp["inetaddr"],resp["port"]
         
     def makeConnection(self, host, port):
@@ -88,12 +109,17 @@ class WavefrontSensorJob(object):
         jsock = JSONSocket(sock)
         vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
         jsock.sendJSON(vals)
+        data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
+        st = Status()
+        st.publish(st.wavefrontSensorJob, st.retrieve, data)
         print "wavefrontSensorJob vals = ",vals
         newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
         newName = os.path.join("/tmp",newName)
         if not os.path.exists(os.path.dirname(newName)):
             os.makedirs(os.path.dirname(newName))
         name = jsock.recvFile(receiveTo=newName)
+        data["file"] = name
+        st.publish(st.wavefrontSensorJob, st.fileReceived, data)
         self.logger.log(Log.INFO, "file received = %s" % name)
         return name, "telemetry"
         
@@ -102,11 +128,12 @@ class WavefrontSensorJob(object):
             distHost, distPort = self.requestDistributor(exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
 
-        self.logger.log(Log.INFO, "Perform alert production:")
-        self.logger.log(Log.INFO, "generating DIASources")
-        self.logger.log(Log.INFO, "updating  DIAObjects")
-        self.logger.log(Log.INFO, "issuing alerts")
-        self.logger.log(Log.INFO, "worker completed")
+        st = Status()
+        st.publish(st.wavefrontSensorJob, st.perform, "alert production")
+        st.publish(st.wavefrontSensorJob, st.generate, "DIASources")
+        st.publish(st.wavefrontSensorJob, st.update, "DIAObjects")
+        st.publish(st.wavefrontSensorJob, st.issue, "alerts")
+        st.publish(st.wavefrontSensorJob, st.finish, st.success)
         sys.exit(0)
 
 if __name__ == "__main__":
