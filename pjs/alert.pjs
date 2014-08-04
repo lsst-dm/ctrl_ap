@@ -73,10 +73,10 @@ void doit(obj_ar) {
     distributorGroup = new DistributorGroup(350,30);
     distributorGroup.update();
 
-    exposure0 = new FocalPlane(width-250, 50);
+    exposure0 = new FocalPlane("Exposure 0", width-300, 50);
     exposure0.update();
 
-    exposure1 = new FocalPlane(width-250, 300);
+    exposure1 = new FocalPlane("Exposure 1", width-300, 350);
     exposure1.update();
 
     lastMillis = millis();
