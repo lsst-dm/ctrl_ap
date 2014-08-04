@@ -106,7 +106,7 @@ class DistributorGroup extends Addressable {
 
     void processMessage(JSONObject jobj) {
         String id = jobj.componentID;
-        println("distributor: lookup up id = "+id);
+        //println("distributor: lookup up id = "+id);
         Distributor dist = lookupID(id);
         if (dist == null) {
             println("didn't find it");

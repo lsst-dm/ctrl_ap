@@ -60,11 +60,9 @@ class Raft {
             if (s.name.equals(sensor)) {
                 s.assignWorkerID(workerID);
                 s.update();
-                print("raft = "+this.name+", sensor = "+sensor+", workerID = "+workerID);
                 return;
             }
         }
-        println("1 failed: sensor = "+sensor+", workerID = "+workerID);
         exit();
     }
 
