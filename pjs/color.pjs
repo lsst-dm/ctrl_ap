@@ -17,6 +17,10 @@ class Color {
         return new Color(255,255,255);
     }
 
+    static Color lightGrey() {
+        return new Color(225,225,225);
+    }
+
     static Color green() {
         return new Color(0, 200, 0);
     }

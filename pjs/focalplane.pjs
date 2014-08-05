@@ -215,7 +215,7 @@ class FocalPlane extends Addressable {
                 return;
             }
             if (status.equals("retrieve")) {
-                color = Color.yellow();
+                color = Color.lightGrey();
                 assignColor(jobj.raft, jobj.sensor, color);
                 return;
             } else if (status.equals("file received")) {

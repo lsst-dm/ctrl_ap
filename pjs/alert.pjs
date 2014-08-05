@@ -78,6 +78,9 @@ void doit(obj_ar) {
 
     focalPlaneGroup = new FocalPlaneGroup(500, 10);
     focalPlaneGroup.update();
+    
+    Key key = new Key("Exposure 0: waiting", Color.yellow(), 0, 0,100,50);
+    key.update();
 
     lastMillis = millis();
     milliDelta = int(obj_ar[0].time);
