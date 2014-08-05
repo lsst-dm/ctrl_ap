@@ -220,15 +220,15 @@ class FocalPlane extends Addressable {
                 return;
             } else if (status.equals("file received")) {
                 color = Color.cyan();
-                println("fr: raft = "+jobj.raft+", sensor = "+jobj.sensor);
+                //println("fr: raft = "+jobj.raft+", sensor = "+jobj.sensor);
                 assignColor(jobj.raft, jobj.sensor, color);
                 return;
             } else if (status.equals("finish")) {
                 String componentID = jobj.componentID;
                 Sensor s = sensorMap.get(componentID);
-                println("finishing: s.name = "+s.name);
+                //println("finishing: s.name = "+s.name);
                 s.clear();
-                println("finishing: DONE");
+                //println("finishing: DONE");
                 return;
             }
         }

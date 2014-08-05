@@ -24,7 +24,11 @@ void draw() {
     if (rightNow >= (lastMillis+milliDelta)) {
         JSONObject jobj = objs[counter];
         String component = jobj.component;
-        if (component.equals("base dmcs")) {
+        if (component.equals("worker job")) {
+            focalPlaneGroup.processMessage(jobj);
+        } else if (component.equals("wavefront sensor job")) {
+            focalPlaneGroup.processMessage(jobj);
+        } else if (component.equals("base dmcs")) {
             baseDMCS.processMessage(jobj);
         } else if (component.equals("archive dmcs")) {
             archiveDMCS.processMessage(jobj);
@@ -33,21 +37,16 @@ void draw() {
         } else if (component.equals("replicator node")) {
             replicatorGroup.processMessage(jobj);
         } else if (component.equals("replicator job")) {
-            println("component = |"+component+"|status = "+jobj.status);
             replicatorGroup.processMessage(jobj);
         } else if (component.equals("wavefront job")) {
             replicatorGroup.processMessage(jobj);
-        } else if (component.equals("worker job")) {
-            focalPlaneGroup.processMessage(jobj);
-        } else if (component.equals("wavefront sensor job")) {
-            focalPlaneGroup.processMessage(jobj);
         } else {
             println("---");
         }
         lastMillis = millis();
         counter++;
         milliDelta = int(objs[counter].time);
-        if (milliDelta > 5000)
+        if (milliDelta > 2000)
             println("lastMillis = "+lastMillis+", milliDelta = "+milliDelta);
     } else {
         //counter++;

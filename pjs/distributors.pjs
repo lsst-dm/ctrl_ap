@@ -25,11 +25,19 @@ class Distributor extends Box {
         if (super.processMessage(jobj))
             return true;
         String status = jobj.status;
-        if (status.equals("accept from")) {
+        if (status.equals("request file")) {
             setColor(Color.cyan());
             acceptCount++;
             update();
+        } else if (status.equals("send file")) {
+            acceptCount--;
+            if (acceptCount <= 0) {
+                acceptCount = 0;
+                setColor(Color.green());
+                update();
+            }
         }
+                
         return false;
     }
 

@@ -62,8 +62,8 @@ class WorkerRequestHandler(object):
         name = self.getFileInfo(key)
         print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
         st = Status();
-        st.publish(st.distributorNode, st.sendFile, {"file":name})
         self.jsock.sendFile(name)
+        st.publish(st.distributorNode, st.sendFile, {"file":name})
         print "transmitFile: done"
 
     def handleRequest(self):
@@ -73,6 +73,9 @@ class WorkerRequestHandler(object):
             exposureSequenceID = self.msg["exposureSequenceID"]
             raft = self.msg["raft"]
             sensor = self.msg["sensor"]
+            st = Status()
+            data = { "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}
+            st.publish(st.distributorNode, st.requestFile, data)
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
             self.transmitFile(key)
             return
