@@ -109,7 +109,6 @@ class DistributorGroup extends Addressable {
         //println("distributor: lookup up id = "+id);
         Distributor dist = lookupID(id);
         if (dist == null) {
-            println("didn't find it");
             String host = jobj.server.host;
             int port = jobj.server.port;
             dist = assign(id, port);

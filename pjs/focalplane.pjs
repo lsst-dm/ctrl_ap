@@ -13,6 +13,10 @@ class Sensor extends Box {
         this.workerID = workerID;
     }
 
+    void clear() {
+        this.workerID = -1;
+    }
+
     void update() {
         super.update();
         if (this.workerID >= 0) {
@@ -21,12 +25,11 @@ class Sensor extends Box {
             if (this.workerID < 10)
                 text(""+this.workerID, xpos+8, ypos+18);
             else if (this.workerID < 100)
-                text(""+this.workerID, xpos+5, ypos+18);
+                text(""+this.workerID, xpos+6, ypos+18);
             else
-                text(""+this.workerID, xpos+1, ypos+18);
+                text(""+this.workerID, xpos+2, ypos+18);
         }
     }
-
 }
 
 class Raft {
@@ -54,16 +57,16 @@ class Raft {
         }
     }
 
-    void assignWorkerID(Sensor sensor, int workerID) {
+    Sensor assignWorkerID(Sensor sensor, int workerID) {
         for (int i = 0; i < 9; i++) {
             Sensor s = sensors[i];
             if (s.name.equals(sensor)) {
                 s.assignWorkerID(workerID);
                 s.update();
-                return;
+                return s;
             }
         }
-        exit();
+        return null;
     }
 
     void assignColor(Sensor sensor, color) {
@@ -92,14 +95,18 @@ class WavefrontRaft extends Raft {
         sensor.update();
     }
 
-    void assignWorkerID(Sensor s, int workerID) {
+    Sensor assignWorkerID(Sensor s, int workerID) {
+        println("assignWorkerID: sensor.name = "+sensor.name+", s = "+s);
         if (sensor.name.equals(s)) {
             sensor.assignWorkerID(workerID);
             sensor.update();
+            return sensor;
         }
+        return null;
     }
 
     void assignColor(Sensor s, Color color) {
+        println("assignColor: sensor.name = "+sensor.name+", s = "+s);
         if (sensor.name.equals(s)) {
             sensor.setColor(color);
             sensor.update();
@@ -110,6 +117,7 @@ class WavefrontRaft extends Raft {
 class FocalPlane extends Addressable {
     Raft[] rafts = new Raft[25];
     int gap = 5;
+    HashMap sensorMap = null;
     FocalPlane(String label, float x, float y) {
         int size = Sensor.size*3;
         // TODO: do the right thing and make this a set of loops
@@ -148,6 +156,7 @@ class FocalPlane extends Addressable {
         fill(0);
         text(label, x+size*2+10, y+size*5+25);
 
+        sensorMap = new HashMap();
     }
 
     void update() {
@@ -169,16 +178,16 @@ class FocalPlane extends Addressable {
         }
     }
 
-    void assignWorkerID(Raft raft, Sensor sensor, int workerID) {
+    Sensor assignWorkerID(Raft raft, Sensor sensor, int workerID) {
         for (int i = 0; i < 25; i++) {
             Raft r = rafts[i];
             if (r.name.equals(raft)) {
-                r.assignWorkerID(sensor, workerID);
-                return;
+                Sensor s = r.assignWorkerID(sensor, workerID);
+                return s;
             }
         }
         println("2 failed: raft = "+raft+", sensor = "+sensor+", workerID = "+workerID);
-        exit();
+        return null;
     }
 
     void setStatus(JSONObject jobj, String status) {
@@ -207,24 +216,39 @@ class FocalPlane extends Addressable {
                 Raft raft = jobj.data.raft;
                 Sensor sensor = jobj.data.sensor;
                 int workerID = jobj.workerID;
-                assignWorkerID(raft, sensor, workerID);
+                Sensor s = assignWorkerID(raft, sensor, workerID);
+                sensorMap.put(jobj.componentID, s);
                 return;
             }
             if (status.equals("retrieve")) {
                 setStatus(jobj, status);
+                return;
+            }
+            if (status.equals("finish")) {
+                String componentID = jobj.componentID;
+                Sensor s = sensorMap.get(componentID);
+                s.clear();
                 return;
             }
         }
         if (jobj.component.equals("wavefront sensor job")) {
-            if (jobj.status.equals("start")) {
+            String status = jobj.status;
+            if (status.equals("start")) {
                 Raft raft = jobj.data.raft;
                 Sensor sensor = jobj.data.sensor;
                 int workerID = jobj.workerID;
-                assignWorkerID(raft, sensor, workerID);
+                Sensor s = assignWorkerID(raft, sensor, workerID);
+                sensorMap.put(jobj.componentID, s);
                 return;
             }
             if (status.equals("retrieve")) {
                 setStatus(jobj, status);
+                return;
+            }
+            if (status.equals("finish")) {
+                String componentID = jobj.componentID;
+                Sensor s = sensorMap.get(componentID);
+                s.clear();
                 return;
             }
         }

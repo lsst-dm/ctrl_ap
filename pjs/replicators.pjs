@@ -87,19 +87,15 @@ class Replicator extends Box {
     }
 
     Bool processMessage(JSONObject jobj) {
-        println("rep: 0");
         if (super.processMessage(jobj)) {
-            println("rep: 1");
             return true;
         }
-        println("rep: 2");
         String status = jobj.status;
         if (status.equals("connect")) {
             arrow = true;
             update();
             return true;
         }
-        println("rep: 3");
         return false;
     }
 }
