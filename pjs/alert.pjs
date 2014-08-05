@@ -47,7 +47,8 @@ void draw() {
         lastMillis = millis();
         counter++;
         milliDelta = int(objs[counter].time);
-        //println("lastMillis = "+lastMillis+", milliDelta = "+milliDelta);
+        if (milliDelta > 5000)
+            println("lastMillis = "+lastMillis+", milliDelta = "+milliDelta);
     } else {
         //counter++;
     }

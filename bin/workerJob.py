@@ -60,7 +60,7 @@ class WorkerJob(object):
         jobnum = os.getenv("_CONDOR_SLOT","slot0");
         thishost = socket.gethostname();
         hostnum = int(thishost[len("lsst-run"):][:-len(".ncsa.illinois.edu")])
-        workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])+1
+        workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])
 
         st = Status()
         data = {"workerID":workerID, "data":{"visitID":visitID,"raft":raft,"sensor":ccd}}

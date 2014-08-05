@@ -56,6 +56,8 @@ class BaseDMCS(object):
                 jm = jobManager.JobManager()
                 visitID = ps.get("visitID")
                 exposureSequenceID = ps.get("exposureSequenceID")
+                data = {"visitID":visitID, "exposureSequenceID":exposureSequenceID}
+                st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
                 jm.submitAllReplicatorJobs(rHostList, visitID, exposureSequenceID)
             elif ocsEventType == "nextVisit":
                 visitID = ps.get("visitID")

@@ -3,10 +3,12 @@ class Distributor extends Box {
     String host;
     int port;
     int incomingPort;
+    int acceptCount = 0;
 
     Distributor(int num, float x, float y) {
         super(x, y, Color.white(), 20);
         this.num = num;
+        this.acceptCount = 0;
     }
 
     void update() {
@@ -22,6 +24,12 @@ class Distributor extends Box {
     void processMessage(JSONObject jobj) {
         if (super.processMessage(jobj))
             return true;
+        String status = jobj.status;
+        if (status.equals("accept from")) {
+            setColor(Color.cyan());
+            acceptCount++;
+            update();
+        }
         return false;
     }
 
@@ -104,17 +112,17 @@ class DistributorGroup extends Addressable {
         return dist;
     }
 
+
     void processMessage(JSONObject jobj) {
-        String id = jobj.componentID;
-        //println("distributor: lookup up id = "+id);
-        Distributor dist = lookupID(id);
+        String componentID = jobj.componentID;
+        Distributor dist = lookupID(componentID);
         if (dist == null) {
             String host = jobj.server.host;
             int port = jobj.server.port;
-            dist = assign(id, port);
+            dist = assign(componentID, port);
             dist.setHost(host);
             dist.setPort(port);
-            Bool handled = dist.processMessage(jobj);
         }
+        Bool handled = dist.processMessage(jobj);
     }
 }

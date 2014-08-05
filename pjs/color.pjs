@@ -20,6 +20,11 @@ class Color {
     static Color green() {
         return new Color(0, 200, 0);
     }
+
+    static Color cyan() {
+        return new Color(0, 255, 255);
+    }
+
     static Color lightGreen() {
         return new Color(0, 250, 0);
     }

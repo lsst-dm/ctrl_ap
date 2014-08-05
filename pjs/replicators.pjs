@@ -208,10 +208,15 @@ class ReplicatorGroup extends Addressable {
             rep.setComponentID(id);
             rep.setRaft(jobj.startupArgs.raft);
             rep.update();
-        }
-        if (status.equals("finish")) {
+        } else if (status.equals("read")) {
             Replicator rep = lookupComponentID(id);
             println("finish: id = "+id+", rep = "+rep);
+            rep.setColor(Color.cyan());
+            rep.update();
+        } else if (status.equals("finish")) {
+            Replicator rep = lookupComponentID(id);
+            println("finish: id = "+id+", rep = "+rep);
+            rep.setColor(Color.green());
             rep.setRaft(null);
             rep.update();
             println("finish: done");

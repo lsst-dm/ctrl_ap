@@ -30,6 +30,7 @@ import json
 import socket
 import threading
 from lsst.ctrl.ap.key import Key
+from lsst.ctrl.ap.status import Status
 
 class WorkerRequestHandler(object):
     def __init__(self, logger, jsock, msg, dataTable, condition):
@@ -60,6 +61,8 @@ class WorkerRequestHandler(object):
         print "transmitFile: key = ",key
         name = self.getFileInfo(key)
         print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
+        st = Status();
+        st.publish(st.distributorNode, st.sendFile, {"file":name})
         self.jsock.sendFile(name)
         print "transmitFile: done"
 

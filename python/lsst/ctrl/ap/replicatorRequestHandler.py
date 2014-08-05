@@ -56,10 +56,11 @@ class ReplicatorRequestHandler(object):
     def handleReplicatorJob(self):
         self.logger.log(Log.INFO, "handling request from replicator job")
         st = Status()
-        st.publish(st.distributor,st.received,self.msg)
+        st.publish(st.distributorNode, st.infoReceived, self.msg)
         self.sendToArchiveDMCS(self.msg) # XXX
         self.logger.log(Log.INFO, 'received from replicator %s' % self.msg)
         name = self.jsock.recvFile()
+        st.publish(st.distributorNode, st.fileReceived, {"file":name})
         self.logger.log(Log.INFO, 'file received: %s' % name)
         visitID = self.msg["visitID"]
         exposureSequenceID = self.msg["exposureSequenceID"]
@@ -69,11 +70,12 @@ class ReplicatorRequestHandler(object):
     def handleWavefrontJob(self):
         d = self.msg.copy()
         st = Status()
-        st.publish(st.distributor,st.received, d)
+        st.publish(st.distributorNode,st.infoReceived, d)
         for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
             d["raft"] = raft
             self.sendToArchiveDMCS(d)
         name = self.jsock.recvFile()
+        st.publish(st.distributorNode, st.fileReceived, {"file":name})
         self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
         visitID = self.msg["visitID"]
         exposureSequenceID = self.msg["exposureSequenceID"]
