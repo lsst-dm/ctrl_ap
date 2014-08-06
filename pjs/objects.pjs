@@ -34,7 +34,7 @@ class Addressable {
     Bool processMessage(JSONObject jobj) {
         String status = jobj.status;
         if (status.equals("start")) {
-            setColor(Color.green());
+            setColor(Color.lightGreen());
             update();
             return true;
         }
@@ -95,7 +95,7 @@ class ArchiveDMCS extends LabeledBox {
 
 class LSSTCamera extends LabeledBox {
     LSSTCamera(float x, float y) {
-        super(x, y, Color.green(), 80, "   Camera");
+        super(x, y, Color.lightGreen(), 80, "   Camera");
     }
 
     void update() {

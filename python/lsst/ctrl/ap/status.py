@@ -80,6 +80,7 @@ class Status(object):
     receivedMsg = "received message"
     submit = "submit"
     perform = "perform"
+    completed = "completed"
     generate = "generate"
     update = "update"
     pub = "publish"

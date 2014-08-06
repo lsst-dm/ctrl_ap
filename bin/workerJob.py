@@ -60,10 +60,10 @@ class WorkerJob(object):
         jobnum = os.getenv("_CONDOR_SLOT","slot0");
         thishost = socket.gethostname();
         hostnum = int(thishost[len("lsst-run"):][:-len(".ncsa.illinois.edu")])
-        workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])
+        self.workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])
 
         st = Status()
-        data = {"workerID":workerID, "data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
+        data = {"workerID":self.workerID, "data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
         st.publish(st.workerJob, st.start, data)
 
     def requestDistributor(self, exposureSequenceID):
@@ -125,12 +125,16 @@ class WorkerJob(object):
         return name, "telemetry"
         
     def execute(self):
+        st = Status()
         for exposure in range (0, self.exposures):
             distHost, distPort = self.requestDistributor(exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
+            data = {"workerID":self.workerID, "data":{"exposureSequenceID":exposure, "visitID":self.visitID,"raft":self.raft,"sensor":self.ccd}}
+            time.sleep(2);
+            st.publish(st.workerJob, st.perform, data)
+            time.sleep(5);
+            st.publish(st.workerJob, st.completed, data)
 
-        st = Status()
-        st.publish(st.workerJob, st.perform, "alert production")
         st.publish(st.workerJob, st.generate, "DIASources")
         st.publish(st.workerJob, st.update, "DIAObjects")
         st.publish(st.workerJob, st.issue, "alerts")

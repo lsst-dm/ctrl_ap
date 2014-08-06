@@ -10,6 +10,7 @@ long lastMillis;
 long milliDelta;
 Array objs;
 int counter = 0;
+int length;
 ArchiveDMCS archiveDMCS;
 BaseDMCS baseDMCS;
 ReplicatorGroup replicatorGroup;
@@ -19,6 +20,9 @@ FocalPlaneGroup  focalPlaneGroup;
 void draw() {
     
     if (objs == null) // || counter > 500)
+        return;
+   
+    if (counter >= total)
         return;
     rightNow = millis();
     if (rightNow >= (lastMillis+milliDelta)) {
@@ -59,6 +63,9 @@ void doit(obj_ar) {
     println(obj_ar[0].component);
     println(obj_ar[0].time);
 
+    total = objs.length;
+
+    println("total = "+total);
     background(200);
     baseDMCS = new BaseDMCS(90,height-100);
     baseDMCS.update();
@@ -79,7 +86,7 @@ void doit(obj_ar) {
     focalPlaneGroup = new FocalPlaneGroup(500, 10);
     focalPlaneGroup.update();
     
-    Key key = new Key("Exposure 0: waiting", Color.yellow(), 0, 0,100,50);
+    LegendKey key = new LegendKey("Exposure 0: waiting", Color.lightYellow(), 0, 0,100,50);
     key.update();
 
     lastMillis = millis();

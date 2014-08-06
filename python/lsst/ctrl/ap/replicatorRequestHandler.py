@@ -60,25 +60,26 @@ class ReplicatorRequestHandler(object):
         self.sendToArchiveDMCS(self.msg) # XXX
         self.logger.log(Log.INFO, 'received from replicator %s' % self.msg)
         name = self.jsock.recvFile()
-        st.publish(st.distributorNode, st.fileReceived, {"file":name})
-        self.logger.log(Log.INFO, 'file received: %s' % name)
         visitID = self.msg["visitID"]
         exposureSequenceID = self.msg["exposureSequenceID"]
         raft = self.msg["raft"]
+        st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
+        self.logger.log(Log.INFO, 'file received: %s' % name)
         self.splitReplicatorFile(visitID, exposureSequenceID, raft, name)
 
     def handleWavefrontJob(self):
         d = self.msg.copy()
+        synRaft = self.msg["raft"]
         st = Status()
         st.publish(st.distributorNode,st.infoReceived, d)
         for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
             d["raft"] = raft
             self.sendToArchiveDMCS(d)
         name = self.jsock.recvFile()
-        st.publish(st.distributorNode, st.fileReceived, {"file":name})
-        self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
         visitID = self.msg["visitID"]
         exposureSequenceID = self.msg["exposureSequenceID"]
+        st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
+        self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
         self.splitWavefrontFile(visitID, exposureSequenceID, name)
 
     def sendToArchiveDMCS(self, msg):

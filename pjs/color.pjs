@@ -9,10 +9,6 @@ class Color {
         this.b = b;
     }
 
-    static Color yellow() {
-        return new Color(255,255,0);
-    }
-
     static Color white() {
         return new Color(255,255,255);
     }
@@ -21,15 +17,60 @@ class Color {
         return new Color(225,225,225);
     }
 
-    static Color green() {
-        return new Color(0, 200, 0);
+    static Color blue() {
+        return new Color(0, 0, 255);
     }
 
-    static Color cyan() {
+    //
+    // yellow
+    //
+    static Color lightYellow() {
+        return new Color(255, 255, 0);
+    }
+
+    static Color darkYellow() {
+        return new Color(200, 200, 0);
+    }
+
+    //
+    // cyan
+    //
+    static Color lightCyan() {
         return new Color(0, 255, 255);
     }
 
-    static Color lightGreen() {
-        return new Color(0, 250, 0);
+    static Color darkCyan() {
+        return new Color(0, 200, 200);
     }
+
+    //
+    // green
+    //
+    static Color lightGreen() {
+        return new Color(0, 255, 0);
+    }
+
+    static Color darkGreen() {
+        return new Color(0, 200, 0);
+    }
+
+    //
+    // pink
+    //
+    static Color lightPink() {
+        return new Color(255, 0, 255);
+    }
+
+    static Color darkPink() {
+        return new Color(200, 0, 200);
+    }
+
+    //
+    // purple
+    // 
+    static Color lightPurple() {
+        return new Color(140, 140, 230);
+    }
+
+
 }

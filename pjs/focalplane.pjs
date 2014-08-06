@@ -19,6 +19,10 @@ class Sensor extends Box {
         update();
     }
 
+    void colorRunning() {
+        setColor(Color.lightGreen());
+    }
+
     void update() {
         super.update();
         if (this.workerID >= 0) {
@@ -64,6 +68,7 @@ class Raft {
             Sensor s = sensors[i];
             if (s.name.equals(sensor)) {
                 s.assignWorkerID(workerID);
+                s.colorRunning();
                 s.update();
                 return s;
             }
@@ -98,9 +103,9 @@ class WavefrontRaft extends Raft {
     }
 
     Sensor assignWorkerID(Sensor s, int workerID) {
-        println("assignWorkerID: sensor.name = "+sensor.name+", s = "+s);
         if (sensor.name.equals(s)) {
             sensor.assignWorkerID(workerID);
+            sensor.colorRunning();
             sensor.update();
             return sensor;
         }
@@ -108,7 +113,6 @@ class WavefrontRaft extends Raft {
     }
 
     void assignColor(Sensor s, Color color) {
-        println("assignColor: sensor.name = "+sensor.name+", s = "+s);
         if (sensor.name.equals(s)) {
             sensor.setColor(color);
             sensor.update();
@@ -203,34 +207,49 @@ class FocalPlane extends Addressable {
     }
 
     void processMessage(JSONObject jobj) {
-        String comp = jobj.component;
-        if (comp.equals("wavefront sensor job") || comp.equals("worker job")) {
-            String status = jobj.status;
-            if (status.equals("start")) {
-                Raft raft = jobj.data.raft;
-                Sensor sensor = jobj.data.sensor;
-                int workerID = jobj.workerID;
-                Sensor s = assignWorkerID(raft, sensor, workerID);
-                sensorMap.put(jobj.componentID, s);
-                return;
-            }
-            if (status.equals("retrieve")) {
-                color = Color.lightGrey();
-                assignColor(jobj.raft, jobj.sensor, color);
-                return;
-            } else if (status.equals("file received")) {
-                color = Color.cyan();
-                //println("fr: raft = "+jobj.raft+", sensor = "+jobj.sensor);
-                assignColor(jobj.raft, jobj.sensor, color);
-                return;
-            } else if (status.equals("finish")) {
-                String componentID = jobj.componentID;
-                Sensor s = sensorMap.get(componentID);
-                //println("finishing: s.name = "+s.name);
-                s.clear();
-                //println("finishing: DONE");
-                return;
-            }
+        String status = jobj.status;
+        if (status.equals("start")) {
+            Raft raft = jobj.data.raft;
+            Sensor sensor = jobj.data.sensor;
+            int workerID = jobj.workerID;
+            Sensor s = assignWorkerID(raft, sensor, workerID);
+            sensorMap.put(jobj.componentID, s);
+            return;
+        } else if (status.equals("retrieve")) {
+            int x = jobj.exposureSequenceID;
+            Color c; 
+            if (x == 0)
+                c = Color.lightCyan();
+            else
+                c = Color.lightPink();
+            assignColor(jobj.raft, jobj.sensor, c);
+            return;
+        } else if (status.equals("file received")) {
+            int x = jobj.exposureSequenceID;
+            Color c;
+            if (x == 0)
+                c = Color.darkCyan();
+            else
+                c = Color.darkPink();
+            assignColor(jobj.raft, jobj.sensor, c);
+            return;
+        } else if (status.equals("finish")) {
+            String componentID = jobj.componentID;
+            Sensor s = sensorMap.get(componentID);
+            //println("finishing: s.name = "+s.name);
+            s.clear();
+            //println("finishing: DONE");
+            return;
+        } else if (status.equals("perform")) {
+            String componentID = jobj.componentID;
+            Sensor s = sensorMap.get(componentID);
+            s.setColor(Color.blue());
+            s.update();
+        } else if (status.equals("completed")) {
+            String componentID = jobj.componentID;
+            Sensor s = sensorMap.get(componentID);
+            s.setColor(Color.lightGreen());
+            s.update();
         }
     }
 }

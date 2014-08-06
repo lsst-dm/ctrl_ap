@@ -4,9 +4,11 @@ class Distributor extends Box {
     int port;
     int incomingPort;
     int acceptCount = 0;
+    String raft;
+    int size = 20;
 
     Distributor(int num, float x, float y) {
-        super(x, y, Color.white(), 20);
+        super(x, y, Color.white(), size);
         this.num = num;
         this.acceptCount = 0;
     }
@@ -19,26 +21,59 @@ class Distributor extends Box {
             text(""+this.num, xpos+8, ypos+15);
         else
             text(""+this.num, xpos+3, ypos+15);
+        if (raft != null) {
+            stroke(0);
+            fill(255,255,255);
+            rect(xpos+size+5,ypos,30,20);
+            fill(0);
+            text(raft, xpos+size+5, ypos+15);
+        } else {
+            stroke(200);
+            fill(200, 200, 200);
+            rect(xpos+size+5,ypos,30,20);
+        }
+    }
+
+    void setRaft(String raft) {
+        this.raft = raft;
     }
 
     void processMessage(JSONObject jobj) {
-        if (super.processMessage(jobj))
-            return true;
         String status = jobj.status;
-        if (status.equals("request file")) {
-            setColor(Color.cyan());
+        if (status.equals("start")) {
+            colorIdle();
+            update();
+        } else if (status.equals("request file")) {
+            int x = jobj.exposureSequenceID;
+            if (x == 0)
+                setColor(Color.lightCyan());
+            else
+                setColor(Color.lightPink());
             acceptCount++;
+            update();
+        } else if (status.equals("file received")) {
+            int x = jobj.exposureSequenceID;
+            if (x == 0)
+                setColor(Color.darkCyan());
+            else
+                setColor(Color.darkPink());
             update();
         } else if (status.equals("send file")) {
             acceptCount--;
             if (acceptCount <= 0) {
                 acceptCount = 0;
-                setColor(Color.green());
+                colorIdle();
+                setRaft(null);
                 update();
             }
+        } else if (status.equals("information received")) {
+            setRaft(jobj.raft);
+            update();
         }
-                
-        return false;
+    }
+
+    void colorIdle() {
+        setColor(Color.lightGreen());
     }
 
     void setHost(String host) {
@@ -131,6 +166,6 @@ class DistributorGroup extends Addressable {
             dist.setHost(host);
             dist.setPort(port);
         }
-        Bool handled = dist.processMessage(jobj);
+        dist.processMessage(jobj);
     }
 }

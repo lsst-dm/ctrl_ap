@@ -1,4 +1,4 @@
-class Key {
+class LegendKey {
     float x;
     float y;
     int height;
@@ -6,7 +6,7 @@ class Key {
     String label;
     Color color;
 
-    Key(String label, Color color, float x, float y, int height, int width) {
+    LegendKey(String label, Color color, float x, float y, int height, int width) {
         this.label = label;
         this.color = color;
         this.x = x;
@@ -16,9 +16,6 @@ class Key {
     }
 
     void update() {
-        //stroke(0);
-        //fill(255);
-        //rect(x,y,height,width);
         fill(color.r, color.g, color.b, 255);
         stroke(color.r, color.g, color.b);
         rect(x+3,y+3, 10, 10);
@@ -27,3 +24,11 @@ class Key {
     }
 }
 
+class Legend {
+
+
+    class Legend() {
+        LegendKey key = new LegendKey("Exposure 0: waiting", Color.lightCyan(), 0, 0,100,50);
+        key.update();
+    }
+}

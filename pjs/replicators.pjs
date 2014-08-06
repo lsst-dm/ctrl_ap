@@ -19,6 +19,10 @@ class Replicator extends Box {
         this.jobID = null;
     }
 
+    void colorIdle() {
+        setColor(Color.lightGreen());
+    }
+
     void setHost(String host) {
         this.host = host;
     }
@@ -87,11 +91,11 @@ class Replicator extends Box {
     }
 
     Bool processMessage(JSONObject jobj) {
-        if (super.processMessage(jobj)) {
-            return true;
-        }
         String status = jobj.status;
-        if (status.equals("connect")) {
+        if (status.equals("start")) {
+            colorIdle();
+            return true;
+        } else if (status.equals("connect")) {
             arrow = true;
             update();
             return true;
@@ -202,24 +206,24 @@ class ReplicatorGroup extends Addressable {
         if (status.equals("start")) {
             String host = jobj.replicatorHost;
             int port = jobj.replicatorPort;
-            // println("host = "+host+", port = "+port);
             Replicator rep = matchReplicatorNode(host, port);
-            println("setting id = "+id);
             rep.setComponentID(id);
             rep.setRaft(jobj.startupArgs.raft);
+            rep.setColor(Color.darkYellow());
             rep.update();
         } else if (status.equals("read")) {
             Replicator rep = lookupComponentID(id);
-            println("finish: id = "+id+", rep = "+rep);
-            rep.setColor(Color.cyan());
+            int x = jobj.data.exposureSequenceID;
+            if (x == 0)
+                rep.setColor(Color.darkCyan());
+            else
+                rep.setColor(Color.darkPink());
             rep.update();
         } else if (status.equals("finish")) {
             Replicator rep = lookupComponentID(id);
-            println("finish: id = "+id+", rep = "+rep);
-            rep.setColor(Color.green());
+            rep.colorIdle();
             rep.setRaft(null);
             rep.update();
-            println("finish: done");
         }
     }
 

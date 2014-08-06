@@ -61,10 +61,10 @@ class WavefrontSensorJob(object):
         jobnum = os.getenv("_CONDOR_SLOT","slot0");
         thishost = socket.gethostname();
         hostnum = int(thishost[len("lsst-run"):][:-len(".ncsa.illinois.edu")])
-        workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])+1
+        self.workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])+1
 
         st = Status()
-        data = {"workerID":workerID, "data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
+        data = {"workerID":self.workerID, "data":{"visitID":visitID,"raft":raft,"sensor":ccd}}
         st.publish(st.wavefrontSensorJob, st.start, data)
 
     def requestDistributor(self, exposureSequenceID):
@@ -105,12 +105,14 @@ class WavefrontSensorJob(object):
 
     def retrieveDistributorImage(self, host, port, exposure):
         self.logger.log(Log.INFO, "retriving image from distributor")
+        st = Status()
+        connection = {st.server:{st.host:host, st.port:port}}
+        st.publish(st.wavefrontSensorJob, st.connect, connection)
         sock = self.makeConnection(host, port)
         jsock = JSONSocket(sock)
         vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
         jsock.sendJSON(vals)
         data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
-        st = Status()
         st.publish(st.wavefrontSensorJob, st.retrieve, data)
         print "wavefrontSensorJob vals = ",vals
         newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
@@ -124,12 +126,16 @@ class WavefrontSensorJob(object):
         return name, "telemetry"
         
     def execute(self):
+        st = Status()
         for exposure in range (0, self.exposures):
             distHost, distPort = self.requestDistributor(exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
+            data = {"workerID":self.workerID, "data":{"exposureSequenceID":exposure, "visitID":self.visitID,"raft":self.raft,"sensor":self.ccd}}
+            time.sleep(2);
+            st.publish(st.workerJob, st.perform, data)
+            time.sleep(5);
+            st.publish(st.workerJob, st.completed, data)
 
-        st = Status()
-        st.publish(st.wavefrontSensorJob, st.perform, "alert production")
         st.publish(st.wavefrontSensorJob, st.generate, "DIASources")
         st.publish(st.wavefrontSensorJob, st.update, "DIAObjects")
         st.publish(st.wavefrontSensorJob, st.issue, "alerts")
