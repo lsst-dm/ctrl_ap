@@ -209,7 +209,7 @@ class ReplicatorGroup extends Addressable {
             Replicator rep = matchReplicatorNode(host, port);
             rep.setComponentID(id);
             rep.setRaft(jobj.startupArgs.raft);
-            rep.setColor(Color.darkYellow());
+            rep.setColor(Color.lightYellow());
             rep.update();
         } else if (status.equals("read")) {
             Replicator rep = lookupComponentID(id);

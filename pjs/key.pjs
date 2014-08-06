@@ -1,18 +1,14 @@
 class LegendKey {
+    Color color;
+    String label;
     float x;
     float y;
-    int height;
-    int width;
-    String label;
-    Color color;
 
-    LegendKey(String label, Color color, float x, float y, int height, int width) {
-        this.label = label;
+    LegendKey(Color color, String label, float x, float y) {
         this.color = color;
+        this.label = label;
         this.x = x;
         this.y = y;
-        this.height = height;
-        this.width = width;
     }
 
     void update() {
@@ -26,9 +22,25 @@ class LegendKey {
 
 class Legend {
 
+    LegendKey[] keys;
+    LegendKey key2;
 
-    class Legend() {
-        LegendKey key = new LegendKey("Exposure 0: waiting", Color.lightCyan(), 0, 0,100,50);
-        key.update();
+    Legend(float x, float y) {
+        keys = new LegendKey[8];
+        keys[0] = new LegendKey(Color.white(), "Off", x, y);
+        keys[1] = new LegendKey(Color.lightGreen(),"Running", x, y+15);
+        keys[2] = new LegendKey(Color.lightYellow(),"Wait for camera", x, y+30);
+        keys[3] = new LegendKey(Color.lightCyan(),"Wait for exposure 0", x, y+45);
+        keys[4] = new LegendKey(Color.darkCyan(),"Received exposure 0", x, y+60);
+        keys[5] = new LegendKey(Color.lightPink(),"Wait for exposure 1", x, y+75);
+        keys[6] = new LegendKey(Color.darkPink(),"Received exposure 1", x, y+90);
+        keys[7] = new LegendKey(Color.blue(),"Processing", x, y+105);
+    }
+
+    void update() {
+        for (int i = 0; i < keys.length; i++) {
+            LegendKey key = keys[i];
+            key.update();
+        }
     }
 }
