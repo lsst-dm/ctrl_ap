@@ -1,6 +1,6 @@
 void setup() {
     int width = 1000;
-    int height = 900;
+    int height = 700;
     size(width, height);
 }
 
@@ -45,13 +45,13 @@ void draw() {
         } else if (component.equals("wavefront job")) {
             replicatorGroup.processMessage(jobj);
         } else {
-            println("---");
+            //println("---");
         }
         lastMillis = millis();
         counter++;
         milliDelta = int(objs[counter].time);
-        if (milliDelta > 2000)
-            println("lastMillis = "+lastMillis+", milliDelta = "+milliDelta);
+        //if (milliDelta > 2000)
+        //    println("lastMillis = "+lastMillis+", milliDelta = "+milliDelta);
     } else {
         //counter++;
     }
@@ -59,13 +59,13 @@ void draw() {
 
 void doit(obj_ar) {
     objs = obj_ar;
-    println("yee ha!");
-    println(obj_ar[0].component);
-    println(obj_ar[0].time);
+    //println("yee ha!");
+    //println(obj_ar[0].component);
+    //println(obj_ar[0].time);
 
     total = objs.length;
 
-    println("total = "+total);
+    //println("total = "+total);
     background(200);
     baseDMCS = new BaseDMCS(90,height-100);
     baseDMCS.update();
@@ -92,10 +92,12 @@ void doit(obj_ar) {
     lastMillis = millis();
     milliDelta = int(obj_ar[0].time);
     
+    /*
     println("bah");
     println("lastMillis "+lastMillis);
     println("baseMillis "+baseMillis);
     println("nextMillis "+nextMillis);
     println("milliDelta "+milliDelta);
     println("boom");
+    */
 }
