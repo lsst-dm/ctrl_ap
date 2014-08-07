@@ -109,3 +109,71 @@ class LSSTCamera extends LabeledBox {
     }
 
 }
+
+/*
+*/
+class OCSMessageGroup {
+    String visitText = null;
+    String exposureText = null;
+    String messageText = null;
+    float x, y;
+    Color color;
+    
+    OCSMessageGroup(float x, float y) {
+        this.x = x;
+        this.y = y;
+        visitText = null;
+        exposureText = null;
+        messageText = null;
+        color = Color.white();
+    }
+
+    void update() {
+        stroke(0);
+        fill(color.r, color.g, color.b, 255);
+        rect(x,y,200,80);
+        fill(200);
+        text("Last OCS Message", x+3, y-5);
+        fill(0);
+        text("Last OCS Message", x+3, y-5);
+        if (visitText != null) 
+            text(visitText, x+3, y+30);
+        if (messageText != null) 
+            text(messageText, x+3, y+45);
+        if (exposureText != null) 
+            text(exposureText, x+3, y+60);
+    }
+
+    void processMessage(JSONObject jobj) {
+        String cmd = jobj.cmd;
+        if (cmd.equals("nextVisit")) {
+            visitText = "Visit: "+jobj.visitID; 
+            exposureText = null;
+            messageText = "OCS: nextVisit sent";
+            color = Color.lightGreen();
+        } else if (cmd.equals("startIntegration")) {
+            int x = jobj.exposureSequenceID;
+            visitText = "Visit: "+jobj.visitID; 
+            exposureText = "Exposure: "+jobj.exposureSequenceID;
+            messageText = "Message: startIntegration sent";
+            if (x == 0)
+                color = Color.lightCyan();
+            else 
+                color = Color.lightPink();
+        } else if (cmd.equals("startReadout")) {
+            int x = jobj.exposureSequenceID;
+            visitText = "Visit: "+jobj.visitID; 
+            exposureText = "Exposure: "+x;
+            messageText = "Message: startReadout sent";
+            if (x == 0)
+                color = Color.darkCyan();
+            else
+                color = Color.darkPink();
+        } else {
+           println("cmd = "+cmd);
+        }
+        update();
+    }
+/*
+*/
+}

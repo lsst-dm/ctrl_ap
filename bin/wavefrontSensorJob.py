@@ -29,6 +29,7 @@ import sys
 import argparse
 import json
 import socket
+import errno
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
@@ -126,7 +127,7 @@ class WavefrontSensorJob(object):
 
     # when this goes to python 3.2, we can use exist_ok, but
     # until then, we ignore the fact that someone got there before us.
-    def safemakedirs(path):
+    def safemakedirs(self, path):
         try:
             os.makedirs(path)
         except OSError as exc:

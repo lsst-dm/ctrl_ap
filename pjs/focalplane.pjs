@@ -222,7 +222,10 @@ class FocalPlane extends Addressable {
                 c = Color.lightCyan();
             else
                 c = Color.lightPink();
-            assignColor(jobj.raft, jobj.sensor, c);
+            //assignColor(jobj.raft, jobj.sensor, c);
+            Sensor s = sensorMap.get(jobj.componentID);
+            s.setColor(c);
+            update();
             return;
         } else if (status.equals("file received")) {
             int x = jobj.exposureSequenceID;
@@ -231,7 +234,10 @@ class FocalPlane extends Addressable {
                 c = Color.darkCyan();
             else
                 c = Color.darkPink();
-            assignColor(jobj.raft, jobj.sensor, c);
+            //assignColor(jobj.raft, jobj.sensor, c);
+            Sensor s = sensorMap.get(jobj.componentID);
+            s.setColor(c);
+            update();
             return;
         } else if (status.equals("finish")) {
             String componentID = jobj.componentID;

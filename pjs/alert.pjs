@@ -16,6 +16,7 @@ BaseDMCS baseDMCS;
 ReplicatorGroup replicatorGroup;
 DistributorGroup distributorGroup;
 FocalPlaneGroup  focalPlaneGroup;
+//OCSMessageGroup ocsMessageGroup;
 
 void draw() {
     
@@ -44,6 +45,8 @@ void draw() {
             replicatorGroup.processMessage(jobj);
         } else if (component.equals("wavefront job")) {
             replicatorGroup.processMessage(jobj);
+        } else if (component.equals("ocs")) {
+            ocsMessageGroup.processMessage(jobj);
         } else {
             //println("---");
         }
@@ -89,9 +92,12 @@ void doit(obj_ar) {
     Legend legend = new Legend(10, 10);
     legend.update();
 
+    ocsMessageGroup = new OCSMessageGroup(10,350);
+    ocsMessageGroup.update();
+
     lastMillis = millis();
     milliDelta = int(obj_ar[0].time);
-    
+
     /*
     println("bah");
     println("lastMillis "+lastMillis);
