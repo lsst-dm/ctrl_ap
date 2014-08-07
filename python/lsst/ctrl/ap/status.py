@@ -64,6 +64,7 @@ class Status(object):
     replicatorJobs = "replicator jobs"
     workerJob = "worker job"
     workerJobs = "worker jobs"
+    ocs = "ocs"
 
     # part deux:
     server = "server"
@@ -78,6 +79,7 @@ class Status(object):
     sendFile = "send file"
     fileReceived = "file received"
     receivedMsg = "received message"
+    sendMsg = "send message"
     submit = "submit"
     perform = "perform"
     completed = "completed"

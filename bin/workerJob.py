@@ -115,14 +115,23 @@ class WorkerJob(object):
         st.publish(st.workerJob, st.retrieve, data)
         newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
         newName = os.path.join("/tmp",newName)
-        if not os.path.exists(os.path.dirname(newName)):
-            os.makedirs(os.path.dirname(newName))
+        self.safemakedirs(os.path.dirname(newName))
         #st.publish(st.workerJob, st.requestFile, newName)
         name = jsock.recvFile(receiveTo=newName)
         data["file"] = name;
         st.publish(st.workerJob, st.fileReceived, data)
         self.logger.log(Log.INFO, "file received = %s" % name)
         return name, "telemetry"
+
+    # when this goes to python 3.2, we can use exist_ok, but
+    # until then, we ignore the fact that someone got there before us.
+    def safemakedirs(path):
+        try:
+            os.makedirs(path)
+        except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else: raise
         
     def execute(self):
         st = Status()

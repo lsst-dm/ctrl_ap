@@ -27,6 +27,7 @@ import os.path
 import argparse
 import lsst.ctrl.events as events
 from lsst.ctrl.ap import ocs
+from lsst.ctrl.ap.status import Status
 
 class OCSTransmitter(object):
 
@@ -80,9 +81,13 @@ if __name__ == "__main__":
 
     args = ocsT.parseArgs(basename)
 
+    st = Status()
     if args.cmd == "startIntegration":
+        st.publish(st.ocs, st.sendMsg, {"cmd":args.cmd, "exposureSequenceID":args.exposureSequenceID, "visitID":args.visitID})
         ocsT.sendStartIntegration(args.visitID, args.exposureSequenceID)
     elif args.cmd == "startReadout":
+        st.publish(st.ocs, st.sendMsg, {"cmd":args.cmd, "exposureSequenceID":args.exposureSequenceID, "imageID":args.imageID, "visitID":args.visitID})
         ocsT.sendStartReadout(args.imageID, args.visitID, args.exposureSequenceID)
     elif args.cmd == "nextVisit":
+        st.publish(st.ocs, st.sendMsg, {"cmd":args.cmd, "exposures":args.exposures, "visitID":args.visitID, "filterID":args.filterID, "boresight":args.boresight})
         ocsT.sendNextVisit(args.visitID, args.exposures, args.boresight, args.filterID)
