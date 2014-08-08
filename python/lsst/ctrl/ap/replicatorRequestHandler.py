@@ -140,7 +140,7 @@ class ReplicatorRequestHandler(object):
         self.splitFile(visitID, exposureSequenceID, filename, sensors)
 
     def splitWavefrontFile(self, visitID, exposureSequenceID, filename):
-        sensors = ["R:0,0 S:2,2", "R:0,4 S:0,2", "R:4,0 S:2,0", "R:4,4 S:0,0"]
+        sensors = ["R:0,0 S:2,2", "R:0,4 S:2,0", "R:4,0 S:0,2", "R:4,4 S:0,0"]
         self.splitFile(visitID, exposureSequenceID, filename, sensors)
 
     def splitFile(self, visitID, exposureSequenceID, filename, sensors):

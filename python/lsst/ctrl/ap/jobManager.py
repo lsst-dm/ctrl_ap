@@ -144,7 +144,7 @@ class JobManager(object):
             #ad["WhenToTransferOutput"] =  "ON_EXIT"
             cluster = self.workerSchedd.submit(ad,1)
 
-        sensors = ["R:0,0 S:2,2", "R:0,4 S:0,2", "R:4,0 S:2,0", "R:4,4 S:0,0"]
+        sensors = ["R:0,0 S:2,2", "R:0,4 S:2,0", "R:4,0 S:0,2", "R:4,4 S:0,0"]
         ad = self.getClassAd(self.wavefrontSensorJobPath)
         for x in range(1,5):
             sensorInfo = sensors[x-1]

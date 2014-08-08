@@ -140,6 +140,7 @@ class WorkerJob(object):
             distHost, distPort = self.requestDistributor(exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
             data = {"workerID":self.workerID, "data":{"exposureSequenceID":exposure, "visitID":self.visitID,"raft":self.raft,"sensor":self.ccd}}
+            time.sleep(1);
             st.publish(st.workerJob, st.perform, data)
             time.sleep(5);
             st.publish(st.workerJob, st.completed, data)
