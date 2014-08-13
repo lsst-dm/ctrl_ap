@@ -98,10 +98,10 @@ class WavefrontSensorJob(object):
             sock.connect((host, port))
         except socket.gaierror, err:
             self.logger.log(Log.INFO, "address problem?")
-            return False
+            return None
         except socket.error, err:
             self.logger.log(Log.INFO, "connection problem: %s" % err)
-            return False
+            return None
         return sock
 
     def retrieveDistributorImage(self, host, port, exposure):
@@ -109,6 +109,7 @@ class WavefrontSensorJob(object):
         st = Status()
         connection = {st.server:{st.host:host, st.port:port}}
         st.publish(st.wavefrontSensorJob, st.connect, connection)
+        print "host = %s, port = %d" % (host, port)
         sock = self.makeConnection(host, port)
         jsock = JSONSocket(sock)
         vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}

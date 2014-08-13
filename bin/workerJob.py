@@ -99,6 +99,8 @@ class WorkerJob(object):
             self.logger.log(Log.INFO, "address problem?")
             return False
         except socket.error, err:
+            self.logger.log(Log.INFO, "connection problem: host %s" % host)
+            self.logger.log(Log.INFO, "connection problem: port %d" % port)
             self.logger.log(Log.INFO, "connection problem: %s" % err)
             return False
         return sock
