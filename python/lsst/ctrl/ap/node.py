@@ -55,18 +55,13 @@ class Node(object):
     def connectToNode(self, component, host, port):
         outSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        # this is to get the outbound port assigned
-        #outSock.listen(5)
-
         # publish status message
         st = Status()
         n = outSock.getsockname()
         print "n = ",n
         name = socket.gethostname()
         serverInfo = {st.host:host, st.port:port}
-        # xxx - this only gives us port # 0.
-        #clientInfo = {st.host:name, st.port:n[1]}
-        #connection = {st.client:clientInfo, st.server:serverInfo}
+
         connection = {st.server:serverInfo}
         st.publish(component, st.connect, connection)
 

@@ -37,6 +37,12 @@ from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.pex.logging import Log
 
+from multiprocessing.pool import ThreadPool
+
+#def callHandler(jsock, distHost, outSock):
+#    rh = ReplicatorHandler(jsock, distHost, outSock)
+#    return rh.go()
+
 class ReplicatorNode(Node):
 
     def __init__(self, distHost, distPort, repPort):
@@ -51,20 +57,33 @@ class ReplicatorNode(Node):
         st = Status()
         st.publish(st.replicatorNode, st.start, {"server":{"host":socket.gethostname(), "port":repPort}, "distributor":{"host":self.distHost, "port":self.distPort}})
 
+        self.pool = ThreadPool()
+
+    def callHandler(self, jsock, distHost, outSock):
+        rh = ReplicatorHandler(jsock, distHost, outSock)
+        return rh.go()
+
     def activate(self):
         st = Status()
+        # connect to distributor
+        
+        # repeatedly attempt to connect to distributor, if we can't contact it.
         while self.connectToNode(Status.replicatorNode, args.distributor, args.port) == False:
             time.sleep(self.sleepInterval)
             pass
         self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
+        # connection from replicator job
         while True:
             (clientSock, (ipAddr, clientPort)) = self.inSock.accept()
             print "replicator node: accepted connection"
             client = {"client":{st.host:ipAddr, st.port:clientPort}}
             st.publish(st.replicatorNode, st.accept, client)
             jsock = JSONSocket(clientSock)
-            rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
-            rh.start()
+            #rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
+            #rh.start()
+            async = self.pool.apply_async(self.callHandler, (jsock, self.distHost, self.outSock))
+            result = async.get()
+            print result
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

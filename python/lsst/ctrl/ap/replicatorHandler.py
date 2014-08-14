@@ -34,33 +34,42 @@ import subprocess
 import getpass
 from lsst.pex.logging import Log
 
-class ReplicatorHandler(threading.Thread):
+class ReplicatorHandler(object):
     def __init__(self, jobSocket, distHost, distSock):
-        super(ReplicatorHandler, self).__init__()
+        #super(ReplicatorHandler, self).__init__()
         self.jobSock = jobSocket
         self.distHost = distHost
         self.distSock = distSock
         self.logger = Log.getDefaultLog()
-        self.chunksize = 1024
 
 
-    def run(self):
-        # don't need to decode it;  we're just passing it on
+    # this thread receives messages from the replicator job and sends
+    # those along to the distributor node.
+    def go(self):
+        # receive message from replicator job
+        # this contains information about the exposure #, visit id, and raft
         s = self.jobSock.recvall()
         if s == "":
             return
         self.logger.log(Log.INFO, 'received from replicator job %s' % json.loads(s))
         self.logger.log(Log.INFO, 'sending to distributor')
+
+        # send the message straight to the distributor
         # don't need to re-encode it
         self.distSock.sendWithLength(s)
         self.logger.log(Log.INFO, 'sent!')
+
+        # the next thing we'll get is a filename from the replicator job.
+        # Now, keep in mind that that replicator job runs on the replicator
+        # node, so it's already on the machine (in this case on the filesystem).
         vals = self.jobSock.recvJSON()
         name = vals["filename"]
 
         self.logger.log(Log.INFO, 'name from replicator job %s' % str(name))
 
 
+        # send the named file to the distributor.
         self.distSock.sendFile(name)
         print "file  %s was sent" % name
-        # remove the file locally
-        #os.unlink(name)
+
+        return "I am done"
