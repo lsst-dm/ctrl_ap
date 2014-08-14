@@ -48,15 +48,21 @@ class ReplicatorHandler(object):
     def go(self):
         # receive message from replicator job
         # this contains information about the exposure #, visit id, and raft
-        s = self.jobSock.recvall()
+        try:
+            s = self.jobSock.recvall()
+        except socket.error, err:
+            return Exception("replicator")
         if s == "":
-            return
+            return Exception("replicator")
         self.logger.log(Log.INFO, 'received from replicator job %s' % json.loads(s))
         self.logger.log(Log.INFO, 'sending to distributor')
 
         # send the message straight to the distributor
         # don't need to re-encode it
-        self.distSock.sendWithLength(s)
+        try :
+            self.distSock.sendWithLength(s)
+        except socket.error, err:
+            return Exception("distributor")
         self.logger.log(Log.INFO, 'sent!')
 
         # the next thing we'll get is a filename from the replicator job.
@@ -69,7 +75,8 @@ class ReplicatorHandler(object):
 
 
         # send the named file to the distributor.
-        self.distSock.sendFile(name)
+        try:
+            self.distSock.sendFile(name)
+        except socket.error, err:
+            return Exception("distributor")
         print "file  %s was sent" % name
-
-        return "I am done"

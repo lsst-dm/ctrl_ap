@@ -36,6 +36,8 @@ from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.pex.logging import Log
+from lsst.ctrl.ap.exceptions import ReplicatorJobException
+from lsst.ctrl.ap.exceptions import DistributorException
 
 from multiprocessing.pool import ThreadPool
 
@@ -67,23 +69,31 @@ class ReplicatorNode(Node):
         st = Status()
         # connect to distributor
         
-        # repeatedly attempt to connect to distributor, if we can't contact it.
-        while self.connectToNode(Status.replicatorNode, args.distributor, args.port) == False:
-            time.sleep(self.sleepInterval)
-            pass
-        self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
-        # connection from replicator job
+        needToConnect = True
+        needToAccept = True
         while True:
-            (clientSock, (ipAddr, clientPort)) = self.inSock.accept()
-            print "replicator node: accepted connection"
-            client = {"client":{st.host:ipAddr, st.port:clientPort}}
-            st.publish(st.replicatorNode, st.accept, client)
-            jsock = JSONSocket(clientSock)
-            #rh = ReplicatorHandler(jsock, self.distHost, self.outSock)
-            #rh.start()
-            async = self.pool.apply_async(self.callHandler, (jsock, self.distHost, self.outSock))
-            result = async.get()
-            print result
+            # repeatedly attempt to connect to distributor, if we can't contact it.
+            if needToConnect:
+                while self.connectToNode(Status.replicatorNode, args.distributor, args.port) == False:
+                    time.sleep(self.sleepInterval)
+                self.logger.log(Log.INFO, "connected to distributor Node %s:%d" % (args.distributor, args.port))
+                needToConnect = False
+            # connection from replicator job
+            while True:
+                if needToAccept:
+                        (clientSock, (ipAddr, clientPort)) = self.inSock.accept()
+                        print "replicator node: accepted connection"
+                        client = {"client":{st.host:ipAddr, st.port:clientPort}}
+                        st.publish(st.replicatorNode, st.accept, client)
+                        jsock = JSONSocket(clientSock)
+                        needToAccept = False
+                    try:
+                        async = self.pool.apply_async(self.callHandler, (jsock, self.distHost, self.outSock))
+                        result = async.get()
+                    except ReplicatorException:
+                        needtoAccept = True
+                    except DistributorException:
+                        needtoConnect = True
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
