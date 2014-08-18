@@ -59,7 +59,7 @@ class ReplicatorNode(Node):
         st = Status()
         st.publish(st.replicatorNode, st.start, {"server":{"host":socket.gethostname(), "port":repPort}, "distributor":{"host":self.distHost, "port":self.distPort}})
 
-        self.pool = ThreadPool()
+        self.pool = ThreadPool(processes=1)
 
     def callHandler(self, jsock, distHost, outSock):
         rh = ReplicatorHandler(jsock, distHost, outSock)
@@ -80,20 +80,27 @@ class ReplicatorNode(Node):
                 needToConnect = False
             # connection from replicator job
             while True:
+                print "replicator loop begun"
                 if needToAccept:
+                        print "replicator waiting on accept"
                         (clientSock, (ipAddr, clientPort)) = self.inSock.accept()
                         print "replicator node: accepted connection"
                         client = {"client":{st.host:ipAddr, st.port:clientPort}}
                         st.publish(st.replicatorNode, st.accept, client)
                         jsock = JSONSocket(clientSock)
                         needToAccept = False
-                    try:
-                        async = self.pool.apply_async(self.callHandler, (jsock, self.distHost, self.outSock))
-                        result = async.get()
-                    except ReplicatorException:
-                        needtoAccept = True
-                    except DistributorException:
-                        needtoConnect = True
+                try:
+                    print "1"
+                    async = self.pool.apply_async(self.callHandler, (jsock, self.distHost, self.outSock))
+                    result = async.get()
+                    needToAccept = True
+                except ReplicatorException:
+                    print "2"
+                    needToAccept = True
+                except DistributorException:
+                    print "3"
+                    needToConnect = True
+                print "replicator loop done"
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
