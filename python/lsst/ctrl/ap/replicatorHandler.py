@@ -33,6 +33,8 @@ import threading
 import subprocess
 import getpass
 from lsst.pex.logging import Log
+from lsst.ctrl.ap.exceptions import ReplicatorJobException
+from lsst.ctrl.ap.exceptions import DistributorException
 
 class ReplicatorHandler(object):
     def __init__(self, jobSocket, distHost, distSock):
@@ -51,9 +53,9 @@ class ReplicatorHandler(object):
         try:
             s = self.jobSock.recvall()
         except socket.error, err:
-            return Exception("replicator")
+            raise ReplicatorJobException("socket error")
         if s == "":
-            return Exception("replicator")
+            raise ReplicatorJobException("null string received")
         self.logger.log(Log.INFO, 'received from replicator job %s' % json.loads(s))
         self.logger.log(Log.INFO, 'sending to distributor')
 
@@ -62,7 +64,7 @@ class ReplicatorHandler(object):
         try :
             self.distSock.sendWithLength(s)
         except socket.error, err:
-            return Exception("distributor")
+            raise DistributorException("error sending message")
         self.logger.log(Log.INFO, 'sent!')
 
         # the next thing we'll get is a filename from the replicator job.
@@ -78,5 +80,5 @@ class ReplicatorHandler(object):
         try:
             self.distSock.sendFile(name)
         except socket.error, err:
-            return Exception("distributor")
+            raise DistributorException("error sending file")
         print "file  %s was sent" % name

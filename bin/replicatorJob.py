@@ -109,7 +109,7 @@ class ReplicatorJob(object):
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
 
         # send the replicator node the name of the file
-        vals = {"filename" : f.name}
+        vals = {"msgtype":"file", "filename" : f.name}
         self.rSock.sendJSON(vals)
         st.publish(st.replicatorJob, st.pub, f.name)
 
