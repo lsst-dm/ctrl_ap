@@ -36,6 +36,7 @@ from lsst.pex.logging import Log
 from lsst.ctrl.ap.exceptions import ReplicatorJobException
 from lsst.ctrl.ap.exceptions import DistributorException
 
+# this is being deprecated, and will be removed soon.
 class ReplicatorHandler(object):
     def __init__(self, jobSocket, distHost, distSock):
         #super(ReplicatorHandler, self).__init__()
