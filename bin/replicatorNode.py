@@ -39,17 +39,18 @@ from lsst.pex.logging import Log
 from lsst.ctrl.ap.exceptions import ReplicatorJobException
 from lsst.ctrl.ap.exceptions import DistributorException
 
-from multiprocessing.pool import ThreadPool
+import threading
 
-class DistributorConnection(Thread):
+class DistributorConnection(threading.Thread):
 
-    def __init__(self, distributor, port, condition, msgList):
+    def __init__(self, logger, distributor, port, condition, msgList):
         super(DistributorConnection, self).__init__()
-        this.distributor = distributor
-        this.port = port
+        self.logger = logger
+        self.distributor = distributor
+        self.port = port
         self.msgList = msgList
-        this.condition = condition
-        this.sleepInterval = 5 # seconds
+        self.condition = condition
+        self.sleepInterval = 5 # seconds
         self.outSock = None
 
     def connectToNode(self, host, port):
@@ -71,48 +72,55 @@ class DistributorConnection(Thread):
         except socket.gaierror, err:
             self.logger.log(Log.INFO, "address problem?  %s " % err)
             self.outSock = None
+            return False
         except socket.error, err:
             self.logger.log(Log.INFO, "Connection problem: %s" % err)
             self.outSock = None
-        return self.outSock
+            return False
+        return True
 
     def send(self, msg):
+        print "msg is ",msg
         type = msg["msgtype"]
         if type == "file":
             filename = msg["filename"]
             self.outSock.sendFile(filename)
-        elif type == "replicator job" or type == "ping":
+        elif type == "replicator job" or type == "wavefront job" or type == "ping":
             self.outSock.sendJSON(msg)
         else:
             print "unknown type: ",type
 
     def run(self):
+        connectionOK = False
         while True:
             if connectionOK == False:
-                while self.connectToNode(self.distributor, self.port)
+                while self.connectToNode(self.distributor, self.port) == False:
                     time.sleep(self.sleepInterval)
             connectionOK = True
             self.condition.acquire()
+            while len(self.msgList) == 0:
+                self.condition.wait()
             while self.msgList:
                 if connectionOK:
+                    # try to send the message before popping it.
                     s = self.msgList[0]
                     try:
                         self.send(s)
                     except socket.error, err:
                         connectionOK = False
                         break
-                    msgList.pop(0)
+                    s =  self.msgList.pop(0)
             self.condition.release()
-            self.condition.wait()
 
-class ReplicatorJobConnection(Thread):
+class ReplicatorJobConnection(threading.Thread):
     def __init__(self, jobSocket, condition, msgList):
         super(ReplicatorJobConnection, self).__init__()
         self.jobSocket = jobSocket
+        self.condition = condition
         self.msgList = msgList
 
-    def queueMsg(self, vals)
-        self.condition.aquire()
+    def queueMsg(self, vals):
+        self.condition.acquire()
         self.msgList.append(vals)
         self.condition.notifyAll()
         self.condition.release()
@@ -155,7 +163,7 @@ class ReplicatorNode(Node):
         msgList = list()
         
 
-        dc = DistributorConnection(args.distributor, args.port, condition, msgList)
+        dc = DistributorConnection(self.logger, args.distributor, args.port, condition, msgList)
         dc.start()
 
         print "replicator loop begun"
