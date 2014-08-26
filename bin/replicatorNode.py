@@ -52,6 +52,12 @@ class DistributorConnection(threading.Thread):
         self.condition = condition
         self.sleepInterval = 5 # seconds
         self.outSock = None
+        self.heartCondition = threading.Condition()
+        self.heartSock = None
+
+        self.hr = HeartBeatReceiver(heartCondition, heartSock)
+        self.hr.run()
+
 
     def connectToNode(self, host, port):
         outSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -96,7 +102,14 @@ class DistributorConnection(threading.Thread):
             if connectionOK == False:
                 while self.connectToNode(self.distributor, self.port) == False:
                     time.sleep(self.sleepInterval)
+
             connectionOK = True
+
+            heartCondition.acquire()
+            self.heartSock = self.outSock()
+            heartCondition.notifyAll()
+            heartCondition.release()
+
             self.condition.acquire()
             while len(self.msgList) == 0:
                 self.condition.wait()
@@ -111,6 +124,32 @@ class DistributorConnection(threading.Thread):
                         break
                     s =  self.msgList.pop(0)
             self.condition.release()
+
+class HeartbeatReceiver(threading.Thread):
+    def __init__(self, condition, sock):
+        super(HeartbeatReceiver, self).__init__()
+        self.condition = condition
+        self.sock = sock
+
+    # this is implemented this way for recoverablity of distributor connections
+    def run(self):
+        while True:
+            s = None
+            while s is None:
+                self.condition.acquire()
+                if self.sock is None:
+                    self.condition.wait()
+                else:
+                    s = self.sock
+                self.release()
+            while True:
+                # TODO: this has to be done via select and a timeout
+                msg = s.recvJSON()
+                if msg is None:
+                    break
+        
+            
+        
 
 class ReplicatorJobConnection(threading.Thread):
     def __init__(self, jobSocket, condition, msgList):
@@ -162,7 +201,6 @@ class ReplicatorNode(Node):
         condition = threading.Condition()
         msgList = list()
         
-
         dc = DistributorConnection(self.logger, args.distributor, args.port, condition, msgList)
         dc.start()
 
