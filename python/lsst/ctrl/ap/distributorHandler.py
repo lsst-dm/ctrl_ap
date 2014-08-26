@@ -41,15 +41,14 @@ class DistributorHandler(threading.Thread):
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
+        self.socketCondition = threading.Condition()
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "distributorHandler")
 
         
-    def respond(self):
-        msg = {"msgtype":"response", "status":"alive"}
-        self.jsock.sendJSON(msg)
-        
     def run(self):
+        rrHandler = ReplicatorRequestHandler(self.logger, self.jsock, self.dataTable, self.condition)
+        workerHandler = WorkerRequestHandler(self.logger, self.jsock, self.dataTable,  self.condition)
         while True:
             # TODO:  this should probably renew a lease to the archive, so the
             # archive knows this is still alive, rather than the archive always
@@ -57,22 +56,27 @@ class DistributorHandler(threading.Thread):
     
             # receive the visit id, exposure sequence number and raft id, from
             # the replicator.
-            vals = self.jsock.recvJSON()
-            if vals ==  None:
+        
+            msg = self.jsock.recvJSON()
+
+            if msg ==  None:
                 self.logger.log(Log.INFO, 'received nothing')
                 return 
+            print "msg is ",msg
             msgtype = vals["msgtype"]
             print "message type = ",msgtype
-            if (msgtype == "replicator job") or (msgtype == "wavefront job"):
-                handler = ReplicatorRequestHandler(self.logger, self.jsock, vals, self.dataTable, self.condition)
-                handler.handleRequest()
+            if msgtype =="replicator":
+                rrHandler.handleReplicator(msg)
+            elif msgtype == "replicator job":
+                rrHandler.handleReplicatorJob(msg)
+            elif msgtype == "wavefront job":
+                rrHhandler.handleWavefrontJob(msg)
                 # note that we do not return, since this is an open connection
             elif msgtype == "worker job":
-                handler = WorkerRequestHandler(self.logger, self.jsock, vals, self.dataTable,  self.condition)
-                handler.handleRequest()
+                workerHandler.handleRequest(msg)
                 return
             elif msgtype == "heartbeat":
-                self.respond()
+                rrHandler.respond()
             else:
                 print "message type unknown"
                 return

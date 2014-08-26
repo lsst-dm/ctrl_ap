@@ -84,7 +84,7 @@ class ReplicatorJob(object):
             pass
 
         self.logger.log(Log.INFO, "sending info to replicator node")
-        vals = {"msgtype":"replicator job", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
+        vals = {"msgtype":"replicator job", "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
         st = Status()
@@ -109,7 +109,7 @@ class ReplicatorJob(object):
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
 
         # send the replicator node the name of the file
-        vals = {"msgtype":"file", "filename" : f.name}
+        vals = {"msgtype":"replicator job", "request":"file info", "filename" : f.name, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}
         self.rSock.sendJSON(vals)
         st.publish(st.replicatorJob, st.pub, f.name)
 

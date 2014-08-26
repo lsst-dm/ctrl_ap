@@ -120,7 +120,7 @@ class WorkerJob(object):
         newName = os.path.join("/tmp",newName)
         self.safemakedirs(os.path.dirname(newName))
         #st.publish(st.workerJob, st.requestFile, newName)
-        name = jsock.recvFile(receiveTo=newName)
+        name = jsock.recvFile(newName)
         data["file"] = name;
         st.publish(st.workerJob, st.fileReceived, data)
         self.logger.log(Log.INFO, "file received = %s" % name)

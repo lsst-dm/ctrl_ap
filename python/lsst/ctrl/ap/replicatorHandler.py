@@ -72,14 +72,16 @@ class ReplicatorHandler(object):
         # Now, keep in mind that that replicator job runs on the replicator
         # node, so it's already on the machine (in this case on the filesystem).
         vals = self.jobSock.recvJSON()
-        name = vals["filename"]
+        msg = vals.copy()
+        msg["msgtype"] = "replicator"
+        msg["request"] = "upload"
 
         self.logger.log(Log.INFO, 'name from replicator job %s' % str(name))
 
 
         # send the named file to the distributor.
         try:
-            self.distSock.sendFile(name)
+            self.distSock.sendFile(msg)
         except socket.error, err:
             raise DistributorException("error sending file")
         print "file  %s was sent" % name

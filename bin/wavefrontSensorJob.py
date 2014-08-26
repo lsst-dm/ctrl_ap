@@ -120,7 +120,7 @@ class WavefrontSensorJob(object):
         newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
         newName = os.path.join("/tmp",newName)
         self.safemakedirs(os.path.dirname(newName))
-        name = jsock.recvFile(receiveTo=newName)
+        name = jsock.recvFile(newName)
         data["file"] = name
         st.publish(st.wavefrontSensorJob, st.fileReceived, data)
         self.logger.log(Log.INFO, "file received = %s" % name)

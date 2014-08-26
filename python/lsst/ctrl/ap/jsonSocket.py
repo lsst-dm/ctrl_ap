@@ -51,13 +51,13 @@ class JSONSocket(object):
         #print "recvJSON: '%s'" % s
         return s
 
-    def sendFile(self, name):
+    def sendFile(self, msg):
+        name = msg["filename"]
 
         chunksize = 4096
 
         # send the json info first
-        vals = { "filename" : name }
-        self.sendJSON(vals)
+        self.sendJSON(msg)
 
         # then end the size of the file and the raw data
         st = os.stat(name)
@@ -74,13 +74,17 @@ class JSONSocket(object):
         self.sock.sendall(val)
         f.close()
 
-    def recvFile(self, receiveTo=None):
+    # TODO: this is getting refactored, and is temporary
+    def recvFile2(self, receiveTo=None):
         vals = self.recvJSON()
         if receiveTo is None:
             name = str(vals["filename"])
         else:
             name = receiveTo
         #print "jsonSocket: recvFile, name = ",name
+        return self.recvFile(name)
+
+    def recvFile(self, name):
         total = 0
         size = sys.maxint
         recvSize = 4

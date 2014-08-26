@@ -37,45 +37,49 @@ from lsst.ctrl.ap.distributorInfo import DistributorInfo
 from lsst.ctrl.ap.status import Status
 
 class ReplicatorRequestHandler(object):
-    def __init__(self, logger, jsock, msg, dataTable, condition):
+    def __init__(self, logger, jsock, dataTable, condition):
         self.logger = logger
         self.jsock = jsock
-        self.msg = msg
         self.dataTable = dataTable
         self.condition = condition
 
-    def handleRequest(self):
-        msgtype = self.msg["msgtype"]
-        if msgtype == "replicator job":
-            self.handleReplicatorJob()
-        elif msgtype == "wavefront job":
-            self.handleWavefrontJob()
-        else:
-            print "unknown msgtype: %s" % msgtype
-
-    def handleReplicatorJob(self):
+    def handleReplicatorJob(self, msg):
         self.logger.log(Log.INFO, "handling request from replicator job")
         st = Status()
-        st.publish(st.distributorNode, st.infoReceived, self.msg)
-        self.sendToArchiveDMCS(self.msg) # XXX
-        self.logger.log(Log.INFO, 'received from replicator %s' % self.msg)
-        name = self.jsock.recvFile()
-        visitID = self.msg["visitID"]
-        exposureSequenceID = self.msg["exposureSequenceID"]
-        raft = self.msg["raft"]
-        st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
-        self.logger.log(Log.INFO, 'file received: %s' % name)
-        self.splitReplicatorFile(visitID, exposureSequenceID, raft, name)
+        st.publish(st.distributorNode, st.infoReceived, msg)
 
-    def handleWavefrontJob(self):
-        d = self.msg.copy()
-        synRaft = self.msg["raft"]
+        request = msg["request"]
+        if request == "info post":
+            self.sendToArchiveDMCS(msg) # XXX
+            self.logger.log(Log.INFO, 'received from replicator %s' % self.msg)
+        else:
+            print "unknown request; msg = ",msg
+
+    def handleReplicator(self, msg):
+        request = msg["request"]
+        if request == "upload":
+            name = msg["filename"]
+            self.jsock.recvFile(name)
+            visitID = msg["visitID"]
+            exposureSequenceID = msg["exposureSequenceID"]
+            raft = msg["raft"]
+            st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
+            self.logger.log(Log.INFO, 'file received: %s' % name)
+            self.splitReplicatorFile(visitID, exposureSequenceID, raft, name)
+        elif request == "heartbeat":
+            print "heartbeat received"
+        else:
+            print "unknown request; msg = ",msg
+
+    def handleWavefrontJob(self, msg):
+        d = msg.copy()
+        synRaft = msg["raft"]
         st = Status()
         st.publish(st.distributorNode,st.infoReceived, d)
         for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
             d["raft"] = raft
             self.sendToArchiveDMCS(d)
-        name = self.jsock.recvFile()
+        name = self.jsock.recvFile2()
         visitID = self.msg["visitID"]
         exposureSequenceID = self.msg["exposureSequenceID"]
         st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
