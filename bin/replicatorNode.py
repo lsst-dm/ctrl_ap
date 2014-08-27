@@ -52,11 +52,6 @@ class DistributorConnection(threading.Thread):
         self.condition = condition
         self.sleepInterval = 5 # seconds
         self.outSock = None
-        self.heartCondition = threading.Condition()
-        self.heartSock = None
-
-        self.hr = HeartBeatReceiver(heartCondition, heartSock)
-        self.hr.run()
 
 
     def connectToNode(self, host, port):
@@ -102,17 +97,22 @@ class DistributorConnection(threading.Thread):
             if connectionOK == False:
                 while self.connectToNode(self.distributor, self.port) == False:
                     time.sleep(self.sleepInterval)
+                # start the heartbeat thread
+                self.heartbeatEvent = threading.Event()
+                self.hr = HeartBeatReceiver(self.outSock, self.condition, self.heartbeatEvent)
+                self.hr.start()
+                connectionOK = True
 
-            connectionOK = True
-
-            heartCondition.acquire()
-            self.heartSock = self.outSock()
-            heartCondition.notifyAll()
-            heartCondition.release()
-
+            # check to see if there's anything in the list
             self.condition.acquire()
             while len(self.msgList) == 0:
                 self.condition.wait()
+                # if we wake up, it's because of one of two reasons:
+                # 1) We were notified that there's a message in the list
+                # 2) we were notified that the heartbeat failed.
+                if self.hearbeatEvent.is_set():
+                    connectionOK = False
+                    break
             while self.msgList:
                 if connectionOK:
                     # try to send the message before popping it.
@@ -121,35 +121,34 @@ class DistributorConnection(threading.Thread):
                         self.send(s)
                     except socket.error, err:
                         connectionOK = False
+                        self.heartbeatEvent.set()
+                        # if there's a connection failure, leave the
+                        # rest of the msgList alone so we can send
+                        # things after reconnection.
                         break
+                    # the message was sent, so pop it.
                     s =  self.msgList.pop(0)
             self.condition.release()
 
 class HeartbeatReceiver(threading.Thread):
-    def __init__(self, condition, sock):
+    def __init__(self, sock, condition, event):
         super(HeartbeatReceiver, self).__init__()
-        self.condition = condition
         self.sock = sock
+        self.condition = condition
+        self.event = event
 
     # this is implemented this way for recoverablity of distributor connections
     def run(self):
-        while True:
-            s = None
-            while s is None:
-                self.condition.acquire()
-                if self.sock is None:
-                    self.condition.wait()
-                else:
-                    s = self.sock
-                self.release()
-            while True:
-                # TODO: this has to be done via select and a timeout
+        # note that this event could be set internally (because the heart
+        # beat failed), or externally (because sending to the distributor failed)
+        while not self.event.is_set():
+            try:
+            # TODO: this has to be done via select and a timeout
                 msg = s.recvJSON()
-                if msg is None:
-                    break
-        
-            
-        
+            except exc:
+                print exc
+                self.event.set()
+                self.condition.notifyAll()
 
 class ReplicatorJobConnection(threading.Thread):
     def __init__(self, jobSocket, condition, msgList):
