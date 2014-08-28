@@ -106,11 +106,13 @@ class WorkerJob(object):
         return sock
 
     def retrieveDistributorImage(self, host, port, exposure):
-        self.logger.log(Log.INFO, "retriving image from distributor")
+        self.logger.log(Log.INFO, "retrieving image from distributor")
         st = Status()
         connection = {st.server:{st.host:host, st.port:port}}
         st.publish(st.workerJob, st.connect, connection)
+        print "making connection"
         sock = self.makeConnection(host, port)
+        print "connection made"
         jsock = JSONSocket(sock)
         vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
         jsock.sendJSON(vals)
@@ -120,7 +122,9 @@ class WorkerJob(object):
         newName = os.path.join("/tmp",newName)
         self.safemakedirs(os.path.dirname(newName))
         #st.publish(st.workerJob, st.requestFile, newName)
+        print "trying to receive file ",newName
         name = jsock.recvFile(newName)
+        print "file received ",newName
         data["file"] = name;
         st.publish(st.workerJob, st.fileReceived, data)
         self.logger.log(Log.INFO, "file received = %s" % name)

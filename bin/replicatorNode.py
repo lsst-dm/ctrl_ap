@@ -81,36 +81,47 @@ class DistributorConnection(threading.Thread):
         return True
 
     def send(self, msg):
-        print "msg is ",msg
+        print "dct: send: msg is ",msg
         type = msg["msgtype"]
         if type == "file":
+            print "dct: send: 1: msg is ",msg
             filename = msg["filename"]
+            print "sending on ",self.outSock
             self.outSock.sendFile(filename)
-        elif type == "replicator job" or type == "wavefront job" or type == "ping":
+        elif type == "replicator job" or type == "wavefront job":
+            print "dct: send: 2a: msg is ",msg
+            print "sending on ",self.outSock
             self.outSock.sendJSON(msg)
+            print "dct: send: 2b: msg is ",msg
         else:
             print "unknown type: ",type
 
     def run(self):
+        heartbeatEvent = None
         connectionOK = False
         while True:
             if connectionOK == False:
                 while self.connectToNode(self.distributor, self.port) == False:
                     time.sleep(self.sleepInterval)
                 # start the heartbeat thread
-                self.heartbeatEvent = threading.Event()
-                self.hr = HeartBeatReceiver(self.outSock, self.condition, self.heartbeatEvent)
-                self.hr.start()
+                heartbeatEvent = threading.Event()
+                #self.hr = HeartbeatReceiver(self.outSock, self.condition, heartbeatEvent)
+                #self.hr.start()
                 connectionOK = True
 
             # check to see if there's anything in the list
+            print "Distributor connection thread: acquiring"
             self.condition.acquire()
+            print "Distributor connection thread: acquired"
             while len(self.msgList) == 0:
+                print "Distributor connection thread: list is zero; waiting"
                 self.condition.wait()
+                print "Distributor connection thread: done waiting"
                 # if we wake up, it's because of one of two reasons:
                 # 1) We were notified that there's a message in the list
                 # 2) we were notified that the heartbeat failed.
-                if self.hearbeatEvent.is_set():
+                if heartbeatEvent.is_set():
+                    print "Distributor connection thread: hearbeatEvent set"
                     connectionOK = False
                     break
             while self.msgList:
@@ -121,10 +132,11 @@ class DistributorConnection(threading.Thread):
                         self.send(s)
                     except socket.error, err:
                         connectionOK = False
-                        self.heartbeatEvent.set()
+                        heartbeatEvent.set()
                         # if there's a connection failure, leave the
                         # rest of the msgList alone so we can send
                         # things after reconnection.
+                        print "dct: got an exception!"
                         break
                     # the message was sent, so pop it.
                     s =  self.msgList.pop(0)
@@ -145,10 +157,13 @@ class HeartbeatReceiver(threading.Thread):
             try:
             # TODO: this has to be done via select and a timeout
                 msg = s.recvJSON()
-            except exc:
-                print exc
+                print "heartbeat: ",msg
+            except:
+                print "heartbeat exception"
                 self.event.set()
+                self.condition.acquire()
                 self.condition.notifyAll()
+                self.condition.release()
 
 class ReplicatorJobConnection(threading.Thread):
     def __init__(self, jobSocket, condition, msgList):
@@ -158,25 +173,33 @@ class ReplicatorJobConnection(threading.Thread):
         self.msgList = msgList
 
     def queueMsg(self, vals):
+        print "queueMsg: acquiring for ",vals
         self.condition.acquire()
+        print "queueMsg, queuing = ",vals
         self.msgList.append(vals)
+        print "queueMsg, notifying = ",vals
         self.condition.notifyAll()
+        print "queueMsg, releasing = ",vals
         self.condition.release()
+        print "queueMsg, released = ",vals
 
     def run(self):
+        # send the info post
         try:
             vals = self.jobSocket.recvJSON()
+            print "replicatorNode: 1) received: ",vals
         except socket.error, err:
             print "first receive failed; err = ",err
             pass # do interesting something here
         self.queueMsg(vals)
+        # send the file upload
         try:
             vals = self.jobSocket.recvJSON()
+            print "replicatorNode: 2) received: ",vals
         except socket.error, err:
             print "second receive failed; err = ",err
             pass # do interesting something here
         self.queueMsg(vals)
-    
         
 
 class ReplicatorNode(Node):
@@ -186,7 +209,6 @@ class ReplicatorNode(Node):
         self.createIncomingSocket(repPort)
         self.distHost = distHost
         self.distPort = distPort
-        self.dSock = None
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "ReplicatorNode")
         self.sleepInterval = 5 # seconds

@@ -54,12 +54,13 @@ class DistributorEventHandler(threading.Thread):
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             archiveEvent = eventSystem.receiveEvent(self.eventTopic)
+            
             ps = archiveEvent.getPropertySet()
+            print"event received: ",ps.toString()
 
             # todo: switch in event "request"
             request = ps.get("request")
 
-            
             # send events for contents dataTable
             self.condition.acquire()
             print "dataTable = ",self.dataTable
@@ -85,9 +86,9 @@ class Heartbeat(threading.Thread):
 
     def run(self):
         while True:
-                msg = {"msgtype":"heartbeat"}
-                self.jsock.sendJSON(msg)
-                time.sleep(1)
+            msg = {"msgtype":"heartbeat"}
+            self.jsock.sendJSON(msg)
+            time.sleep(1)
 
 class DistributorNode(Node):
 
@@ -121,8 +122,9 @@ class DistributorNode(Node):
             connection = {"connection":{st.server:serverInfo, st.client:clientInfo}}
             st.publish(st.distributorNode, st.accept, connection)
             jclient = JSONSocket(client)
-            heartbeat = Heartbeat(jclient)
-            heartbeat.start()
+            #heartbeat = Heartbeat(jclient)
+            #heartbeat.start()
+
             dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()
 

@@ -32,6 +32,7 @@ from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import threading
 import socket
+import signal
 from time import sleep
 
 class DistributorLookupHandler(threading.Thread):
@@ -167,7 +168,6 @@ class ArchiveDMCS(object):
         self.logger = Log(logger, "ArchiveDMCS")
         st = Status()
         st.publish(st.archiveDMCS, st.start)
-
 
 if __name__ == "__main__":
     archive = ArchiveDMCS()

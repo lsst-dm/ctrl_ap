@@ -29,14 +29,15 @@ import argparse
 import json
 import socket
 import threading
+from lsst.pex.logging import Log
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 
 class WorkerRequestHandler(object):
-    def __init__(self, logger, jsock, msg, dataTable, condition):
-        self.logger = logger
+    def __init__(self, jsock, dataTable, condition):
+        print "wrh:  object created"
+        self.logger = Log.getDefaultLog()
         self.jsock = jsock
-        self.msg = msg
         self.dataTable = dataTable
         self.condition = condition
 
@@ -57,25 +58,27 @@ class WorkerRequestHandler(object):
         self.condition.release()
         return name
 
-    def transmitFile(self, key):
+    def transmitFile(self, key, data):
         print "transmitFile: key = ",key
         name = self.getFileInfo(key)
         print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
         st = Status();
-        self.jsock.sendFile(name)
-        st.publish(st.distributorNode, st.sendFile, {"file":name})
+        msg = data.copy()
+        msg["filename"] = name
+        self.jsock.sendFile(msg)
+        st.publish(st.distributorNode, st.sendFile, {"filename":name})
         print "transmitFile: done"
 
-    def handleRequest(self):
-        request = self.msg["request"]
+    def serviceRequest(self, msg):
+        request = msg["request"]
         if request == "file":
-            visitID = self.msg["visitID"]
-            exposureSequenceID = self.msg["exposureSequenceID"]
-            raft = self.msg["raft"]
-            sensor = self.msg["sensor"]
+            visitID = msg["visitID"]
+            exposureSequenceID = msg["exposureSequenceID"]
+            raft = msg["raft"]
+            sensor = msg["sensor"]
             st = Status()
             data = { "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}
             st.publish(st.distributorNode, st.requestFile, data)
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
-            self.transmitFile(key)
+            self.transmitFile(key, data)
             return
