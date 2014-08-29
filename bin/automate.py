@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 # 
@@ -24,38 +23,41 @@
 #
 
 import sys
+import time
 import os.path
 import argparse
 import lsst.ctrl.events as events
 from lsst.ctrl.ap import ocs
 from lsst.ctrl.ap.status import Status
 
-def AutomatedOCS(object):
+class AutomatedOCS(object):
     def __init__(self):
-        self.st = Status()
-
+        self.ocs = ocs.OCS()
     def sendStartIntegration(self, visitID, exposureSequenceID):
-        self.st.publish(st.ocs, st.sendMsg, 
+        st = Status()
+        st.publish(st.ocs, st.sendMsg, 
             {"cmd":"startIntegration", 
-             "exposureSequenceID":args.exposureSequenceID,
-             "visitID":args.visitID})
+             "exposureSequenceID":exposureSequenceID,
+             "visitID":visitID})
         self.ocs.sendStartIntegration(visitID, exposureSequenceID)
 
     def sendStartReadout(self, imageID, visitID, exposureSequenceID):
-        self.st.publish(st.ocs, st.sendMsg, 
-            {"cmd":args.cmd, 
-             "exposureSequenceID":args.exposureSequenceID,
-             "imageID":args.imageID, 
-             "visitID":args.visitID})
+        st = Status()
+        st.publish(st.ocs, st.sendMsg, 
+            {"cmd":"startReadout", 
+             "exposureSequenceID":exposureSequenceID,
+             "imageID":imageID, 
+             "visitID":visitID})
         self.ocs.sendStartReadout(imageID, visitID, exposureSequenceID)
 
     def sendNextVisit(self, visitID, exposures, boresight, filterID):
-        self.st.publish(st.ocs, st.sendMsg, 
-                {"cmd":args.cmd, 
-                 "exposures":args.exposures, 
-                 "visitID":args.visitID, 
-                 "filterID":args.filterID, 
-                 "boresight":args.boresight})
+        st = Status()
+        st.publish(st.ocs, st.sendMsg, 
+                {"cmd":"nextVisit", 
+                 "exposures":exposures, 
+                 "visitID":visitID, 
+                 "filterID":filterID, 
+                 "boresight":boresight})
         self.ocs.sendNextVisit(visitID, exposures, boresight, filterID)
 
     def begin(self):
@@ -66,7 +68,7 @@ def AutomatedOCS(object):
         imageID = 28000
         sleepInterval = 60
         visits = 2
-        for visit in range(0, visits)
+        for visit in range(0, visits):
             self.sendNextVisit(visitID, exposures, boresight, filterID)
             time.sleep(sleepInterval)
             for expo in range(0, exposures):
@@ -79,5 +81,5 @@ def AutomatedOCS(object):
 
 if __name__ == "__main__":
     auto = AutomatedOCS()
-
     auto.begin()
+

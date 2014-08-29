@@ -35,6 +35,17 @@ from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.replicatorRequestHandler import ReplicatorRequestHandler
 from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
 
+class Heartbeat(threading.Thread):
+    def __init__(self, jsock):
+        threading.Thread.__init__(self)
+        self.jsock = jsock
+
+    def run(self):
+        while True:
+            msg = {"msgtype":"heartbeat"}
+            self.jsock.sendJSON(msg)
+            time.sleep(1)
+
 class DistributorHandler(threading.Thread):
     def __init__(self, jsock, dataTable, condition):
         super(DistributorHandler, self).__init__()
@@ -45,6 +56,7 @@ class DistributorHandler(threading.Thread):
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "distributorHandler")
 
+
     def run(self):
         msg = self.jsock.recvJSON()
         print "dh: 1: msg =",msg
@@ -52,6 +64,8 @@ class DistributorHandler(threading.Thread):
         if msgType == "replicator job" or msgType == "wavefront job":
             handler = ReplicatorRequestHandler(self.jsock, self.dataTable, self.condition)
             handler.serviceRequest(msg)
+            heartbeat = Heartbeat(self.jsock)
+            heartbeat.start()
             while True:
                 msg = self.jsock.recvJSON()
                 print "dh: 2: msg =",msg

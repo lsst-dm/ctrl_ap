@@ -79,17 +79,6 @@ class DistributorEventHandler(threading.Thread):
                 eventSystem.publishEvent("distributor_event", event)
             self.condition.release()
 
-class Heartbeat(threading.Thread):
-    def __init__(self, jsock):
-        threading.Thread.__init__(self)
-        self.jsock = jsock
-
-    def run(self):
-        while True:
-            msg = {"msgtype":"heartbeat"}
-            self.jsock.sendJSON(msg)
-            time.sleep(1)
-
 class DistributorNode(Node):
 
     def __init__(self, port):
@@ -122,9 +111,6 @@ class DistributorNode(Node):
             connection = {"connection":{st.server:serverInfo, st.client:clientInfo}}
             st.publish(st.distributorNode, st.accept, connection)
             jclient = JSONSocket(client)
-
-            heartbeat = Heartbeat(jclient)
-            heartbeat.start()
 
             dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()
