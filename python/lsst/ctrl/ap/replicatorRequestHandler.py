@@ -61,7 +61,6 @@ class ReplicatorRequestHandler(object):
 
         request = msg["request"]
         if request == "info post":
-
             self.sendToArchiveDMCS(msg) # XXX
             self.logger.log(Log.INFO, 'received from replicator %s' % msg)
         elif request == "upload":

@@ -118,8 +118,8 @@ class DistributorConnection(threading.Thread):
                     time.sleep(self.sleepInterval)
                 # start the heartbeat thread
                 heartbeatEvent = threading.Event()
-                #self.hr = HeartbeatReceiver(self.outSock, self.condition, heartbeatEvent)
-                #self.hr.start()
+                self.hr = HeartbeatReceiver(self.outSock, self.condition, heartbeatEvent)
+                self.hr.start()
                 connectionOK = True
 
             # check to see if there's anything in the list
@@ -172,7 +172,7 @@ class HeartbeatReceiver(threading.Thread):
         while not self.event.is_set():
             try:
             # TODO: this has to be done via select and a timeout
-                msg = s.recvJSON()
+                msg = self.sock.recvJSON()
                 print "heartbeat: ",msg
             except:
                 print "heartbeat exception"

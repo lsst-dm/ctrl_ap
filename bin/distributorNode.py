@@ -122,8 +122,9 @@ class DistributorNode(Node):
             connection = {"connection":{st.server:serverInfo, st.client:clientInfo}}
             st.publish(st.distributorNode, st.accept, connection)
             jclient = JSONSocket(client)
-            #heartbeat = Heartbeat(jclient)
-            #heartbeat.start()
+
+            heartbeat = Heartbeat(jclient)
+            heartbeat.start()
 
             dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()
