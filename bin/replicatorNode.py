@@ -80,16 +80,34 @@ class DistributorConnection(threading.Thread):
             return False
         return True
 
-    def send(self, msg):
+    def sendOLD(self, msg):
         print "dct: send: msg is ",msg
         type = msg["msgtype"]
         if type == "file":
             filename = msg["filename"]
-            self.outSock.sendFile(filename)
+            print "dct: sending"
+            self.outSock.sendFile(msg)
         elif type == "replicator job" or type == "wavefront job":
+            print "dct: sending msg"
             self.outSock.sendJSON(msg)
+            print "dct: done sending msg"
         else:
             print "unknown type: ",type
+
+    def send(self, msg):
+        print "dct: send: msg is ",msg
+        type = msg["msgtype"]
+        if type == "replicator job" or type == "wavefront job":
+            request = msg["request"]
+            if request == "info post":
+                self.outSock.sendJSON(msg)
+            elif request == "upload": 
+                self.outSock.sendFile(msg)
+            else:
+                print "unknown request: ",request
+        else:
+            print "unknown msgtype: ",type
+        
 
     def run(self):
         heartbeatEvent = None
@@ -124,7 +142,9 @@ class DistributorConnection(threading.Thread):
                     # try to send the message before popping it.
                     s = self.msgList[0]
                     try:
+                        print "about to try"
                         self.send(s)
+                        print "end of try"
                     except socket.error, err:
                         connectionOK = False
                         heartbeatEvent.set()
@@ -135,6 +155,7 @@ class DistributorConnection(threading.Thread):
                         break
                     # the message was sent, so pop it.
                     s =  self.msgList.pop(0)
+                    print "just popped message off list ",s
             self.condition.release()
 
 class HeartbeatReceiver(threading.Thread):

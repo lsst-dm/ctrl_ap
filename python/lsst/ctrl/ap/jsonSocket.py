@@ -53,6 +53,8 @@ class JSONSocket(object):
 
     def sendFile(self, msg):
         name = msg["filename"]
+        print "sendFile: sending msg: ",msg
+        print "sendFile: sending file: ",name
 
         chunksize = 4096
 

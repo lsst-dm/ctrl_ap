@@ -65,6 +65,7 @@ class WorkerRequestHandler(object):
         st = Status();
         msg = data.copy()
         msg["filename"] = name
+        print "transmitFile: msg =",msg
         self.jsock.sendFile(msg)
         st.publish(st.distributorNode, st.sendFile, {"filename":name})
         print "transmitFile: done"
