@@ -84,15 +84,10 @@ class DistributorConnection(threading.Thread):
         print "dct: send: msg is ",msg
         type = msg["msgtype"]
         if type == "file":
-            print "dct: send: 1: msg is ",msg
             filename = msg["filename"]
-            print "sending on ",self.outSock
             self.outSock.sendFile(filename)
         elif type == "replicator job" or type == "wavefront job":
-            print "dct: send: 2a: msg is ",msg
-            print "sending on ",self.outSock
             self.outSock.sendJSON(msg)
-            print "dct: send: 2b: msg is ",msg
         else:
             print "unknown type: ",type
 

@@ -45,18 +45,16 @@ class DistributorHandler(threading.Thread):
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "distributorHandler")
 
-        
     def run(self):
         msg = self.jsock.recvJSON()
+        print "dh: 1: msg =",msg
         msgType = msg["msgtype"]
-        print "dh: msg =",msg
         if msgType == "replicator job" or msgType == "wavefront job":
             handler = ReplicatorRequestHandler(self.jsock, self.dataTable, self.condition)
             handler.serviceRequest(msg)
-            print "dh: serviced msg =",msg
             while True:
                 msg = self.jsock.recvJSON()
-                print "dh: servicing msg =",msg
+                print "dh: 2: msg =",msg
                 handler.serviceRequest(msg)
         elif msgType == "worker job":
             handler = WorkerRequestHandler(self.jsock, self.dataTable,  self.condition)

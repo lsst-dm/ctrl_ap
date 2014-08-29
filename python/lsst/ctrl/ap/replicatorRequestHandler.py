@@ -56,20 +56,15 @@ class ReplicatorRequestHandler(object):
 
     def handleReplicatorJob(self, msg):
         self.logger.log(Log.INFO, "handling request from replicator job")
-        print "hrj: 1: msg = ",msg
         st = Status()
         st.publish(st.distributorNode, st.infoReceived, msg)
-        print "hrj: 2: msg = ",msg
 
         request = msg["request"]
         if request == "info post":
-            print "hrj: 3: msg = ",msg
+
             self.sendToArchiveDMCS(msg) # XXX
-            print "hrj: 3a: msg = ",msg
             self.logger.log(Log.INFO, 'received from replicator %s' % msg)
-            print "hrj: 3b: msg = ",msg
         elif request == "upload":
-            print "hrj: 4: msg = ",msg
             name = msg["filename"]
             self.jsock.recvFile(name)
             visitID = msg["visitID"]
