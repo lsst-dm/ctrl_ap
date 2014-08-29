@@ -122,7 +122,10 @@ class WorkerJob(object):
         newName = os.path.join("/tmp",newName)
         self.safemakedirs(os.path.dirname(newName))
         #st.publish(st.workerJob, st.requestFile, newName)
-        print "trying to receive file ",newName
+        print "trying receive file sequence for ",newName
+        msg = jsock.recvJSON()
+        print "message received was ",msg
+        print "now receiving file ",newName
         name = jsock.recvFile(newName)
         print "file received ",newName
         data["file"] = name;
