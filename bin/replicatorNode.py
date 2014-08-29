@@ -173,7 +173,6 @@ class HeartbeatReceiver(threading.Thread):
             try:
             # TODO: this has to be done via select and a timeout
                 msg = self.sock.recvJSON()
-                print "heartbeat: ",msg
             except:
                 print "heartbeat exception"
                 self.event.set()
