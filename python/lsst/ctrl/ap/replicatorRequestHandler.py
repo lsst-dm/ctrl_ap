@@ -29,6 +29,7 @@ import argparse
 import json
 import socket
 import threading
+import errno
 from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 import lsst.ctrl.events as events
@@ -160,8 +161,14 @@ class ReplicatorRequestHandler(object):
                 raft = sensorInfo.split(" ")[0]
                 sensor = sensorInfo.split(" ")[1]
                 target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
-                if not os.path.exists(os.path.dirname(target)):
-                    os.makedirs(os.path.dirname(target))
+                targetDir = os.path.dirname(target)
+                try:
+                    os.makedirs(targetDir)
+                except OSError as exc:
+                    if exc.errno == errno.EEXIST and os.path.isdir(targetDir):
+                        pass
+                    else:
+                        raise
                 f = open(target,'wb')
                 f.write(src.read(buflen))
                 f.close()

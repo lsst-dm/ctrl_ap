@@ -52,7 +52,6 @@ class OCS(object):
         trans = events.EventTransmitter(self.brokerName, self.eventTopic)
         trans.publishEvent(event)
         ts = time.time()
-        self.logger.log(Log.INFO,  datetime.datetime.fromtimestamp(ts).strftime('startIntegration: %Y-%m-%d %H:%M:%S'))
 
     def sendStartReadout(self, imageID, visitID, exposureSequenceID):
         eventSystem = events.EventSystem().getDefaultEventSystem()

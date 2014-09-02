@@ -33,7 +33,10 @@ from lsst.ctrl.ap.status import Status
 class AutomatedOCS(object):
     def __init__(self):
         self.ocs = ocs.OCS()
-    def sendStartIntegration(self, visitID, exposureSequenceID):
+
+    def sendStartIntegration(self, verbose, visitID, exposureSequenceID):
+        if verbose:
+            print "startIntegration: visitID = ",visitID," exposureSequenceID = ", exposureSequenceID
         st = Status()
         st.publish(st.ocs, st.sendMsg, 
             {"cmd":"startIntegration", 
@@ -41,7 +44,9 @@ class AutomatedOCS(object):
              "visitID":visitID})
         self.ocs.sendStartIntegration(visitID, exposureSequenceID)
 
-    def sendStartReadout(self, imageID, visitID, exposureSequenceID):
+    def sendStartReadout(self, verbose, imageID, visitID, exposureSequenceID):
+        if verbose:
+            print "startReadout: imageID",imageID,"visitID = ",visitID," exposureSequenceID = ", exposureSequenceID
         st = Status()
         st.publish(st.ocs, st.sendMsg, 
             {"cmd":"startReadout", 
@@ -50,7 +55,9 @@ class AutomatedOCS(object):
              "visitID":visitID})
         self.ocs.sendStartReadout(imageID, visitID, exposureSequenceID)
 
-    def sendNextVisit(self, visitID, exposures, boresight, filterID):
+    def sendNextVisit(self, verbose, visitID, exposures, boresight, filterID):
+        if verbose:
+            print "startReadout: visitID = ", visitID, " exposures = ", exposures, "boresight = ", boresight, "filterID = ",filterID
         st = Status()
         st.publish(st.ocs, st.sendMsg, 
                 {"cmd":"nextVisit", 
@@ -60,21 +67,37 @@ class AutomatedOCS(object):
                  "boresight":boresight})
         self.ocs.sendNextVisit(visitID, exposures, boresight, filterID)
 
-    def begin(self, exposures, boresight, filterID, visitID, imageID, sleepInterval, visits):
+    def begin(self, verbose, exposures, boresight, filterID, visitID, imageID, sleepInterval, visits):
+
+        if verbose:
+            print "running with the following parameters:"
+            print "exposures per visit = ", exposures
+            print "boresight = ", boresight
+            print "filterID = ", filterID
+            print "beginning visitID = ", visitID
+            print "beginning imageID = ", imageID
+            print "sleep interval between commands = ", sleepInterval, "seconds"
+            print "number of visits to perform = ",visits
+            print
+
         _visitID = visitID
         _imageID = imageID
         for visit in range(0, visits):
-            self.sendNextVisit(_visitID, exposures, boresight, filterID)
+            print "executing visit:",visit
+            self.sendNextVisit(verbose, _visitID, exposures, boresight, filterID)
             time.sleep(sleepInterval)
             for expo in range(0, exposures):
-                self.sendStartIntegration(_visitID, expo)
+                self.sendStartIntegration(verbose, _visitID, expo)
                 time.sleep(sleepInterval)
-                self.sendStartReadout(_imageID, _visitID, expo)
+                self.sendStartReadout(verbose, _imageID, _visitID, expo)
                 time.sleep(sleepInterval)
                 _imageID = _imageID+1
             _visitID = _visitID+1
 
 if __name__ == "__main__":
+
+    basename = os.path.basename(sys.argv[0])
+
     parser = argparse.ArgumentParser(prog=basename)
 
 
@@ -82,7 +105,7 @@ if __name__ == "__main__":
 
     boresight="18,18"
 
-    parser.add_argument("-F", "--filterID", type=int, action="store", help="image filter id", default="u")
+    parser.add_argument("-F", "--filterID", type=str, action="store", help="image filter id", default="u")
 
     parser.add_argument("-I", "--visitID", type=int, action="store", help="visit id", default=1000)
 
@@ -91,9 +114,10 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--sleepInterval", type=int, action="store", help="interval to sleep between commands (in seconds)", default=60)
 
     parser.add_argument("-v", "--visits", type=int, action="store", help="number of visits to run", default=1)
+    parser.add_argument("-V", "--verbose", action="store_true", help="turn on verbosity to see what's happening")
 
 
     args = parser.parse_args()
 
     auto = AutomatedOCS()
-    auto.begin(args.exposures, boresight, args.filterID, args.visitID, args.imageID, args.sleepInterval, args.visits)
+    auto.begin(args.verbose, args.exposures, boresight, args.filterID, args.visitID, args.imageID, args.sleepInterval, args.visits)
