@@ -22,18 +22,21 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import lsst.pex.config as pexConfig
+import re, os
 
-class DMCSHostConfig(pexConfig.Config):
-    """Information about where the base DMCS and failover base DMCS is located
-    """
-    host = pexConfig.Field(doc="DMCS host name",dtype=str,default=None)
-    port = pexConfig.Field(doc="DMCS port number",dtype=int,default=0)
-
-class BaseConfig(pexConfig.Config):
-    main = pexConfig.ConfigField("primary base DMCS", DMCSHostConfig)
-    failover = pexConfig.ConfigField("failover  base DMCS", DMCSHostConfig)
-
-class ArchiveConfig(pexConfig.Config):
-    main = pexConfig.ConfigField("primary archive DMCS", DMCSHostConfig)
-    failover = pexConfig.ConfigField("failover archive DMCS", DMCSHostConfig)
+# Given a string, look for any $ prefixed word, attempt to substitute
+# an environment variable with that name.  
+# @throw exception if the environment variable doesn't exist
+# @return the resulting string
+def resolve(strVal):
+    p = re.compile('\$[a-zA-Z0-9_]+')
+    retVal = strVal
+    exprs = p.findall(retVal)
+    for i in exprs:
+        var = i[1:]
+        val = os.getenv(var, None)
+        if val == None:
+            raise RuntimeError("couldn't find environment variable "+i)
+            sys.exit(120)
+        retVal = p.sub(val,retVal,1)
+    return retVal

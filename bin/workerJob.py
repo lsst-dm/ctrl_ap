@@ -36,18 +36,21 @@ from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
+from lsst.ctrl.ap.dmcsHostConfig import ArchiveConfig
+from lsst.ctrl.ap import envString
 
 class WorkerJob(object):
 
-    def __init__(self, host, port, visitID, exposures, boresight, filterID, raft, ccd):
-        self.host = host
-        self.port = port
+    def __init__(self, archiveConfig, visitID, exposures, boresight, filterID, raft, ccd):
+        self.host = archiveConfig.main.host
+        self.port = archiveConfig.main.port
         self.visitID = visitID
         self.exposures = exposures
         self.boresight = boresight
         self.filterID = filterID
         self.raft = raft
         self.ccd = ccd
+        self.connectionAttemptInterval = 2 # seconds
 
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "workerJob")
@@ -90,6 +93,18 @@ class WorkerJob(object):
         
         st.publish(st.workerJob, st.infoReceived, data)
         return resp["inetaddr"],resp["port"]
+
+    def makeBaseConnection(self, archiveConfig):
+        while True:
+            sock = self.makeConnection(archiveConfig.main.host, archiveConfig.main.port)
+            if sock is not None:
+                return sock
+            sock = self.makeConnection(archiveConfig.failover.host, archiveConfig.failover.port)
+            if sock is not None:
+                return sock
+            time.sleep(self.connectionAttemptInterval)
+        
+        
         
     def makeConnection(self, host, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -97,12 +112,12 @@ class WorkerJob(object):
             sock.connect((host, port))
         except socket.gaierror, err:
             self.logger.log(Log.INFO, "address problem?")
-            return False
+            sock = None
         except socket.error, err:
             self.logger.log(Log.INFO, "connection problem: host %s" % host)
             self.logger.log(Log.INFO, "connection problem: port %d" % port)
             self.logger.log(Log.INFO, "connection problem: %s" % err)
-            return False
+            sock = None
         return sock
 
     def retrieveDistributorImage(self, host, port, exposure):
@@ -161,6 +176,11 @@ class WorkerJob(object):
         sys.exit(0)
 
 if __name__ == "__main__":
+    apCtrlPath = envString.resolve("$CTRL_AP_DIR")
+    archiveConfig = ArchiveConfig()
+    subDirPath = os.path.join(apCtrlPath,"etc","config", "archive.py")
+    archiveConfig.load(subDirPath)
+
     basename = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=basename)
     parser.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
@@ -169,9 +189,8 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)
     parser.add_argument("-r", "--raft", type=str, action="store", help="raft id", required=True)
     parser.add_argument("-c", "--ccd", type=str, action="store", help="ccd #", required=True)
-    parser.add_argument("-H", "--host", type=str, action="store", help="archive DMCS host", required=True)
-    parser.add_argument("-P", "--port", type=int, action="store", help="archive DMCS port", required=True)
     
     args = parser.parse_args()
-    job = WorkerJob(args.host, args.port, args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
+
+    job = WorkerJob(archiveConfig, args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
     job.execute()

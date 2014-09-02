@@ -8,6 +8,7 @@ source /etc/bashrc
 WORKDIR=/nfs/workflow/srp
 export LSSTSW=$WORKDIR/lsstsw
 . $LSSTSW/loadLSST.sh
+setup pex_config
 setup ctrl_events
 HERE=$PWD
 cd $WORKDIR/ap/ctrl_ap
