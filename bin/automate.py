@@ -60,26 +60,40 @@ class AutomatedOCS(object):
                  "boresight":boresight})
         self.ocs.sendNextVisit(visitID, exposures, boresight, filterID)
 
-    def begin(self):
-        exposures = 2
-        boresight = "18,18"
-        filterID = "u"
-        visitID = 18000
-        imageID = 28000
-        sleepInterval = 60
-        visits = 2
+    def begin(self, exposures, boresight, filterID, visitID, imageID, sleepInterval, visits):
+        _visitID = visitID
+        _imageID = imageID
         for visit in range(0, visits):
-            self.sendNextVisit(visitID, exposures, boresight, filterID)
+            self.sendNextVisit(_visitID, exposures, boresight, filterID)
             time.sleep(sleepInterval)
             for expo in range(0, exposures):
-                self.sendStartIntegration(visitID, expo)
+                self.sendStartIntegration(_visitID, expo)
                 time.sleep(sleepInterval)
-                self.sendStartReadout(imageID, visitID, expo)
+                self.sendStartReadout(_imageID, _visitID, expo)
                 time.sleep(sleepInterval)
-                imageID = imageID+1
-            visitID = visitID+1
+                _imageID = _imageID+1
+            _visitID = _visitID+1
 
 if __name__ == "__main__":
-    auto = AutomatedOCS()
-    auto.begin()
+    parser = argparse.ArgumentParser(prog=basename)
 
+
+    parser.add_argument("-n", "--exposures", type=int, action="store", help="number of exposures", default=2)
+
+    boresight="18,18"
+
+    parser.add_argument("-F", "--filterID", type=int, action="store", help="image filter id", default="u")
+
+    parser.add_argument("-I", "--visitID", type=int, action="store", help="visit id", default=1000)
+
+    parser.add_argument("-i", "--imageID", type=int, action="store", help="image id", default=10000)
+
+    parser.add_argument("-s", "--sleepInterval", type=int, action="store", help="interval to sleep between commands (in seconds)", default=60)
+
+    parser.add_argument("-v", "--visits", type=int, action="store", help="number of visits to run", default=1)
+
+
+    args = parser.parse_args()
+
+    auto = AutomatedOCS()
+    auto.begin(args.exposures, boresight, args.filterID, args.visitID, args.imageID, args.sleepInterval, args.visits)

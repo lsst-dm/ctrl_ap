@@ -58,10 +58,10 @@ class OCSTransmitter(object):
         parser_b.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
         parser_c = subparsers.add_parser("nextVisit")
-	parser_c.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
-	parser_c.add_argument("-n", "--exposures", type=int, action="store", help="number of exposures", required=True)
-	parser_c.add_argument("-b", "--boresight", type=str, action="store", help="boresight pointing", required=True)
-	parser_c.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)
+        parser_c.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
+        parser_c.add_argument("-n", "--exposures", type=int, action="store", help="number of exposures", required=True)
+        parser_c.add_argument("-b", "--boresight", type=str, action="store", help="boresight pointing", required=True)
+        parser_c.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)
 
         return  parser.parse_args()
 
