@@ -178,7 +178,7 @@ class WorkerJob(object):
 if __name__ == "__main__":
     apCtrlPath = envString.resolve("$CTRL_AP_DIR")
     archiveConfig = ArchiveConfig()
-    subDirPath = os.path.join(apCtrlPath,"etc","config", "archive.py")
+    subDirPath = os.path.join(apCtrlPath, "etc", "config", "archive.py")
     archiveConfig.load(subDirPath)
 
     basename = os.path.basename(sys.argv[0])

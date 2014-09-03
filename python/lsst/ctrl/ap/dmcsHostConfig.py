@@ -29,6 +29,7 @@ class DMCSHostConfig(pexConfig.Config):
     """
     host = pexConfig.Field(doc="DMCS host name",dtype=str,default=None)
     port = pexConfig.Field(doc="DMCS port number",dtype=int,default=0)
+    heartbeatPort = pexConfig.Field(doc="DMCS heartbeat port number",dtype=int,default=0)
 
 class BaseConfig(pexConfig.Config):
     main = pexConfig.ConfigField("primary base DMCS", DMCSHostConfig)

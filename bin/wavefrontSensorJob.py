@@ -60,7 +60,7 @@ class WavefrontSensorJob(object):
         # the host number to get that info.
         slotsPerHost = 13
         jobnum = os.getenv("_CONDOR_SLOT","slot0");
-        thishost = socket.gethostname();
+        thishost = socket.gethostname()
         hostnum = int(thishost[len("lsst-run"):][:-len(".ncsa.illinois.edu")])
         self.workerID = (hostnum-1)*slotsPerHost+int(jobnum[4:])+1
 

@@ -34,17 +34,7 @@ from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.replicatorRequestHandler import ReplicatorRequestHandler
 from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
-
-class Heartbeat(threading.Thread):
-    def __init__(self, jsock):
-        threading.Thread.__init__(self)
-        self.jsock = jsock
-
-    def run(self):
-        while True:
-            msg = {"msgtype":"heartbeat"}
-            self.jsock.sendJSON(msg)
-            time.sleep(1)
+from lsst.ctrl.ap.heartbeat import Heartbeat
 
 class DistributorHandler(threading.Thread):
     def __init__(self, jsock, dataTable, condition):
