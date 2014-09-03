@@ -73,17 +73,6 @@ class BaseDMCS(object):
             return True
         return False
 
-    def connectToFailover(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.connect((self.baseConfig.failover.host, self.baseConfig.failover.heartbeatPort))
-        except socket.gaierror, err:
-            print err
-            s = None
-        except socket.error, err:
-            print err
-            s = None
-        return s
 
 
     def handleEvents(self):
@@ -93,13 +82,7 @@ class BaseDMCS(object):
         st.publish(st.baseDMCS, st.start)
 
         if self.isMain():
-            s = None
-            while s is None:
-                s = self.connectToFailover()
-                time.sleep(1)
-            self.isConnected = True
-            jsock = JSONSocket(s)
-            hb = Heartbeat(jsock)
+            hb = BaseHeartbeat(self.baseConfig)
             hb.start()
         elif self.isFailover():
             serverSock = socket.socket()
@@ -144,6 +127,36 @@ class BaseDMCS(object):
                 st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
                 jm = jobManager.JobManager()
                 jm.submitWorkerJobs(visitID, exposures, boresight, filterID)
+
+class BaseHeartbeat(threading.Thread):
+    def __init__(self, baseConfig):
+        threading.Thread.__init__(self)
+        self.baseConfig = baseConfig
+        
+    
+    def connectToFailover(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect((self.baseConfig.failover.host, self.baseConfig.failover.heartbeatPort))
+        except socket.gaierror, err:
+            print err
+            s = None
+        except socket.error, err:
+            print err
+            s = None
+        return s
+
+    def run(self):
+        s = None
+        while s is None:
+            s = self.connectToFailover()
+            time.sleep(1)
+        self.isConnected = True
+        jsock = JSONSocket(s)
+        while True:
+            msg = {"msgtype":"heartbeat"}
+            jsock.sendJSON(msg)
+            time.sleep(1)
 
 class HeartbeatHandler(threading.Thread):
     def __init__(self, jsock, event):
