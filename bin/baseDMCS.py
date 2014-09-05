@@ -24,6 +24,7 @@
 
 
 import os
+import select
 import socket
 import sys
 import threading
@@ -52,6 +53,12 @@ class BaseDMCS(object):
         self.isConnected = False
         self.event = None
 
+        self.MAIN = "main"
+        self.FAILOVER = "failover"
+        self.UNKNOWN = "unknown"
+        self.identity = self.UNKNOWN
+        self.establishInitialIdentity()
+
     def loadConfig(self):
         apCtrlPath = envString.resolve("$CTRL_AP_DIR")
         baseConfig = BaseConfig()
@@ -59,44 +66,12 @@ class BaseDMCS(object):
         baseConfig.load(subDirPath)
         return baseConfig
 
-    def isMain(self):
+    def establishInitialIdentity(self):
         thisHost = socket.gethostname()
         if thisHost == self.baseConfig.main.host:
-            print "Configured as the main base DMCS"
-            return True
-        return False
-
-    def isFailover(self):
-        thisHost = socket.gethostname()
-        if thisHost == self.baseConfig.failover.host:
-            print "Configured as the failover base DMCS"
-            return True
-        return False
-
-
-
-    def handleEvents(self):
-        eventSystem = events.EventSystem().getDefaultEventSystem()
-        eventSystem.createReceiver(self.brokerName, self.eventTopic)
-        st = Status()
-        st.publish(st.baseDMCS, st.start)
-
-        if self.isMain():
-            hb = BaseHeartbeat(self.baseConfig)
-            hb.start()
-        elif self.isFailover():
-            serverSock = socket.socket()
-            serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            serverSock.bind((self.baseConfig.failover.host, self.baseConfig.failover.heartbeatPort))
-            serverSock.listen(5)
-            while True:
-                (clientSock, (ipAddr, clientPort)) = serverSock.accept()
-                self.isConnected = True
-                jsock = JSONSocket(clientSock)
-
-                self.event = threading.Event()
-                hbr = HeartbeatHandler(jsock, self.event)
-                hbr.start()
+            self.identity = self.MAIN
+        elif thisHost == self.baseConfig.failover.host:
+            self.identity = self.FAILOVER
         else:
             print "couldn't determine host type from config"
             print "I think I'm: ",socket.gethostname()
@@ -104,10 +79,95 @@ class BaseDMCS(object):
             print "failover host is configured as: ",self.baseConfig.failover.host
             sys.exit(1)
 
+    def connectToFailover(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect((self.baseConfig.failover.host, self.baseConfig.failover.heartbeatPort))
+        except socket.gaierror, err:
+            print "gaierror ", err
+            s = None
+        except socket.error, err:
+            print "socket.error ", err
+            s = None
+        return s
+
+    def establishConnection(self):
+        if self.identity == self.MAIN:
+            s = None
+            while s is None:
+                s = self.connectToFailover()
+                time.sleep(1)
+            self.isConnected = True
+            self.jsock = JSONSocket(s)
+
+            msg = {"msgtype":"inquire", "question":"whoareyou"}
+            self.jsock.sendJSON(msg)
+
+            # response is {"msgtype":"response", "answer":"failover|main"}
+            # where "answer" is either "failover" or "main"
+            msg = self.jsock.recvJSON()
+
+            print "other side is",msg["answer"]
+
+            if msg["answer"] == self.MAIN:
+                self.identity = self.FAILOVER
+
+        elif self.identity == self.FAILOVER:
+            serverSock = socket.socket()
+            serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            serverSock.bind((self.baseConfig.failover.host, self.baseConfig.failover.heartbeatPort))
+            serverSock.listen(5)
+            readable = False
+            while not readable:
+                readList = [ serverSock ]
+                timeout = 5
+                readable, writeable, errored = select.select(readList, [], [], 5)
+                if not readable:
+                    self.identity = self.MAIN
+                    print "main didn't contact; switching to MAIN"
+                    continue
+            (clientSock, (ipAddr, clientPort)) = serverSock.accept()
+            print "connection accepted!"
+            self.isConnected = True
+            self.jsock = JSONSocket(clientSock)
+
+            msg = self.jsock.recvJSON()
+            # TODO: check message
+            if msg["msgtype"] != "inquire":
+                print "unknown message = ",msg
+                return
+            if msg["question"] != "whoareyou":
+                print "unknown message = ",msg
+                return
+            resp = {"msgtype":"response", "answer":self.identity}
+            msg = self.jsock.sendJSON(resp)
+
+    def handleEvents(self):
+        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem.createReceiver(self.brokerName, self.eventTopic)
+        st = Status()
+        st.publish(st.baseDMCS, st.start)
+
+        self.establishConnection()
+
+        if self.identity == self.MAIN:
+            baseHeartEvent = threading.Event()
+            hb = BaseHeartbeat(self.jsock, baseHeartEvent)
+            hb.start()
+        elif self.identity == self.FAILOVER:
+            self.event = threading.Event()
+            hbr = BaseHeartbeatHandler(self.jsock, self.event)
+            hbr.start()
+
+
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             st.publish(st.baseDMCS, st.listen, {"topic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
+
+            # if the current identity is FAILOVER, don't do anything.
+            if self.identify == self.FAILOVER:
+                continue
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
             self.logger.log(Log.INFO, ocsEventType)
@@ -129,40 +189,29 @@ class BaseDMCS(object):
                 jm.submitWorkerJobs(visitID, exposures, boresight, filterID)
 
 class BaseHeartbeat(threading.Thread):
-    def __init__(self, baseConfig):
-        threading.Thread.__init__(self)
-        self.baseConfig = baseConfig
-        
-    
-    def connectToFailover(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.connect((self.baseConfig.failover.host, self.baseConfig.failover.heartbeatPort))
-        except socket.gaierror, err:
-            print err
-            s = None
-        except socket.error, err:
-            print err
-            s = None
-        return s
-
-    def run(self):
-        s = None
-        while s is None:
-            s = self.connectToFailover()
-            time.sleep(1)
-        self.isConnected = True
-        jsock = JSONSocket(s)
-        while True:
-            msg = {"msgtype":"heartbeat"}
-            jsock.sendJSON(msg)
-            time.sleep(1)
-
-class HeartbeatHandler(threading.Thread):
     def __init__(self, jsock, event):
-        super(HeartbeatHandler, self).__init__()
+        super(BaseHeartbeat, self).__init__()
         self.jsock = jsock
         self.event = event
+        print "start BaseHeartbeat"
+    
+    def run(self):
+
+        while not self.event.is_set():
+            msg = {"msgtype":"heartbeat"}
+            try :
+                self.jsock.sendJSON(msg)
+                time.sleep(1)
+            except:
+                print "BaseHeartbeat exception"
+                self.event.set()
+
+class BaseHeartbeatHandler(threading.Thread):
+    def __init__(self, jsock, event):
+        super(BaseHeartbeatHandler, self).__init__()
+        self.jsock = jsock
+        self.event = event
+        print "start BaseHeartbeatHandler"
 
     def run(self):
         while not self.event.is_set():
@@ -171,7 +220,7 @@ class HeartbeatHandler(threading.Thread):
                 msg = self.jsock.recvJSON()
                 print msg
             except:
-                print "heartbeat exception"
+                print "BaseBeartbeatHandler exception"
                 self.event.set()
 
 if __name__ == "__main__":
