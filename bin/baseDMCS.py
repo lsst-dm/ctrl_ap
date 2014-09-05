@@ -56,7 +56,8 @@ class BaseDMCS(object):
         self.MAIN = "main"
         self.FAILOVER = "failover"
         self.UNKNOWN = "unknown"
-        self.identity = [self.UNKNOWN]
+        self.identity = self.UNKNOWN
+        self.isActive = [ False ]
 
     def loadConfig(self):
         apCtrlPath = envString.resolve("$CTRL_AP_DIR")
@@ -68,9 +69,9 @@ class BaseDMCS(object):
     def establishInitialIdentity(self):
         thisHost = socket.gethostname()
         if thisHost == self.baseConfig.main.host:
-            self.identity[0] = self.MAIN
+            self.identity = self.MAIN
         elif thisHost == self.baseConfig.failover.host:
-            self.identity[0] = self.FAILOVER
+            self.identity = self.FAILOVER
         else:
             print "couldn't determine host type from config"
             print "I think I'm: ",socket.gethostname()
@@ -86,7 +87,12 @@ class BaseDMCS(object):
         st = Status()
         st.publish(st.baseDMCS, st.start)
 
-        hm = HeartbeatMonitor(self.baseConfig, self.identity)
+        if self.identity == self.MAIN:
+            self.isActive[0] = True
+        elif self.identity == self.FAILOVER:
+            self.isActive[0] = False
+
+        hm = HeartbeatMonitor(self.baseConfig, self.identity, self.isActive)
         hm.start()
 
         while True:
@@ -95,7 +101,7 @@ class BaseDMCS(object):
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
 
             # if the current identity is FAILOVER, don't do anything.
-            if self.identify == self.FAILOVER:
+            if self.isActive[0] == False:
                 continue
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
@@ -118,13 +124,15 @@ class BaseDMCS(object):
                 jm.submitWorkerJobs(visitID, exposures, boresight, filterID)
 
 class HeartbeatMonitor(threading.Thread):
-    def __init__(self, baseConfig, identity):
+    def __init__(self, baseConfig, identity, isActive):
         super(HeartbeatMonitor, self).__init__()
         self.baseConfig = baseConfig
         self.identity = identity
+        self.isActive = isActive
         self.MAIN = "main"
         self.FAILOVER = "failover"
         self.UNKNOWN = "unknown"
+        self.timeout = 1
 
     def run(self):
         while True:
@@ -133,12 +141,12 @@ class HeartbeatMonitor(threading.Thread):
             thr.join()
 
     def startHeartbeat(self):
-        if self.identity[0] == self.MAIN:
+        if self.isActive[0] == True:
             baseHeartEvent = threading.Event()
             hb = BaseHeartbeat(self.jsock, baseHeartEvent)
             hb.start()
             return hb
-        elif self.identity[0] == self.FAILOVER:
+        else:
             self.event = threading.Event()
             hbr = BaseHeartbeatHandler(self.jsock, self.event)
             hbr.start()
@@ -159,7 +167,7 @@ class HeartbeatMonitor(threading.Thread):
 
 
     def establishConnection(self):
-        if self.identity[0] == self.MAIN:
+        if self.identity == self.MAIN:
             s = None
             while s is None:
                 s = self.connectToFailover()
@@ -167,7 +175,7 @@ class HeartbeatMonitor(threading.Thread):
             self.isConnected = True
             self.jsock = JSONSocket(s)
 
-            msg = {"msgtype":"inquire", "question":"whoareyou"}
+            msg = {"msgtype":"inquire", "question":"areyouactive"}
             self.jsock.sendJSON(msg)
 
             # response is {"msgtype":"response", "answer":"failover|main"}
@@ -176,10 +184,12 @@ class HeartbeatMonitor(threading.Thread):
 
             print "other side is",msg["answer"]
 
-            if msg["answer"] == self.MAIN:
-                self.identity[0] = self.FAILOVER
+            if msg["answer"] == True:
+                self.isActive[0] = False
+            else:
+                self.isActive[0] = True
 
-        elif self.identity[0] == self.FAILOVER:
+        elif self.identity == self.FAILOVER:
             serverSock = socket.socket()
             serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             serverSock.bind((self.baseConfig.failover.host, self.baseConfig.failover.heartbeatPort))
@@ -187,11 +197,10 @@ class HeartbeatMonitor(threading.Thread):
             readable = False
             while not readable:
                 readList = [ serverSock ]
-                timeout = 5
-                readable, writeable, errored = select.select(readList, [], [], 5)
+                readable, writeable, errored = select.select(readList, [], [], self.timeout)
                 if not readable:
-                    self.identity[0] = self.MAIN
-                    print "main didn't contact; switching to MAIN"
+                    self.isActive[0] = True
+                    print "main didn't contact; switching to isActive True"
                     continue
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
             print "connection accepted!"
@@ -203,10 +212,11 @@ class HeartbeatMonitor(threading.Thread):
             if msg["msgtype"] != "inquire":
                 print "unknown message = ",msg
                 return
-            if msg["question"] != "whoareyou":
+            if msg["question"] != "areyouactive":
                 print "unknown message = ",msg
                 return
-            resp = {"msgtype":"response", "answer":self.identity[0]}
+            resp = {"msgtype":"response", "answer":self.isActive[0]}
+            print "sending:",resp
             msg = self.jsock.sendJSON(resp)
 
 
@@ -242,7 +252,7 @@ class BaseHeartbeatHandler(threading.Thread):
                 msg = self.jsock.recvJSON()
                 print msg
             except:
-                print "BaseBeartbeatHandler exception"
+                print "BaseHeartbeatHandler exception"
                 self.event.set()
 
 if __name__ == "__main__":
