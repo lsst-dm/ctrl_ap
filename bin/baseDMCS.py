@@ -36,6 +36,7 @@ from lsst.ctrl.ap import jobManager
 from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from lsst.ctrl.ap.heartbeat import Heartbeat
+from lsst.ctrl.ap.heartbeat import HeartbeatHandler
 from lsst.ctrl.ap.dmcsHostConfig import BaseConfig
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 
@@ -142,13 +143,11 @@ class HeartbeatMonitor(threading.Thread):
 
     def startHeartbeat(self):
         if self.isActive[0] == True:
-            baseHeartEvent = threading.Event()
-            hb = BaseHeartbeat(self.jsock, baseHeartEvent)
+            hb = Heartbeat(self.jsock, 1)
             hb.start()
             return hb
         else:
-            self.event = threading.Event()
-            hbr = BaseHeartbeatHandler(self.jsock, self.event)
+            hbr = HeartbeatHandler(self.jsock)
             hbr.start()
             return hbr
 
@@ -198,7 +197,7 @@ class HeartbeatMonitor(threading.Thread):
             while not readable:
                 readList = [ serverSock ]
                 readable, writeable, errored = select.select(readList, [], [], self.timeout)
-                if not readable:
+                if not readable and (self.isActive[0] == False):
                     self.isActive[0] = True
                     print "main didn't contact; switching to isActive True"
                     continue
@@ -219,41 +218,6 @@ class HeartbeatMonitor(threading.Thread):
             print "sending:",resp
             msg = self.jsock.sendJSON(resp)
 
-
-class BaseHeartbeat(threading.Thread):
-    def __init__(self, jsock, event):
-        super(BaseHeartbeat, self).__init__()
-        self.jsock = jsock
-        self.event = event
-        print "start BaseHeartbeat"
-    
-    def run(self):
-
-        while not self.event.is_set():
-            msg = {"msgtype":"heartbeat"}
-            try :
-                self.jsock.sendJSON(msg)
-                time.sleep(1)
-            except:
-                print "BaseHeartbeat exception"
-                self.event.set()
-
-class BaseHeartbeatHandler(threading.Thread):
-    def __init__(self, jsock, event):
-        super(BaseHeartbeatHandler, self).__init__()
-        self.jsock = jsock
-        self.event = event
-        print "start BaseHeartbeatHandler"
-
-    def run(self):
-        while not self.event.is_set():
-            try:
-            # TODO: this has to be done via select and a timeout
-                msg = self.jsock.recvJSON()
-                print msg
-            except:
-                print "BaseHeartbeatHandler exception"
-                self.event.set()
 
 if __name__ == "__main__":
     rHostList = []

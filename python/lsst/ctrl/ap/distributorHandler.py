@@ -54,7 +54,7 @@ class DistributorHandler(threading.Thread):
         if msgType == "replicator job" or msgType == "wavefront job":
             handler = ReplicatorRequestHandler(self.jsock, self.dataTable, self.condition)
             handler.serviceRequest(msg)
-            heartbeat = Heartbeat(self.jsock)
+            heartbeat = Heartbeat(self.jsock, 1)
             heartbeat.start()
             while True:
                 msg = self.jsock.recvJSON()

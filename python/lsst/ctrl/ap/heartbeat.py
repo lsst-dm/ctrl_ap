@@ -21,17 +21,42 @@
 # the GNU General Public License along with this program.  If not, 
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
 import threading
 import time
-
 class Heartbeat(threading.Thread):
-    def __init__(self, jsock):
-        threading.Thread.__init__(self)
+    def __init__(self, jsock, delay):
+        super(Heartbeat, self).__init__()
         self.jsock = jsock
+        self.delay = delay
+        print "start Heartbeat"
 
     def run(self):
-        while True:
+
+        excepted = False
+
+        while not excepted:
             msg = {"msgtype":"heartbeat"}
-            self.jsock.sendJSON(msg)
-            time.sleep(1)
+            try :
+                self.jsock.sendJSON(msg)
+                time.sleep(self.delay)
+            except Exception as exp:
+                print "Heartbeat exception"
+                print exp
+                excepted = True
+
+class HeartbeatHandler(threading.Thread):
+    def __init__(self, jsock):
+        super(HeartbeatHandler, self).__init__()
+        self.jsock = jsock
+        print "start HeartbeatHandler"
+
+    def run(self):
+        excepted = False
+        while not excepted:
+            try:
+            # TODO: this has to be done via select and a timeout
+                msg = self.jsock.recvJSON()
+                print msg
+            except:
+                print "HeartbeatHandler exception"
+                excepted = True
