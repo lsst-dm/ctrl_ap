@@ -98,6 +98,7 @@ class Status(object):
     infoReceived ="information received"
     retrieved = "retrieved"
     issue = "issue"
+    failover = "failover"
 
     success = "success"
 

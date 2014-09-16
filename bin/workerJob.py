@@ -42,6 +42,7 @@ from lsst.ctrl.ap import envString
 class WorkerJob(object):
 
     def __init__(self, archiveConfig, visitID, exposures, boresight, filterID, raft, ccd):
+        self.archiveConfig = archiveConfig
         self.host = archiveConfig.main.host
         self.port = archiveConfig.main.port
         self.visitID = visitID
@@ -71,30 +72,34 @@ class WorkerJob(object):
         st.publish(st.workerJob, st.start, data)
 
     def requestDistributor(self, exposureSequenceID):
-        st = Status()
-        server = {st.server:{st.host:self.host,st.port:self.port}}
-        st.publish(st.workerJob, st.connect, server)
-        sock = self.makeConnection(self.host, self.port)
+        try:
+            st = Status()
+            server = {st.server:{st.host:self.host,st.port:self.port}, st.failover:{st.host:self.archiveConfig.failover.host, st.port:self.archiveConfig.failover.port}}
+            st.publish(st.workerJob, st.connect, server)
+            sock = self.makeArchiveConnection(self.archiveConfig)
+    
+            jsock = JSONSocket(sock)
+    
+            self.logger.log(Log.INFO, "worker sending request to Archive for distributor info")
+            # send a message to the Archive DMCS, requesting the host and port
+            # of the correct distributor
+            vals = {"msgtype":"worker job", "request":"distributor", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
+    
+            jsock.sendJSON(vals)
+    
+            data = {st.data:{"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}}
+            st.publish(st.workerJob, st.pub, data)
+            # wait for a response from the Archive DMCS, which is the host and port
+            resp = jsock.recvJSON()
+            self.logger.log(Log.INFO, "worker from response received")
+            
+            st.publish(st.workerJob, st.infoReceived, data)
+            return resp["inetaddr"],resp["port"]
+        except Exception as exp:
+            print exp
+            return None,None
 
-        jsock = JSONSocket(sock)
-
-        self.logger.log(Log.INFO, "worker sending request to Archive for distributor info")
-        # send a message to the Archive DMCS, requesting the host and port
-        # of the correct distributor
-        vals = {"msgtype":"worker job", "request":"distributor", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
-
-        jsock.sendJSON(vals)
-
-        data = {st.data:{"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}}
-        st.publish(st.workerJob, st.pub, data)
-        # wait for a response from the Archive DMCS, which is the host and port
-        resp = jsock.recvJSON()
-        self.logger.log(Log.INFO, "worker from response received")
-        
-        st.publish(st.workerJob, st.infoReceived, data)
-        return resp["inetaddr"],resp["port"]
-
-    def makeBaseConnection(self, archiveConfig):
+    def makeArchiveConnection(self, archiveConfig):
         while True:
             sock = self.makeConnection(archiveConfig.main.host, archiveConfig.main.port)
             if sock is not None:
@@ -161,7 +166,10 @@ class WorkerJob(object):
     def execute(self):
         st = Status()
         for exposure in range (0, self.exposures):
-            distHost, distPort = self.requestDistributor(exposure)
+            distHost = None
+            distPort = None
+            while distHost is None:
+                distHost, distPort = self.requestDistributor(exposure)
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
             data = {"workerID":self.workerID, "data":{"exposureSequenceID":exposure, "visitID":self.visitID,"raft":self.raft,"sensor":self.ccd}}
             time.sleep(1);
