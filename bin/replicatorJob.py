@@ -89,7 +89,7 @@ class ReplicatorJob(object):
         self.rSock.sendJSON(vals)
         st = Status()
         data = {st.data:{"visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}}
-        st.publish(st.replicatorJob, st.pub, data)
+        st.publish(st.replicatorJob, st.inform, data)
 
     def execute(self, imageID, visitID, exposureSequenceID):
         imageSize = 3200000000
@@ -114,13 +114,13 @@ class ReplicatorJob(object):
         # send the replicator node the name of the file
         vals = {"msgtype":"replicator job", "request":"upload", "filename" : f.name, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}
         self.rSock.sendJSON(vals)
-        st.publish(st.replicatorJob, st.pub, f.name)
+        st.publish(st.replicatorJob, st.upload, f.name)
 
     def start(self):
         self.sendInfoToReplicator()
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
-        #st = Status()
+        st = Status()
         # loop until you get the right thing, process and then die.
         while True:
             ts = time.time()
@@ -134,8 +134,8 @@ class ReplicatorJob(object):
             self.logger.log(Log.INFO, "image id = %s" % imageID)
             self.logger.log(Log.INFO, "sequence tag = %s" % visitID)
             self.logger.log(Log.INFO, "exposure sequence id = %s" % exposureSequenceID)
-            #data = {"visitID":visitID, "exposureSequenceID":exposureSequenceID, "imageID":imageID}
-            #st.publish(st.replicatorJob, st.receivedMsg, {st.startReadout:data})
+            data = {"visitID":visitID, "exposureSequenceID":exposureSequenceID, "imageID":imageID}
+            st.publish(st.replicatorJob, st.receivedMsg, {st.startReadout:data})
             # NOTE:  While should be done through a selector on the broker
             # so we only get the visitID and exp seq ID we are looking
             # for, DM Messages are not the ultimate way we'll be receiving

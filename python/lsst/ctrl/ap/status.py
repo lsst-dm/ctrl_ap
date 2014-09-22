@@ -86,6 +86,7 @@ class Status(object):
     generate = "generate"
     update = "update"
     pub = "publish"
+    upload = "upload"
     read = "read"
     finish = "finish"
     create = "create"
@@ -95,10 +96,12 @@ class Status(object):
     connectionWait = "waiting on connection"
     idle = "idle"
     listen = "listen"
+    inform = "inform"
     infoReceived ="information received"
     retrieved = "retrieved"
     issue = "issue"
     failover = "failover"
+    startReadout = "startReadout"
 
     success = "success"
 
