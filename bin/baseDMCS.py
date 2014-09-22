@@ -102,17 +102,17 @@ class BaseDMCS(object):
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
 
             # if the current identity is FAILOVER, don't do anything.
-            if self.isActive[0] == False:
-                continue
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
             self.logger.log(Log.INFO, ocsEventType)
             if ocsEventType == "startIntegration":
-                jm = jobManager.JobManager()
                 visitID = ps.get("visitID")
                 exposureSequenceID = ps.get("exposureSequenceID")
                 data = {"visitID":visitID, "exposureSequenceID":exposureSequenceID}
                 st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
+                if self.isActive[0] == False:
+                    continue
+                jm = jobManager.JobManager()
                 jm.submitAllReplicatorJobs(rHostList, visitID, exposureSequenceID)
             elif ocsEventType == "nextVisit":
                 visitID = ps.get("visitID")
@@ -121,6 +121,8 @@ class BaseDMCS(object):
                 filterID = ps.get("filterID")
                 data = {"visitID":visitID, "exposures":exposures, "boresight":boresight, "filterID":filterID}
                 st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
+                if self.isActive[0] == False:
+                    continue
                 jm = jobManager.JobManager()
                 jm.submitWorkerJobs(visitID, exposures, boresight, filterID)
 

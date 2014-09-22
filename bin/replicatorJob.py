@@ -92,6 +92,9 @@ class ReplicatorJob(object):
         st.publish(st.replicatorJob, st.pub, data)
 
     def execute(self, imageID, visitID, exposureSequenceID):
+        imageSize = 3200000000
+        raftSize = imageSize/21
+        ccdSize = raftSize/9
         self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
@@ -117,6 +120,7 @@ class ReplicatorJob(object):
         self.sendInfoToReplicator()
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
+        #st = Status()
         # loop until you get the right thing, process and then die.
         while True:
             ts = time.time()
@@ -130,6 +134,8 @@ class ReplicatorJob(object):
             self.logger.log(Log.INFO, "image id = %s" % imageID)
             self.logger.log(Log.INFO, "sequence tag = %s" % visitID)
             self.logger.log(Log.INFO, "exposure sequence id = %s" % exposureSequenceID)
+            #data = {"visitID":visitID, "exposureSequenceID":exposureSequenceID, "imageID":imageID}
+            #st.publish(st.replicatorJob, st.receivedMsg, {st.startReadout:data})
             # NOTE:  While should be done through a selector on the broker
             # so we only get the visitID and exp seq ID we are looking
             # for, DM Messages are not the ultimate way we'll be receiving
