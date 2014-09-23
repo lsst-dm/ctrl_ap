@@ -93,7 +93,7 @@ class WavefrontJob(object):
             pass
 
         self.logger.log(Log.INFO, "sending info to replicator node")
-        vals = {"msgtype":"wavefront job", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : raft}
+        vals = {"msgtype":"wavefront job", "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
         st = Status()
@@ -118,9 +118,9 @@ class WavefrontJob(object):
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
 
         # send the replicator node the name of the file
-        vals = {"msgtype":"file", "filename" : f.name}
+        vals = {"msgtype":"wavefront job", "request":"upload", "filename" : f.name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft}
         self.rSock.sendJSON(vals)
-        st.publish(st.wavefrontJob, st.pub, f.name)
+        st.publish(st.wavefrontJob, st.upload, f.name)
 
 
 

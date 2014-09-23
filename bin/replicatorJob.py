@@ -107,9 +107,12 @@ class ReplicatorJob(object):
         tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
         tmp = os.path.join("/tmp",tmp)
         f = open(tmp, "wb")
-        f.write(os.urandom(1024*200*9)) # nine 200k images into one file
+        size = 1024*200*9 # nine 200k images into one file
+        f.write(os.urandom(size))
         f.close()
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
+
+        st.publish(st.replicatorJob, st.fileReceived, {"fileinfo":{"filename":f.name, "size":size}})
 
         # send the replicator node the name of the file
         vals = {"msgtype":"replicator job", "request":"upload", "filename" : f.name, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}

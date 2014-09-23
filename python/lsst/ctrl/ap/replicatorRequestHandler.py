@@ -52,6 +52,7 @@ class ReplicatorRequestHandler(object):
             self.handleReplicatorJob(msg)
         elif msgType == "wavefront job":
             self.handleWavefrontJob(msg)
+            return
         else:
             print "rrh: unknown msg: ",msg
 
@@ -81,15 +82,19 @@ class ReplicatorRequestHandler(object):
         synRaft = msg["raft"]
         st = Status()
         st.publish(st.distributorNode,st.infoReceived, d)
-        for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
-            d["raft"] = raft
-            self.sendToArchiveDMCS(d)
+        # this used to send info to the archive DMCS.  Keeping this
+        # in place (but commented out) to handle additional work
+        # that will be done by the distributor for this type of file. That
+        # work hasn't been implemented yet, so this is a placeholder.
+        #for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
+        #    d["raft"] = raft
+        #    self.sendToArchiveDMCS(d)
         name = self.jsock.recvFile2()
         visitID = msg["visitID"]
         exposureSequenceID = msg["exposureSequenceID"]
         st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
         #self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
-        self.splitWavefrontFile(visitID, exposureSequenceID, name)
+        #self.splitWavefrontFile(visitID, exposureSequenceID, name)
 
     def sendToArchiveDMCS(self, msg):
         props = PropertySet()
@@ -116,10 +121,17 @@ class ReplicatorRequestHandler(object):
         exposureSequenceID = props.get("exposureSequenceID")
         raft = props.get("raft")
         sensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
+        st = Status()
         for sensor in sensors:
             props.set("sensor", sensor)
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
             self.storeDistributorInfo(key, hostinfo[0], hostinfo[1])
+
+            
+            data = {}
+            for x in props.paramNames():
+                data[x] = props.get(x)
+            st.publish(st.distributorNode, st.sendMsg, data)
 
             event = events.Event("distributor", props)
             self.archiveTransmitter.publishEvent(event)
