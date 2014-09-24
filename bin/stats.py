@@ -92,57 +92,89 @@ if __name__ == "__main__":
     ccdSize = 17830000 # ((3.56600 gigagbytes)*18bits *.42)/189
     raftSize = ccdSize*9
     imageSize = raftSize*21
+    mega = 1000000.0
 
     if args.verbose:
         print "calculations based on:"
-        print "ccdSize %d bytes " % ccdSize
-        print "raftSize %d bytes" % raftSize
-        print "imageSize %d bytes" % imageSize
+        print "ccdSize %.2f megabytes " % (ccdSize/mega)
+        print "raftSize %.2f megabytes" % (raftSize/mega)
+        print "imageSize %.2f megabytes" % (imageSize/mega)
         print
 
 
     f = open(args.file)
     content = f.readlines()
 
+    cnt = ocsMessagesSent(content)
     if args.verbose:
-        cnt = ocsMessagesSent(content)
         print "Messages sent by OCS broker  =",cnt
-        totalSentByOCS = cnt
-        print
-        cnt = distributorMessagesToBroker(content)
-        print "archive DMCS DM messages sent to DM broker =",cnt
-        totalToDMBroker = cnt
+    totalSentByOCS = cnt
+    print "Total messages sent by OCS =", totalSentByOCS
+    print "Total OCS messages received by components =", totalSentByOCS
+    if args.verbose:
+        print "(OCS messages are multicast)"
+    print
 
-        cnt = mainArchiveMessagesReceived(content)
-        print "main archive DMCS DM messages received from DM broker =",cnt
-        totalFromDMBroker = cnt
-        cnt = failoverArchiveMessagesReceived(content)
-        print "failover archive DMCS DM messages received from DM broker =",cnt
-        totalFromDMBroker += cnt
-        print
-        cnt = replicatorJobFileReceived(content)
-        print "replicator job files read from OCS =",cnt
-        filesFromOCS = cnt
 
-        cnt = wavefrontJobFileReceived(content)
-        print "wavefront job files read from OCS =",cnt
-        filesFromOCS += cnt
+    cnt = distributorMessagesToBroker(content)
+    if args.verbose:
+        print "distributor messages sent to DM broker =",cnt
+    totalToDMBroker = cnt
 
-        cnt = replicatorJobUpload(content)
-        print "replicator node files sent to distributor nodes =",cnt
-        filesSentToDistributors = cnt
+    cnt = mainArchiveMessagesReceived(content)
+    if args.verbose:
+        print "main archive DMCS messages received from DM broker =",cnt
+    totalFromDMBroker = cnt
+    cnt = failoverArchiveMessagesReceived(content)
+    if args.verbose:
+        print "failover archive DMCS messages received from DM broker =",cnt
+    totalFromDMBroker += cnt
+    print "total DM messages sent to broker =", totalToDMBroker
+    print "total DM messages transmitted by broker = ",totalFromDMBroker
+    print
 
-        cnt = wavefrontJobUpload(content)
-        print "wavefront node files sent to distributor nodes =",cnt
-        filesSentToDistributors += cnt
+    cnt = replicatorJobFileReceived(content)
+    filesFromOCS = cnt
+    replicatorJobFileSize = (cnt*raftSize)/mega
+    if args.verbose:
+        print "replicator job files read from OCS = %d, (%.2f mb)" % (cnt, replicatorJobFileSize)
+    filesFromOCSSize = replicatorJobFileSize
 
-        cnt = distributorFilesReceived(content)
+    cnt = wavefrontJobFileReceived(content)
+    filesFromOCS += cnt
+    wavefrontJobFileSize = (cnt*ccdSize*4)/mega
+    if args.verbose:
+        print "wavefront job files read from OCS = %d, (%.2f mb)" % (cnt, wavefrontJobFileSize)
+    filesFromOCSSize += wavefrontJobFileSize
+    print "total files from OCS = %d (%.2f mb)" % (filesFromOCS, filesFromOCSSize)
+    print
+
+    cnt = replicatorJobUpload(content)
+    filesSentToDistributors = cnt
+    replicatorJobFileSize = (cnt*raftSize)/mega
+    if args.verbose:
+        print "replicator job files sent to distributor nodes = %d (%.2f mb)" % (cnt, replicatorJobFileSize)
+
+    cnt = wavefrontJobUpload(content)
+    filesSentToDistributors += cnt
+    wavefrontJobFileSize = (cnt*ccdSize*4)/mega
+    if args.verbose:
+        print "wavefront job files sent to distributor nodes = %d (%.2f mb)" % (cnt, wavefrontJobFileSize)
+
+    cnt = distributorFilesReceived(content)
+    filesReceivedByDistributors = cnt
+    if args.verbose:
         print "files received by distributor nodes from replicator nodes =",cnt
-        filesReceivedByDistributors = cnt
 
-        cnt = distributorFilesSent(content)
+    print "total files received by distributor nodes = %d (%.2f mb)" % (filesReceivedByDistributors, replicatorJobFileSize+wavefrontJobFileSize)
+
+    cnt = distributorFilesSent(content)
+    filesSentToWorkerJobs = cnt
+    if args.verbose:
         print "distributor files sent to worker jobs =",cnt
-        filesSentToWorkerJobs = cnt
-        cnt = workerFilesReceived(content)
-        print "worker job files received from distributors =",cnt
-        filesReceivedByWorkers = cnt
+    cnt = workerFilesReceived(content)
+    filesReceivedByWorkers = cnt
+    filesReceivedByWorkersSize = (cnt*ccdSize/mega)
+    print "files worker jobs received from distributors %d (%.2f mb)" % (cnt, filesReceivedByWorkersSize)
+    print "(wavefront files are not received by worker jobs)"
+

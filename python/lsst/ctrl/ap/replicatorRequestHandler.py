@@ -114,7 +114,7 @@ class ReplicatorRequestHandler(object):
         # TODO: get these from a config
         self.broker = "lsst8.ncsa.uiuc.edu"
         self.topic = "distributor_event"
-        self.archiveTransmitter = events.EventTransmitter(self.broker, self.topic)
+        self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
         # store this info locally, in case the archive asks for it again, later
 
         visitID = props.get("visitID")
@@ -134,7 +134,7 @@ class ReplicatorRequestHandler(object):
             st.publish(st.distributorNode, st.sendMsg, data)
 
             event = events.Event("distributor", props)
-            self.archiveTransmitter.publishEvent(event)
+            self.distributorTransmitter.publishEvent(event)
 
     def storeFileInfo(self, key, name):
         print "storeFileInfo: key = %s, name = %s " % (key, name)
