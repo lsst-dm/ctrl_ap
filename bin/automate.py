@@ -57,7 +57,7 @@ class AutomatedOCS(object):
 
     def sendNextVisit(self, verbose, visitID, exposures, boresight, filterID):
         if verbose:
-            print "startReadout: visitID = ", visitID, " exposures = ", exposures, "boresight = ", boresight, "filterID = ",filterID
+            print "nextVisit: visitID = ", visitID, " exposures = ", exposures, "boresight = ", boresight, "filterID = ",filterID
         st = Status()
         st.publish(st.ocs, st.sendMsg, 
                 {"cmd":"nextVisit", 
@@ -85,12 +85,11 @@ class AutomatedOCS(object):
         for visit in range(0, visits):
             print "executing visit:",visit
             self.sendNextVisit(verbose, _visitID, exposures, boresight, filterID)
-            time.sleep(sleepInterval)
             for expo in range(0, exposures):
+                time.sleep(sleepInterval)
                 self.sendStartIntegration(verbose, _visitID, expo)
                 time.sleep(sleepInterval)
                 self.sendStartReadout(verbose, _imageID, _visitID, expo)
-                time.sleep(sleepInterval)
                 _imageID = _imageID+1
             _visitID = _visitID+1
 
