@@ -43,7 +43,7 @@ class WorkerRequestHandler(object):
 
     def getFileInfo(self, key):
         print "getFileInfo: key = %s" % key
-        name = ""
+        name = None
         self.condition.acquire()
         while True:
             if key in self.dataTable:
@@ -54,6 +54,13 @@ class WorkerRequestHandler(object):
                 if name is not None: 
                     print "getFileInfo name = ",name
                     break
+            else: 
+                # worker contacted distributor and the key didn't exist,
+                # when it should have.  That means the distributor
+                # had previously given this info to the archive DMCS, but
+                # the distributor no longer has it (due to reboot, or 
+                # expiration.
+                return None
             self.condition.wait()
         self.condition.release()
         return name
@@ -61,11 +68,18 @@ class WorkerRequestHandler(object):
     def transmitFile(self, key, data):
         print "transmitFile: key = ",key
         name = self.getFileInfo(key)
-        print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
         st = Status();
+        if name is None:
+            # TODO:  respond with a message that the file isn't here
+            msg = {st.status:st.error, st.reason:st.fileNotFound}
+            self.jsock.sendJSON(msg)
+            return
+        print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
         msg = data.copy()
+        msg["status"] = st.sendFile
         msg["filename"] = name
         print "transmitFile: msg =",msg
+        # TODO: tell worker we do have it, and then send file
         self.jsock.sendFile(msg)
         st.publish(st.distributorNode, st.sendFile, {"filename":name})
         print "transmitFile: done"

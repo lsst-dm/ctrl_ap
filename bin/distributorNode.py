@@ -61,7 +61,7 @@ class DistributorEventHandler(threading.Thread):
             # todo: switch in event "request"
             request = ps.get("request")
 
-            # send events for contents dataTable
+            # send events for contents of dataTable
             self.condition.acquire()
             print "dataTable = ",self.dataTable
             for key in self.dataTable:
@@ -97,6 +97,7 @@ class DistributorNode(Node):
 
 
         # start handler for incoming requests from the archive
+        # to replenish its information
         eventHandler = DistributorEventHandler(self.logger, dataTable, condition)
         eventHandler.start()
 

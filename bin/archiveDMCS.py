@@ -45,6 +45,7 @@ class DistributorLookupHandler(threading.Thread):
     def run(self):
         jsock = JSONSocket(self.sock)
             
+        # incoming lookup request from worker
         request = jsock.recvJSON()
             
         inetaddr = None
@@ -126,7 +127,62 @@ class EventHandler(threading.Thread):
 
         event = events.Event("archive", root)
         eventSystem.publishEvent(topic, event)
+
+    # return exposure sequence id, visit id, raft and sensor specified in 
+    # property set
+    def getImageInfo(self, ps):
+        exposureSequenceID = ps.get("exposureSequenceID")
+        visitID = ps.get("visitID")
+        raft = ps.get("raft")
+        sensor = ps.get("sensor")
+        return exposureSequenceID, visitID, raft, sensor
         
+    # create the key used for entries in the data table
+    def createKey(self, ps):
+        exposureSequenceID, visitID, raft, sensor = self.getImageInfo(ps)
+        key = Key.create(visitID, exposureSequenceID, raft, sensor)
+        return key
+
+    # create a dictionary containing information about a data table entry
+    # specified in a property set
+    def createData(self, ps):
+        exposureSequenceID, visitID, raft, sensor = self.getImageInfo(ps)
+        inetaddr = ps.get("networkAddress")
+        port = ps.get("networkPort")
+        st = Status()
+        data = {"endpoint":{st.host:inetaddr,st.port:port},
+                st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}}
+        return data
+
+    # insert entry into data table, given info specified in property set
+    def insert(self, ps):
+        st = Status()
+        key = self.createKey(ps)
+        data = self.createData(ps)
+
+        st.publish(st.archiveDMCS, st.receivedMsg, data)
+
+        self.condition.acquire()
+        self.dataTable[key] = (inetaddr, port)
+        self.condition.notifyAll()
+        self.condition.release()
+
+    # remove entry from data table, given info specified in property set
+    def remove(self, ps):
+        st = Status()
+
+        key = self.createKey(ps)
+        data = self.createData(ps)
+        st.publish(st.archiveDMCS, st.removeEntry, data)
+        self.removeEntry(key)
+
+    # remove distributor entry from the data table
+    # (used in property set specified removal and time-based expiration)
+    def removeEntry(self, key):
+        self.condition.acquire()
+        val = self.dataTable.pop(key)
+        self.condition.notifyAll()
+        self.condition.release()
 
     def run(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
@@ -140,23 +196,27 @@ class EventHandler(threading.Thread):
             ps = ocsEvent.getPropertySet()
             print "ps = ",ps.toString()
             ocsEventType = ps.get("distributor_event")
-            exposureSequenceID = ps.get("exposureSequenceID")
-            visitID = ps.get("visitID")
-            raft = ps.get("raft")
-            sensor = ps.get("sensor")
-            inetaddr = ps.get("networkAddress")
-            port = ps.get("networkPort")
-            key = Key.create(visitID, exposureSequenceID, raft, sensor)
-            self.logger.log(Log.INFO, "%s %s:%s" % (key, inetaddr,port))
-            data = {"endpoint":{st.host:inetaddr,st.port:port},
-                    st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}}
+            if ocsEventType == "info":
+                self.insert(ps)
+            elif ocsEventType == "remove":
+                self.remove(ps)
+            #exposureSequenceID = ps.get("exposureSequenceID")
+            #visitID = ps.get("visitID")
+            #raft = ps.get("raft")
+            #sensor = ps.get("sensor")
+            #inetaddr = ps.get("networkAddress")
+            #port = ps.get("networkPort")
+            #key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            #self.logger.log(Log.INFO, "%s %s:%s" % (key, inetaddr,port))
+            #data = {"endpoint":{st.host:inetaddr,st.port:port},
+            #        st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}}
 
-            st.publish(st.archiveDMCS, st.receivedMsg, data)
+            #st.publish(st.archiveDMCS, st.receivedMsg, data)
 
-            self.condition.acquire()
-            self.dataTable[key] = (inetaddr, port)
-            self.condition.notifyAll()
-            self.condition.release()
+            #self.condition.acquire()
+            #self.dataTable[key] = (inetaddr, port)
+            #self.condition.notifyAll()
+            #self.condition.release()
 
 class ArchiveDMCS(object):
     def __init__(self):

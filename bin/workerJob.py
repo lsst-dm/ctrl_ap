@@ -144,6 +144,9 @@ class WorkerJob(object):
         #st.publish(st.workerJob, st.requestFile, newName)
         print "trying receive file sequence for ",newName
         msg = jsock.recvJSON()
+        if msg["status"] == st.fileNotFound:
+            print "distributor did not have file"
+            return None, None
         print "message received was ",msg
         print "now receiving file ",newName
         name = jsock.recvFile(newName)

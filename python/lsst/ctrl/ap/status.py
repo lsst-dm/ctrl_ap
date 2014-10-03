@@ -104,7 +104,10 @@ class Status(object):
     startReadout = "startReadout"
 
     success = "success"
+    error = "error"
 
+    # error types
+    fileNotFound = "file not found"
 
 
     def __init__(self):
