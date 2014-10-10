@@ -33,6 +33,7 @@ from lsst.ctrl.ap.status import Status
 import threading
 import socket
 import signal
+import sys
 from time import sleep
 
 class DistributorLookupHandler(threading.Thread):
@@ -162,25 +163,29 @@ class EventHandler(threading.Thread):
 
         st.publish(st.archiveDMCS, st.receivedMsg, data)
 
+        inetaddr = ps.get("networkAddress")
+        port = ps.get("networkPort")
+
         self.condition.acquire()
         self.dataTable[key] = (inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
 
-    # remove entry from data table, given info specified in property set
+    # remove entries from data table, given ip addr and port  specified
+    # in property set
     def remove(self, ps):
+        addr = ps.get("networkAddress")
+        port = ps.get("networkPort")
+        hostport = (addr, port)
         st = Status()
 
-        key = self.createKey(ps)
-        data = self.createData(ps)
-        st.publish(st.archiveDMCS, st.removeEntry, data)
-        self.removeEntry(key)
-
-    # remove distributor entry from the data table
-    # (used in property set specified removal and time-based expiration)
-    def removeEntry(self, key):
         self.condition.acquire()
-        val = self.dataTable.pop(key)
+        removeThese = []
+        for ent in self.dataTable:
+            if dataTable[ent] == hostport:
+                removeThese.append(ent)
+        for x in removeThese:
+            self.dataTable.pop(x)
         self.condition.notifyAll()
         self.condition.release()
 
@@ -198,8 +203,11 @@ class EventHandler(threading.Thread):
             ocsEventType = ps.get("distributor_event")
             if ocsEventType == "info":
                 self.insert(ps)
-            elif ocsEventType == "remove":
+            elif ocsEventType == "started":
                 self.remove(ps)
+            else:
+                print "ocsEventType unknown: ",ocsEventType
+                sys.exit(0)
             #exposureSequenceID = ps.get("exposureSequenceID")
             #visitID = ps.get("visitID")
             #raft = ps.get("raft")

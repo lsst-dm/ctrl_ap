@@ -39,18 +39,16 @@ from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 
 class DistributorEventHandler(threading.Thread):
-    def __init__(self, logger, dataTable, condition):
+    def __init__(self, logger, broker, topic, dataTable, condition):
         threading.Thread.__init__(self)
         self.logger = logger
         self.dataTable = dataTable
         self.condition = condition
-        self.brokerName = "lsst8.ncsa.illinois.edu"
-        self.eventTopic = "archive_event"
+        self.brokerName = broker
+        self.eventTopic = topic
 
     def run(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
-        eventSystem.createReceiver(self.brokerName, self.eventTopic)
-        eventSystem.createTransmitter(self.brokerName, "distributor_event")
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             archiveEvent = eventSystem.receiveEvent(self.eventTopic)
@@ -83,6 +81,9 @@ class DistributorNode(Node):
 
     def __init__(self, port):
         super(DistributorNode, self).__init__()
+        self.brokerName = "lsst8.ncsa.illinois.edu"
+        self.eventTopic = "archive_event"
+
         self.inboundPort = port
         st = Status()
         self.createIncomingSocket(self.inboundPort)
@@ -91,6 +92,17 @@ class DistributorNode(Node):
         logger = Log.getDefaultLog()
         self.logger = Log(logger,"DistributorNode")
 
+        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem.createReceiver(self.brokerName, self.eventTopic)
+        eventSystem.createTransmitter(self.brokerName, "distributor_event")
+        
+        root = PropertySet()
+        root.add("distributor_event", "started")
+        root.add("networkAddress",socket.gethostbyname(socket.gethostname()))
+        root.add("networkPort", self.inboundPort)
+        event = events.Event("distributor", root)
+        eventSystem.publishEvent("distributor_event", event)
+
     def activate(self):
         dataTable = {}
         condition = threading.Condition()
@@ -98,7 +110,7 @@ class DistributorNode(Node):
 
         # start handler for incoming requests from the archive
         # to replenish its information
-        eventHandler = DistributorEventHandler(self.logger, dataTable, condition)
+        eventHandler = DistributorEventHandler(self.logger, self.brokerName, self.eventTopic, dataTable, condition)
         eventHandler.start()
 
         st = Status()

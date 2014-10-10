@@ -91,7 +91,7 @@ class WorkerJob(object):
             st.publish(st.workerJob, st.pub, data)
             # wait for a response from the Archive DMCS, which is the host and port
             resp = jsock.recvJSON()
-            self.logger.log(Log.INFO, "worker from response received")
+            self.logger.log(Log.INFO, "response received from ArchiveDMCS")
             
             st.publish(st.workerJob, st.infoReceived, data)
             return resp["inetaddr"],resp["port"]

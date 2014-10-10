@@ -60,6 +60,7 @@ class WorkerRequestHandler(object):
                 # had previously given this info to the archive DMCS, but
                 # the distributor no longer has it (due to reboot, or 
                 # expiration.
+                print "XXX - key didn't exist"
                 return None
             self.condition.wait()
         self.condition.release()
@@ -69,10 +70,13 @@ class WorkerRequestHandler(object):
         print "transmitFile: key = ",key
         name = self.getFileInfo(key)
         st = Status();
+        print "transmitFile requested"
         if name is None:
-            # TODO:  respond with a message that the file isn't here
+            # respond to the worker with a message that the file isn't here
+            # TODO: tell the archive DMCS to remove that entry
             msg = {st.status:st.error, st.reason:st.fileNotFound}
             self.jsock.sendJSON(msg)
+            print "transmitFile NOT sent"
             return
         print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
         msg = data.copy()
@@ -85,6 +89,7 @@ class WorkerRequestHandler(object):
         print "transmitFile: done"
 
     def serviceRequest(self, msg):
+        print "serviceRequest: ",msg
         request = msg["request"]
         if request == "file":
             visitID = msg["visitID"]

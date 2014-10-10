@@ -98,7 +98,6 @@ class ReplicatorRequestHandler(object):
 
     def sendToArchiveDMCS(self, msg):
         props = PropertySet()
-        print "sendToArchiveDMCS: props = ",props.toString()
         for x in msg:
             print x, msg[x]
             val = msg[x]
@@ -106,7 +105,7 @@ class ReplicatorRequestHandler(object):
                 props.set(str(x), int(msg[x]))
             else:
                 props.set(str(x), str(msg[x]))
-        props.set("distributor_event", "archive info")
+        props.set("distributor_event", "info")
         hostinfo = self.jsock.getsockname()
         props.set("networkAddress", hostinfo[0])
         props.set("networkPort", hostinfo[1])

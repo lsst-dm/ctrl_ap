@@ -105,6 +105,7 @@ class Status(object):
 
     success = "success"
     error = "error"
+    removeEntry = "remove entry"
 
     # error types
     fileNotFound = "file not found"
