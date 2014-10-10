@@ -73,7 +73,7 @@ class ReplicatorRequestHandler(object):
             raft = msg["raft"]
             st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
             #self.logger.log(Log.INFO, 'file received: %s' % name)
-            self.splitReplicatorFile(visitID, exposureSequenceID, raft, name)
+            self.splitReplicatorFile(self.jsock, visitID, exposureSequenceID, raft, name)
         else:
             print "unknown request; msg = ",msg
 
@@ -94,10 +94,11 @@ class ReplicatorRequestHandler(object):
         exposureSequenceID = msg["exposureSequenceID"]
         st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
         #self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
-        #self.splitWavefrontFile(visitID, exposureSequenceID, name)
+        #self.splitWavefrontFile(self.jsock, visitID, exposureSequenceID, name)
 
     def sendToArchiveDMCS(self, msg):
         props = PropertySet()
+        print "sending the following to archive dmcs..."
         for x in msg:
             print x, msg[x]
             val = msg[x]
@@ -105,6 +106,7 @@ class ReplicatorRequestHandler(object):
                 props.set(str(x), int(msg[x]))
             else:
                 props.set(str(x), str(msg[x]))
+        print "...done"
         props.set("distributor_event", "info")
         hostinfo = self.jsock.getsockname()
         props.set("networkAddress", hostinfo[0])
@@ -135,14 +137,33 @@ class ReplicatorRequestHandler(object):
             event = events.Event("distributor", props)
             self.distributorTransmitter.publishEvent(event)
 
-    def storeFileInfo(self, key, name):
+    def storeFileInfo(self, key, inetaddr, port, name):
         print "storeFileInfo: key = %s, name = %s " % (key, name)
+        distInfo = None
+        notifyArchive = False
         self.condition.acquire()
-        distInfo = self.dataTable[key]
-        distInfo.setName(name)
-        self.dataTable[key] = distInfo
+        # Ordinarily, the worker would already know which distributor has
+        # its information, and will be waiting for the file to arrive.
+        #
+        # It's possible that the distributor receives information
+        # about the incoming file, but doesn't have a previous entry
+        # for that file.  In this case, the worker is stuck at the archiveDMCS
+        # waiting for that information.  If that's the case, then we need
+        # to send information to the archiveDMCS with the info for the file,
+        # so we indicate that in the return value in this method.
+        # 
+        if key is in self.dataTable
+            distInfo = self.dataTable[key]
+            distInfo.setName(name)
+            self.dataTable[key] = distInfo
+        else:
+            notifyArchive = True
+            distInfo = DistributorInfo(inetaddr, port)
+            distInfo.setName(name)
+            self.dataTable[key] = distInfo
         self.condition.notifyAll()
         self.condition.release()
+        return notifyArchive
 
     def storeDistributorInfo(self, key, inetaddr, port):
         print "storeDistributorInfo: key = %s, inet = %s:%s " % (key, inetaddr, port)
@@ -151,7 +172,7 @@ class ReplicatorRequestHandler(object):
         self.condition.notifyAll()
         self.condition.release()
 
-    def splitReplicatorFile(self, visitID, exposureSequenceID, raft, filename):
+    def splitReplicatorFile(self, jsock, visitID, exposureSequenceID, raft, filename):
         sensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
         x = 0
         for s in sensors:
@@ -159,20 +180,28 @@ class ReplicatorRequestHandler(object):
             x += 1
         self.splitFile(visitID, exposureSequenceID, filename, sensors)
 
-    def splitWavefrontFile(self, visitID, exposureSequenceID, filename):
+    def splitWavefrontFile(self, jsock, visitID, exposureSequenceID, filename):
         sensors = ["R:0,0 S:2,2", "R:0,4 S:2,0", "R:4,0 S:0,2", "R:4,4 S:0,0"]
-        self.splitFile(visitID, exposureSequenceID, filename, sensors)
+        self.splitFile(jsock, visitID, exposureSequenceID, filename, sensors)
 
-    def splitFile(self, visitID, exposureSequenceID, filename, sensors):
+    def splitFile(self, jsock, visitID, exposureSequenceID, filename, sensors):
         statinfo = os.stat(filename)
         filesize = statinfo.st_size
         buflen = filesize/len(sensors)
+        hostinfo = self.jsock.getsockname()
+        inetaddr =  hostinfo[0])
+        port = hostinfo[1])
         with open(filename, 'rb') as src:
             for sensorInfo in sensors:
                 raft = sensorInfo.split(" ")[0]
                 sensor = sensorInfo.split(" ")[1]
                 target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
                 targetDir = os.path.dirname(target)
+                # try and create the directory tree.  there's a race condition
+                # where directories could be created during the makedirs
+                # call (by another process on the same machine), but that's
+                # ok, so if they do exist, we can ignore the exception that
+                # would be thrown.
                 try:
                     os.makedirs(targetDir)
                 except OSError as exc:
@@ -184,4 +213,16 @@ class ReplicatorRequestHandler(object):
                 f.write(src.read(buflen))
                 f.close()
                 key = Key.create(visitID, exposureSequenceID, raft, sensor)
-                self.storeFileInfo(key, target)
+                notifyArchive = self.storeFileInfo(key,inetaddr, port, target)
+                # If there wasn't a previous entry for this file, we need
+                # to notify the archive of it's existence so the worker job
+                # can find it.
+                if notifyArchive:
+                    props = Property()
+                    props.set("request","info post")
+                    props.set("msgtype","replicator job") # XXX
+                    props.set("exposureSequenceID", exposureSequenceID)
+                    props.set("raft", raft)
+                    props.set("visitID", visitID)
+                    event = events.Event("distributor", props)
+                    self.distributorTransmitter.publishEvent(event)
