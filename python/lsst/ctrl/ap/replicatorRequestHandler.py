@@ -152,7 +152,7 @@ class ReplicatorRequestHandler(object):
         # to send information to the archiveDMCS with the info for the file,
         # so we indicate that in the return value in this method.
         # 
-        if key is in self.dataTable
+        if key in self.dataTable:
             distInfo = self.dataTable[key]
             distInfo.setName(name)
             self.dataTable[key] = distInfo
@@ -178,7 +178,7 @@ class ReplicatorRequestHandler(object):
         for s in sensors:
             sensors[x] = raft+" "+s
             x += 1
-        self.splitFile(visitID, exposureSequenceID, filename, sensors)
+        self.splitFile(jsock, visitID, exposureSequenceID, filename, sensors)
 
     def splitWavefrontFile(self, jsock, visitID, exposureSequenceID, filename):
         sensors = ["R:0,0 S:2,2", "R:0,4 S:2,0", "R:4,0 S:0,2", "R:4,4 S:0,0"]
@@ -189,8 +189,8 @@ class ReplicatorRequestHandler(object):
         filesize = statinfo.st_size
         buflen = filesize/len(sensors)
         hostinfo = self.jsock.getsockname()
-        inetaddr =  hostinfo[0])
-        port = hostinfo[1])
+        inetaddr =  hostinfo[0]
+        port = hostinfo[1]
         with open(filename, 'rb') as src:
             for sensorInfo in sensors:
                 raft = sensorInfo.split(" ")[0]
