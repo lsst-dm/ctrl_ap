@@ -42,7 +42,6 @@ class DistributorHandler(threading.Thread):
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
-        self.socketCondition = threading.Condition()
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "distributorHandler")
 

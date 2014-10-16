@@ -44,6 +44,10 @@ class ReplicatorRequestHandler(object):
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
+        # TODO: get these from a config
+        self.broker = "lsst8.ncsa.uiuc.edu"
+        self.topic = "distributor_event"
+        self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
 
     def serviceRequest(self, msg):
         print "rrh: serviceRequest: msg = ",msg
@@ -112,10 +116,6 @@ class ReplicatorRequestHandler(object):
         props.set("networkAddress", hostinfo[0])
         props.set("networkPort", hostinfo[1])
 
-        # TODO: get these from a config
-        self.broker = "lsst8.ncsa.uiuc.edu"
-        self.topic = "distributor_event"
-        self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
         # store this info locally, in case the archive asks for it again, later
 
         visitID = props.get("visitID")
@@ -220,9 +220,12 @@ class ReplicatorRequestHandler(object):
                 if notifyArchive:
                     props = PropertySet()
                     props.set("request","info post")
-                    props.set("msgtype","replicator job") # XXX
+                    props.set("distributor_event", "info") # XXX
                     props.set("exposureSequenceID", exposureSequenceID)
                     props.set("raft", str(raft))
+                    props.set("sensor", str(sensor))
+                    props.set("networkAddress", inetaddr)
+                    props.set("networkPort", port)
                     if type(visitID) == int:
                         props.set("visitID", int(visitID))
                     else:

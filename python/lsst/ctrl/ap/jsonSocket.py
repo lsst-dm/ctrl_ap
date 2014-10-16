@@ -26,6 +26,7 @@
 import os
 import sys
 import json
+import yaml
 import socket
 import struct
 
@@ -47,9 +48,9 @@ class JSONSocket(object):
         #print "type = ",type(s)
         #print "length = ",len(s)
         #print ' '.join(format(ord(x), 'x') for x in s)
-        s = json.loads(s)
+        x = yaml.load(s)
         #print "recvJSON: '%s'" % s
-        return s
+        return x
 
     def sendFile(self, msg):
         name = msg["filename"]
