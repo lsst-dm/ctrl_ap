@@ -134,7 +134,7 @@ class DistributorConnection(threading.Thread):
                 # 1) We were notified that there's a message in the list
                 # 2) we were notified that the heartbeat failed.
                 if heartbeatEvent.is_set():
-                    print "Distributor connection thread: hearbeatEvent set"
+                    print "Distributor connection thread: heartbeatEvent set 1"
                     connectionOK = False
                     break
             while self.msgList:
@@ -146,12 +146,14 @@ class DistributorConnection(threading.Thread):
                         self.send(s)
                         print "end of try"
                     except socket.error, err:
+                        print "Distributor connection thread: heartbeatEvent set 2"
                         connectionOK = False
                         heartbeatEvent.set()
                         # if there's a connection failure, leave the
                         # rest of the msgList alone so we can send
                         # things after reconnection.
                         print "dct: got an exception!"
+                        sys.stdout.flush()
                         break
                     # the message was sent, so pop it.
                     s =  self.msgList.pop(0)
@@ -175,8 +177,8 @@ class HeartbeatReceiver(threading.Thread):
                 msg = self.sock.recvJSON()
             except:
                 print "heartbeat exception"
-                self.event.set()
                 self.condition.acquire()
+                self.event.set()
                 self.condition.notifyAll()
                 self.condition.release()
 
@@ -214,7 +216,8 @@ class ReplicatorJobConnection(threading.Thread):
         except socket.error, err:
             print "second receive failed; err = ",err
             pass # do interesting something here
-        self.queueMsg(vals)
+        if vals is not None: # XXX - do something better here?
+            self.queueMsg(vals)
         
 
 class ReplicatorNode(Node):

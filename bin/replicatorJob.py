@@ -56,6 +56,8 @@ class ReplicatorJob(object):
         st = Status()
         vals = {"replicatorHost":socket.gethostname(), "replicatorPort":self.replicatorPort, "startupArgs":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":self.raft}}
         st.publish(st.replicatorJob, st.start, vals)
+        self.logger.log(Log.INFO,"visitID = %s"%str(expectedVisitID))
+        self.logger.log(Log.INFO,"expectedSequenceID = %s"%str(expectedExpSeqID))
         
 
     def connectToReplicator(self):
@@ -128,6 +130,7 @@ class ReplicatorJob(object):
         while True:
             ts = time.time()
             self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
+            st.publish(st.replicatorJob, "waiting", {"eventTopic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             imageID = ps.get("imageID")
@@ -150,6 +153,8 @@ class ReplicatorJob(object):
                 st = Status()
                 st.publish(st.replicatorJob, st.finish, st.success)
                 sys.exit(0)
+            else:
+                self.logger.log(Log.INFO, "did not get expected info!")
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
