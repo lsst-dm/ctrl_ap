@@ -134,30 +134,36 @@ class WorkerJob(object):
         sock = self.makeConnection(host, port)
         print "connection made"
         jsock = JSONSocket(sock)
-        vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
-        jsock.sendJSON(vals)
-        data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
-        st.publish(st.workerJob, st.retrieve, data)
-        newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
-        newName = os.path.join("/tmp",newName)
-        self.safemakedirs(os.path.dirname(newName))
-        #st.publish(st.workerJob, st.requestFile, newName)
-        print "trying receive file sequence for ",newName
-        msg = jsock.recvJSON()
-        if msg == None:
-            print "distributor did not have file"
-            return None, None
-        if msg["status"] == st.fileNotFound:
-            print "distributor did not have file"
-            return None, None
-        print "message received was ",msg
-        print "now receiving file ",newName
-        name = jsock.recvFile(newName)
-        print "file received ",newName
-        data["file"] = name;
-        st.publish(st.workerJob, st.fileReceived, data)
-        self.logger.log(Log.INFO, "file received = %s" % name)
-        return name, "telemetry"
+        while True:
+            try:
+                vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
+                jsock.sendJSON(vals)
+                data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
+                st.publish(st.workerJob, st.retrieve, data)
+                newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
+                newName = os.path.join("/tmp",newName)
+                self.safemakedirs(os.path.dirname(newName))
+                #st.publish(st.workerJob, st.requestFile, newName)
+                print "trying receive file sequence for ",newName
+                msg = jsock.recvJSON()
+                if msg == None:
+                    print "distributor did not have file"
+                    return None, None
+                if msg["status"] == st.fileNotFound:
+                    print "distributor did not have file"
+                    return None, None
+                
+                print "message received was ",msg
+                print "now receiving file ",newName
+                name = jsock.recvFile(newName)
+                print "file received ",newName
+                data["file"] = name;
+                st.publish(st.workerJob, st.fileReceived, data)
+                self.logger.log(Log.INFO, "file received = %s" % name)
+                return name, "telemetry"
+            except:
+                print "trying to get file, recv was empty"
+                print "trying again..."
 
     # when this goes to python 3.2, we can use exist_ok, but
     # until then, we ignore the fact that someone got there before us.

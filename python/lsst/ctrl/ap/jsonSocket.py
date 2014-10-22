@@ -44,12 +44,14 @@ class JSONSocket(object):
 
     def recvJSON(self):
         s = self.recvall()
+        if s == '':
+            raise Exception("recv returned empty string")
         print "recvJSON: '%s'" % s
-        print "type = ",type(s)
-        print "length = ",len(s)
-        print ' '.join(format(ord(x), 'x') for x in s)
+        #print "type = ",type(s)
+        #print "length = ",len(s)
+        #print ' '.join(format(ord(x), 'x') for x in s)
         x = json.loads(s)
-        print "recvJSON: '%s'" % s
+        #print "recvJSON: '%s'" % s
         return x
 
     def sendFile(self, msg):
@@ -151,7 +153,8 @@ class JSONSocket(object):
         while total < size:
             s = self.sock.recv(recvSize)
             if s == "":
-                # this shouldn't happen in the middle of a message
+                # connection is either closed, or in the process of being
+                # closed.
                 return ""
             if not data:
                 # if we haven't put anything in the data buffer yet,

@@ -218,17 +218,12 @@ class ReplicatorRequestHandler(object):
                 # to notify the archive of it's existence so the worker job
                 # can find it.
                 if notifyArchive:
-                    props = PropertySet()
-                    props.set("request","info post")
-                    props.set("distributor_event", "info") # XXX
-                    props.set("exposureSequenceID", exposureSequenceID)
-                    props.set("raft", str(raft))
-                    props.set("sensor", str(sensor))
-                    props.set("networkAddress", inetaddr)
-                    props.set("networkPort", port)
-                    if type(visitID) == int:
-                        props.set("visitID", int(visitID))
-                    else:
-                        props.set("visitID", str(visitID))
-                    event = events.Event("distributor", props)
-                    self.distributorTransmitter.publishEvent(event)
+                    vals = {
+                        "request":"info post",
+                        "msgtype": "replicator job",
+                        "exposureSequenceID": exposureSequenceID,
+                        "raft": str(raft),
+                        "sensor": str(sensor),
+                        "visitID": str(visitID)
+                    }
+                    self.sendToArchiveDMCS(vals)

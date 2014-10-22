@@ -80,8 +80,9 @@ class ReplicatorJob(object):
         return True
 
     def sendInfoToReplicator(self):
-        if self.connectToReplicator() == False:
-            self.logger.log(Log.INFO, "not sending")
+        while self.connectToReplicator() == False:
+            self.logger.log(Log.INFO, "retrying")
+            time.sleep(1)
             # handle not being able to connect to the distributor
             pass
 
