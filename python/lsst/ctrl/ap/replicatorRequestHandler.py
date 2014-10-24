@@ -93,10 +93,25 @@ class ReplicatorRequestHandler(object):
         #for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
         #    d["raft"] = raft
         #    self.sendToArchiveDMCS(d)
-        name = self.jsock.recvFile2()
-        visitID = msg["visitID"]
-        exposureSequenceID = msg["exposureSequenceID"]
-        st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
+        request = msg["request"]
+        if request == "info post":
+            self.sendToArchiveDMCS(msg) # XXX
+            self.logger.log(Log.INFO, 'received from replicator %s' % msg)
+        elif request == "upload":
+            name = msg["filename"]
+            self.jsock.recvFile(name)
+            visitID = msg["visitID"]
+            exposureSequenceID = msg["exposureSequenceID"]
+            st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID})
+            #self.logger.log(Log.INFO, 'file received: %s' % name)
+            self.splitWavefrontFile(self.jsock, visitID, exposureSequenceID, name)
+        else:
+            print "unknown request; msg = ",msg
+
+        #name = self.jsock.recvFile()
+        #visitID = msg["visitID"]
+        #exposureSequenceID = msg["exposureSequenceID"]
+        #st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
         #self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
         #self.splitWavefrontFile(self.jsock, visitID, exposureSequenceID, name)
 

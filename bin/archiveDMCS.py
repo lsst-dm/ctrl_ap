@@ -166,10 +166,12 @@ class EventHandler(threading.Thread):
         inetaddr = ps.get("networkAddress")
         port = ps.get("networkPort")
 
+        print "attempting to add ",ps.toString()
         self.condition.acquire()
         self.dataTable[key] = (inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
+        print "added"
 
     # remove entries from data table, given ip addr and port  specified
     # in property set
@@ -179,27 +181,33 @@ class EventHandler(threading.Thread):
         hostport = (addr, port)
         st = Status()
 
+        print "attempting to remove ",ps.toString()
         self.condition.acquire()
         removeThese = []
         for ent in self.dataTable:
             if dataTable[ent] == hostport:
+                print "removing ",ent
                 removeThese.append(ent)
-        for x in removeThese:
-            self.dataTable.pop(x)
+        if len(removeThese) == 0:
+            print "Didn't remove anything"
+        else:
+            for x in removeThese:
+                self.dataTable.pop(x)
         self.condition.notifyAll()
         self.condition.release()
+        print "removed"
 
     def run(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         self.requestDistributors()
         st = Status()
+        self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
         while True:
-            self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
             st.publish(st.archiveDMCS, st.listen, {"topic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
-            print "ps = ",ps.toString()
+            #print "ps = ",ps.toString()
             ocsEventType = ps.get("distributor_event")
             if ocsEventType == "info":
                 self.insert(ps)

@@ -46,7 +46,7 @@ class JSONSocket(object):
         s = self.recvall()
         if s == '':
             raise Exception("recv returned empty string")
-        print "recvJSON: '%s'" % s
+        #print "recvJSON: '%s'" % s
         #print "type = ",type(s)
         #print "length = ",len(s)
         #print ' '.join(format(ord(x), 'x') for x in s)
@@ -179,3 +179,6 @@ class JSONSocket(object):
             total = sum([len(i) for i in data])
         info = ''.join(data)
         return info
+
+    def close(self):
+        self.sock.close()

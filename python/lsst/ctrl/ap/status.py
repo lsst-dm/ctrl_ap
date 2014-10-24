@@ -105,6 +105,7 @@ class Status(object):
 
     success = "success"
     error = "error"
+    reason = "reason"
     removeEntry = "remove entry"
 
     # error types

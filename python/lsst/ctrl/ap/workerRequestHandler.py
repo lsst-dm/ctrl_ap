@@ -49,11 +49,13 @@ class WorkerRequestHandler(object):
             if key in self.dataTable:
                 info = self.dataTable[key]
                 print "getFileInfo: key = ",key 
-                print "getFileInfo: info = ", info
+                #print "getFileInfo: info = ", info
                 name = info.getName()
                 if name is not None: 
                     print "getFileInfo name = ",name
                     break
+                else:
+                    print "name was none??"
             else: 
                 # worker contacted distributor and the key didn't exist,
                 # when it should have.  That means the distributor

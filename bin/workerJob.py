@@ -55,6 +55,9 @@ class WorkerJob(object):
 
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "workerJob")
+        self.logger.log(Log.INFO, "visitID = %s" % str(visitID))
+        self.logger.log(Log.INFO, "raft = %s" % str(raft))
+        self.logger.log(Log.INFO, "ccd = %s" % str(ccd))
         self.logger.log(Log.INFO, "worker started")
 
         # We don't know  which slot or host we're
@@ -90,12 +93,14 @@ class WorkerJob(object):
             data = {st.data:{"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}}
             st.publish(st.workerJob, st.pub, data)
             # wait for a response from the Archive DMCS, which is the host and port
+            self.logger.log(Log.INFO, "waiting for response from ArchiveDMCS")
             resp = jsock.recvJSON()
             self.logger.log(Log.INFO, "response received from ArchiveDMCS")
             
             st.publish(st.workerJob, st.infoReceived, data)
             return resp["inetaddr"],resp["port"]
         except Exception as exp:
+            self.logger.log(LOG.INFO, "acception from distributor")
             print exp
             return None,None
 
@@ -128,14 +133,14 @@ class WorkerJob(object):
     def retrieveDistributorImage(self, host, port, exposure):
         self.logger.log(Log.INFO, "retrieving image from distributor")
         st = Status()
-        connection = {st.server:{st.host:host, st.port:port}}
-        st.publish(st.workerJob, st.connect, connection)
-        print "making connection"
-        sock = self.makeConnection(host, port)
-        print "connection made"
-        jsock = JSONSocket(sock)
         while True:
             try:
+                connection = {st.server:{st.host:host, st.port:port}}
+                st.publish(st.workerJob, st.connect, connection)
+                self.logger.log(Log.INFO, "making connection")
+                sock = self.makeConnection(host, port)
+                self.logger.log(Log.INFO, "connection made")
+                jsock = JSONSocket(sock)
                 vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
                 jsock.sendJSON(vals)
                 data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
@@ -144,26 +149,30 @@ class WorkerJob(object):
                 newName = os.path.join("/tmp",newName)
                 self.safemakedirs(os.path.dirname(newName))
                 #st.publish(st.workerJob, st.requestFile, newName)
-                print "trying receive file sequence for ",newName
+                self.logger.log(Log.INFO, "trying receive file sequence for %s "% newName)
                 msg = jsock.recvJSON()
                 if msg == None:
-                    print "distributor did not have file"
+                    self.logger.log(Log.INFO, "distributor did not have file")
                     return None, None
                 if msg["status"] == st.fileNotFound:
-                    print "distributor did not have file"
+                    self.logger.log(Log.INFO, "distributor did not have file")
                     return None, None
                 
-                print "message received was ",msg
-                print "now receiving file ",newName
+                #for x in msg:
+                #    self.logger.log(Log.INFO, "%s - %s " % (x,msg[x]))
+                self.logger.log(Log.INFO, "now receiving file %s"  % newName)
                 name = jsock.recvFile(newName)
-                print "file received ",newName
+                self.logger.log(Log.INFO, "file received %s" % newName)
                 data["file"] = name;
                 st.publish(st.workerJob, st.fileReceived, data)
                 self.logger.log(Log.INFO, "file received = %s" % name)
                 return name, "telemetry"
-            except:
-                print "trying to get file, recv was empty"
-                print "trying again..."
+            except Exception, err:
+                self.logger.log(Log.INFO, "exception %s " % err.message)
+                self.logger.log(Log.INFO, "trying to get file, recv was empty")
+                self.logger.log(Log.INFO, "trying again in %d seconds" % self.connectionAttemptInterval)
+                jsock.close()
+                time.sleep(self.connectionAttemptInterval)
 
     # when this goes to python 3.2, we can use exist_ok, but
     # until then, we ignore the fact that someone got there before us.
