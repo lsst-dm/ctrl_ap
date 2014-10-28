@@ -38,10 +38,12 @@ from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 from lsst.ctrl.ap.dmcsHostConfig import ArchiveConfig
 from lsst.ctrl.ap import envString
+from lsst.ctrl.ap.terminator import Terminator
 
 class WorkerJob(object):
 
-    def __init__(self, archiveConfig, visitID, exposures, boresight, filterID, raft, ccd):
+    def __init__(self, archiveConfig, timeout, visitID, exposures, boresight, filterID, raft, ccd):
+        self.timeout = timeout
         self.archiveConfig = archiveConfig
         self.host = archiveConfig.main.host
         self.port = archiveConfig.main.port
@@ -79,7 +81,12 @@ class WorkerJob(object):
             st = Status()
             server = {st.server:{st.host:self.host,st.port:self.port}, st.failover:{st.host:self.archiveConfig.failover.host, st.port:self.archiveConfig.failover.port}}
             st.publish(st.workerJob, st.connect, server)
+            # terminate this process if we haven't been able to connect within
+            # self.timeout seconds
+            term = Terminator(self.logger, self.timeout)
+            term.start()
             sock = self.makeArchiveConnection(self.archiveConfig)
+            term.cancel()
     
             jsock = JSONSocket(sock)
     
@@ -92,15 +99,21 @@ class WorkerJob(object):
     
             data = {st.data:{"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}}
             st.publish(st.workerJob, st.pub, data)
-            # wait for a response from the Archive DMCS, which is the host and port
             self.logger.log(Log.INFO, "waiting for response from ArchiveDMCS")
+
+            # terminate this process if we haven't received a response within 
+            # self.timeout seconds
+            term = Terminator(self.logger, self.timeout)
+            term.start()
+            # wait for a response from the Archive DMCS, which is the host and port
             resp = jsock.recvJSON()
+            term.cancel()
             self.logger.log(Log.INFO, "response received from ArchiveDMCS")
             
             st.publish(st.workerJob, st.infoReceived, data)
             return resp["inetaddr"],resp["port"]
         except Exception as exp:
-            self.logger.log(LOG.INFO, "acception from distributor")
+            self.logger.log(Log.INFO, "exception from distributor")
             print exp
             return None,None
 
@@ -185,13 +198,21 @@ class WorkerJob(object):
             else: raise
         
     def execute(self):
+        # start self termination thread
+
         st = Status()
         for exposure in range (0, self.exposures):
             distHost = None
             distPort = None
             while distHost is None:
                 distHost, distPort = self.requestDistributor(exposure)
+            # terminate this process if we haven't received Image
+            # self.timeout seconds
+            term = Terminator(self.logger, self.timeout)
+            term.start()
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
+            # we received something; cancel termination of this process
+            term.cancel()
             data = {"workerID":self.workerID, "data":{"exposureSequenceID":exposure, "visitID":self.visitID,"raft":self.raft,"sensor":self.ccd}}
             time.sleep(1);
             st.publish(st.workerJob, st.perform, data)
@@ -218,8 +239,9 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)
     parser.add_argument("-r", "--raft", type=str, action="store", help="raft id", required=True)
     parser.add_argument("-c", "--ccd", type=str, action="store", help="ccd #", required=True)
+    parser.add_argument("-t", "--timeout", type=int, action="store", help="ccd #", default=120, required=False)
     
     args = parser.parse_args()
 
-    job = WorkerJob(archiveConfig, args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
+    job = WorkerJob(archiveConfig, args.timeout, args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
     job.execute()

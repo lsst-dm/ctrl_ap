@@ -166,12 +166,12 @@ class EventHandler(threading.Thread):
         inetaddr = ps.get("networkAddress")
         port = ps.get("networkPort")
 
-        print "attempting to add ",ps.toString()
+        #print "attempting to add ",ps.toString()
         self.condition.acquire()
         self.dataTable[key] = (inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
-        print "added"
+        #print "added"
 
     # remove entries from data table, given ip addr and port  specified
     # in property set
@@ -181,21 +181,22 @@ class EventHandler(threading.Thread):
         hostport = (addr, port)
         st = Status()
 
-        print "attempting to remove ",ps.toString()
+        #print "attempting to remove ",ps.toString()
         self.condition.acquire()
         removeThese = []
         for ent in self.dataTable:
             if dataTable[ent] == hostport:
-                print "removing ",ent
+                #print "removing ",ent
                 removeThese.append(ent)
         if len(removeThese) == 0:
-            print "Didn't remove anything"
+            #print "Didn't remove anything"
+            pass
         else:
             for x in removeThese:
                 self.dataTable.pop(x)
         self.condition.notifyAll()
         self.condition.release()
-        print "removed"
+        #print "removed"
 
     def run(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()

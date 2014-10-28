@@ -23,45 +23,52 @@
 #
 
 import os
+import signal
 import sys
 import time
-import argparse
 import socket
 import threading
+from lsst.pex.logging import Log
 
 # terminate the process after a set period, unless we're told not to.
 class Terminator(threading.Thread):
-    def __init__(self, timeout):
+    def __init__(self, logger, timeout):
         super(Terminator, self).__init__()
-        self.condition = threading.Condition()
+        self.logger = logger
         self.timeout = timeout
-        self.terminate = False
+        self.condition = threading.Condition()
+        self.terminate = True
 
     def run(self):
         time.sleep(self.timeout)
         self.condition.acquire()
         if self.terminate == True:
-            print "finished, and terminating"
-            sys.exit(0)
+            self.logger.log(Log.INFO, "terminator: finished, and terminating")
+            os.kill(os.getpid(), signal.SIGKILL)
         self.condition.release()
         # we just fall through and finish this thread
-        print "finished, but not terminating"
+        self.logger.log(Log.INFO, "terminator: finished, but not terminating")
 
 
-    def exitOnCompletion(self):
+    def cancel(self):
         self.condition.acquire()
-        self.terminate = True
+        self.terminate = False
         self.condition.release()
 
 if __name__ == "__main__":
-    term = Terminator(30)
+    print "starting first thread"
+    term = Terminator(15)
     term.start()
     time.sleep(5)
-    term.exitOnCompletion()
+    term.cancel()
     term.join()
+    print "first thread done"
 
-    term = Terminator(30)
+    print "starting second thread"
+    term = Terminator(15)
     term.start()
-    time.sleep(60)
+    time.sleep(5)
     term.join()
 
+
+    print "You shouldn't see this message"
