@@ -22,38 +22,49 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import datetime
 import os
 import signal
 import sys
 import time
 import socket
+import thread
 import threading
 from lsst.pex.logging import Log
 
 # terminate the process after a set period, unless we're told not to.
+# this thread will run to completion, and in the end determine whether
+# or not the process should exit.
 class Terminator(threading.Thread):
-    def __init__(self, logger, timeout):
+    def __init__(self, logger, id, timeout):
         super(Terminator, self).__init__()
         self.logger = logger
+        self.id = id
         self.timeout = timeout
         self.condition = threading.Condition()
         self.terminate = True
+        self.logger.log(Log.INFO, "terminator: %s: started" % self.id)
 
     def run(self):
         time.sleep(self.timeout)
         self.condition.acquire()
         if self.terminate == True:
-            self.logger.log(Log.INFO, "terminator: finished, and terminating")
+            self.logger.log(Log.INFO, "terminator: %s: finished, and terminating" % self.id)
+            ts = time.time()
+            self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('termination at: %Y-%m-%d %H:%M:%S'))
             os.kill(os.getpid(), signal.SIGKILL)
         self.condition.release()
         # we just fall through and finish this thread
-        self.logger.log(Log.INFO, "terminator: finished, but not terminating")
+        self.logger.log(Log.INFO, "terminator: %s: finished, but not terminating" % self.id)
 
 
     def cancel(self):
+
+        self.logger.log(Log.INFO, "terminator: %s: cancelling" % self.id)
         self.condition.acquire()
         self.terminate = False
         self.condition.release()
+        self.logger.log(Log.INFO, "terminator: %s: cancelled" % self.id)
 
 if __name__ == "__main__":
     print "starting first thread"

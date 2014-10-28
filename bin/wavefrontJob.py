@@ -35,10 +35,12 @@ from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
+from lsst.ctrl.ap.terminator import Terminator
 
 class WavefrontJob(object):
 
-    def __init__(self, rPort, expectedVisitID, expectedExpSeqID):
+    def __init__(self, timeout, rPort, expectedVisitID, expectedExpSeqID):
+        self.timeout = timeout
         jobnum = os.getenv("_CONDOR_SLOT","slot0")
         self.replicatorPort = rPort+int(jobnum[4:])
         
@@ -87,10 +89,13 @@ class WavefrontJob(object):
         return True
 
     def sendInfoToReplicator(self, raft):
+        term = Terminator(self.logger, "to replicator", self.timeout)
+        term.start()
         if self.connectToReplicator() == False:
             self.logger.log(Log.INFO, "not sending")
             # handle not being able to connect to the distributor
             pass
+        term.cancel()
 
         self.logger.log(Log.INFO, "sending info to replicator node")
         vals = {"msgtype":"wavefront job", "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : raft}
@@ -124,12 +129,14 @@ class WavefrontJob(object):
 
 
 
-    def start(self):
+    def execute(self):
         raft = "wave"
         self.sendInfoToReplicator(raft)
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         # loop until you get the right thing, process and then die.
+        term = Terminator(self.logger, "start", self.timeout)
+        term.start()
         while True:
             ts = time.time()
             self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
@@ -147,6 +154,7 @@ class WavefrontJob(object):
             # this info. we'll be using the DDS OCS messages, so this is good
             # for now.
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
+                term.cancel()
                 self.logger.log(Log.INFO, "got expected info.  Getting image")
                 self.execute(imageID, visitID, exposureSequenceID, raft)
                 st = Status() 
@@ -159,7 +167,8 @@ if __name__ == "__main__":
     parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="base replicator port (plus slot #) to connect to", required=True)
     parser.add_argument("-I", "--visitID", type=int, action="store", help="visitID", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
+    parser.add_argument("-t", "--timeout", type=int, action="store", help="ccd #", default=120, required=False)
 
     args = parser.parse_args()
-    base = WavefrontJob(args.replicatorPort, args.visitID, args.exposureSequenceID)
-    base.start()
+    base = WavefrontJob(args.timeout, args.replicatorPort, args.visitID, args.exposureSequenceID)
+    base.execute()

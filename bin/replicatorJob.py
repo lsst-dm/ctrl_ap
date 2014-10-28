@@ -33,15 +33,17 @@ import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
+from lsst.ctrl.ap.terminator import Terminator
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 
 class ReplicatorJob(object):
 
-    def __init__(self, rPort, raft, expectedVisitID, expectedExpSeqID):
+    def __init__(self, timeout, rPort, raft, expectedVisitID, expectedExpSeqID):
         jobnum = os.getenv("_CONDOR_SLOT","slot0")
         self.replicatorPort = rPort+int(jobnum[4:])
         
+        self.timeout = timeout
         self.rSock = None
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
@@ -80,11 +82,15 @@ class ReplicatorJob(object):
         return True
 
     def sendInfoToReplicator(self):
+        term = Terminator(self.logger, "info to replicator", self.timeout)
+        term.start()
         while self.connectToReplicator() == False:
             self.logger.log(Log.INFO, "retrying")
             time.sleep(1)
             # handle not being able to connect to the distributor
             pass
+        term.cancel()
+        
 
         self.logger.log(Log.INFO, "sending info to replicator node")
         vals = {"msgtype":"replicator job", "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
@@ -122,12 +128,14 @@ class ReplicatorJob(object):
         self.rSock.sendJSON(vals)
         st.publish(st.replicatorJob, st.upload, f.name)
 
-    def start(self):
+    def begin(self):
         self.sendInfoToReplicator()
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         st = Status()
         # loop until you get the right thing, process and then die.
+        term = Terminator(self.logger, "execute", self.timeout)
+        term.start()
         while True:
             ts = time.time()
             self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
@@ -149,6 +157,7 @@ class ReplicatorJob(object):
             # this info. we'll be using the DDS OCS messages, so this is good
             # for now.
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
+                term.cancel()
                 self.logger.log(Log.INFO, "got expected info.  Getting image")
                 self.execute(imageID, visitID, exposureSequenceID)
                 st = Status()
@@ -164,7 +173,8 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--raft", type=str, action="store", help="raft", required=True)
     parser.add_argument("-I", "--visitID", type=int, action="store", help="visitID", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
+    parser.add_argument("-t", "--timeout", type=int, action="store", help="ccd #", default=120, required=False)
 
     args = parser.parse_args()
-    base = ReplicatorJob(args.replicatorPort, args.raft, args.visitID, args.exposureSequenceID)
-    base.start()
+    base = ReplicatorJob(args.timeout, args.replicatorPort, args.raft, args.visitID, args.exposureSequenceID)
+    base.begin()
