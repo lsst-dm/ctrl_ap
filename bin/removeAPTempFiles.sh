@@ -21,8 +21,9 @@ ssh lsst-run13 /bin/rm -rf /tmp/lsst
 ssh lsst-run14 /bin/rm -rf /tmp/lsst
 ssh lsst-run15 /bin/rm -rf /tmp/lsst
 ssh lsst-rep /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
-ssh lsst-rep1 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
-ssh lsst-rep2 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out
 
-ssh lsst-dist /bin/rm -f dist* R:*
+ssh lsst-rep1 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out /tmp/R:* /tmp/wave*
+ssh lsst-rep2 /bin/rm -f /tmp/tmp_* /tmp/rep.*.out /tmp/R:* /tmp/wave*
+
+ssh lsst-dist /bin/rm -f /tmp/dist* /tmp/R:* /tmp/wave*
 ssh lsst-dist /bin/rm -rf /tmp/lsst
