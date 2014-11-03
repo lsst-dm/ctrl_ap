@@ -43,6 +43,8 @@ class ReplicatorJob(object):
         jobnum = os.getenv("_CONDOR_SLOT","slot0")
         self.replicatorPort = rPort+int(jobnum[4:])
         
+        self.filesize = 1024
+
         self.timeout = timeout
         self.rSock = None
         # TODO:  these need to be placed in a configuration file
@@ -83,6 +85,7 @@ class ReplicatorJob(object):
 
     def sendInfoToReplicator(self):
         term = Terminator(self.logger, "info to replicator", self.timeout)
+        term.daemon = True
         term.start()
         while self.connectToReplicator() == False:
             self.logger.log(Log.INFO, "retrying")
@@ -107,7 +110,7 @@ class ReplicatorJob(object):
         self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
-        time.sleep(2)
+        #time.sleep(2)
         data = {"data":{"visitID":visitID,"exposureSequenceID":exposureSequenceID,"raft":self.raft}}
         st = Status()
         st.publish(st.replicatorJob, st.read, data)
@@ -116,7 +119,7 @@ class ReplicatorJob(object):
         tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
         tmp = os.path.join("/tmp",tmp)
         f = open(tmp, "wb")
-        size = 1024*200*9 # nine 200k images into one file
+        size = self.filesize*9 # nine self.filesize images into one file
         f.write(os.urandom(size))
         f.close()
         self.logger.log(Log.INFO, "file created is named %s" % f.name)
@@ -135,6 +138,7 @@ class ReplicatorJob(object):
         st = Status()
         # loop until you get the right thing, process and then die.
         term = Terminator(self.logger, "execute", self.timeout)
+        term.daemon = True
         term.start()
         while True:
             ts = time.time()
@@ -159,9 +163,12 @@ class ReplicatorJob(object):
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
                 term.cancel()
                 self.logger.log(Log.INFO, "got expected info.  Getting image")
+                self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('start execute: %Y-%m-%d %H:%M:%S'))
                 self.execute(imageID, visitID, exposureSequenceID)
+                self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('done execute: %Y-%m-%d %H:%M:%S'))
                 st = Status()
                 st.publish(st.replicatorJob, st.finish, st.success)
+                self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('finished: %Y-%m-%d %H:%M:%S'))
                 sys.exit(0)
             else:
                 self.logger.log(Log.INFO, "did not get expected info!")

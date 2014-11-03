@@ -90,6 +90,7 @@ class WavefrontJob(object):
 
     def sendInfoToReplicator(self, raft):
         term = Terminator(self.logger, "to replicator", self.timeout)
+        term.daemon = True
         term.start()
         if self.connectToReplicator() == False:
             self.logger.log(Log.INFO, "not sending")
@@ -136,6 +137,7 @@ class WavefrontJob(object):
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         # loop until you get the right thing, process and then die.
         term = Terminator(self.logger, "start", self.timeout)
+        term.daemon = True
         term.start()
         while True:
             ts = time.time()

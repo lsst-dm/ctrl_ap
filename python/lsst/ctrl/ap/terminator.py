@@ -67,16 +67,18 @@ class Terminator(threading.Thread):
         self.logger.log(Log.INFO, "terminator: %s: cancelled" % self.id)
 
 if __name__ == "__main__":
+    logger = Log.getDefaultLog()
     print "starting first thread"
-    term = Terminator(15)
+    term = Terminator(logger, "first test", 15)
     term.start()
     time.sleep(5)
     term.cancel()
     term.join()
     print "first thread done"
 
+    logger = Log.getDefaultLog()
     print "starting second thread"
-    term = Terminator(15)
+    term = Terminator(logger, "second test", 15)
     term.start()
     time.sleep(5)
     term.join()

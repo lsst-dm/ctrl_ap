@@ -98,6 +98,7 @@ class ArchiveConnectionHandler(threading.Thread):
         serverSock.bind((host,port))
         serverSock.listen(5)
         st = Status()
+        connectCount = 0
         while True:
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
             # spawn a thread to handle this connection
@@ -105,7 +106,9 @@ class ArchiveConnectionHandler(threading.Thread):
             st.publish(st.archiveDMCS, st.accept, clientInfo)
             dist = DistributorLookupHandler(self.dataTable, self.condition, clientSock)
             dist.start()
+            connectCount += 1
             # TODO: should do cleanup here
+            print "connection count = ",connectCount
 
 class EventHandler(threading.Thread):
 
@@ -217,23 +220,6 @@ class EventHandler(threading.Thread):
             else:
                 print "ocsEventType unknown: ",ocsEventType
                 sys.exit(0)
-            #exposureSequenceID = ps.get("exposureSequenceID")
-            #visitID = ps.get("visitID")
-            #raft = ps.get("raft")
-            #sensor = ps.get("sensor")
-            #inetaddr = ps.get("networkAddress")
-            #port = ps.get("networkPort")
-            #key = Key.create(visitID, exposureSequenceID, raft, sensor)
-            #self.logger.log(Log.INFO, "%s %s:%s" % (key, inetaddr,port))
-            #data = {"endpoint":{st.host:inetaddr,st.port:port},
-            #        st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}}
-
-            #st.publish(st.archiveDMCS, st.receivedMsg, data)
-
-            #self.condition.acquire()
-            #self.dataTable[key] = (inetaddr, port)
-            #self.condition.notifyAll()
-            #self.condition.release()
 
 class ArchiveDMCS(object):
     def __init__(self):

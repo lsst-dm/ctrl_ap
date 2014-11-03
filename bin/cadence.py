@@ -93,7 +93,7 @@ class KillTest(object):
                 time.sleep(2)
                 _imageID = _imageID+1
             _visitID = _visitID+1
-            time.sleep(36) # XXX - check thiZ
+            time.sleep(36) # XXX - check this
 
 if __name__ == "__main__":
 
@@ -119,4 +119,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     auto = KillTest()
-    auto.begin(args.verbose, args.exposures, boresight, args.filterID, args.visitID, args.imageID, args.sleepInterval, args.visits)
+    auto.begin(args.verbose, exposures, boresight, args.filterID, args.visitID, args.imageID, args.sleepInterval, args.visits)
