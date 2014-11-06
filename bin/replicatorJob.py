@@ -85,8 +85,8 @@ class ReplicatorJob(object):
 
     def sendInfoToReplicator(self):
         term = Terminator(self.logger, "info to replicator", self.timeout)
-        term.daemon = True
         term.start()
+        
         while self.connectToReplicator() == False:
             self.logger.log(Log.INFO, "retrying")
             time.sleep(1)
@@ -138,7 +138,6 @@ class ReplicatorJob(object):
         st = Status()
         # loop until you get the right thing, process and then die.
         term = Terminator(self.logger, "execute", self.timeout)
-        term.daemon = True
         term.start()
         while True:
             ts = time.time()

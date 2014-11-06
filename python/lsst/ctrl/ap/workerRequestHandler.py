@@ -33,6 +33,14 @@ from lsst.pex.logging import Log
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 
+from sys import getsizeof, stderr
+from itertools import chain
+from collections import deque
+try:
+    from reprlib import repr
+except ImportError:
+    pass
+
 class WorkerRequestHandler(object):
     def __init__(self, jsock, dataTable, condition):
         print "wrh:  object created"
@@ -41,14 +49,18 @@ class WorkerRequestHandler(object):
         self.dataTable = dataTable
         self.condition = condition
 
+
     def getFileInfo(self, key):
         print "getFileInfo: key = %s" % key
         name = None
         self.condition.acquire()
         while True:
+            size = getsizeof(self.dataTable)
+            size += sum(map(getsizeof,self.dataTable.itervalues())) + sum(map(getsizeof,self.dataTable.iterkeys()));
+            print "size of datatable = %d" % size
             if key in self.dataTable:
                 info = self.dataTable[key]
-                print "getFileInfo: key = ",key 
+                print "getFileInfo: key = ",key
                 #print "getFileInfo: info = ", info
                 name = info.getName()
                 if name is not None: 
@@ -80,11 +92,11 @@ class WorkerRequestHandler(object):
             self.jsock.sendJSON(msg)
             print "transmitFile NOT sent"
             return
-        print "transmitFile: name = ",name,"to ",self.jsock.getsockname()
+        print "transmitFile: name = %s to %s "% (name, self.jsock.getsockname())
         msg = data.copy()
         msg["status"] = st.sendFile
         msg["filename"] = name
-        print "transmitFile: msg =",msg
+        print "transmitFile: msg = ",msg
         # TODO: tell worker we do have it, and then send file
         self.jsock.sendFile(msg)
         st.publish(st.distributorNode, st.sendFile, {"filename":name})

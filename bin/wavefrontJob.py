@@ -90,7 +90,6 @@ class WavefrontJob(object):
 
     def sendInfoToReplicator(self, raft):
         term = Terminator(self.logger, "to replicator", self.timeout)
-        term.daemon = True
         term.start()
         if self.connectToReplicator() == False:
             self.logger.log(Log.INFO, "not sending")
@@ -137,8 +136,27 @@ class WavefrontJob(object):
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         # loop until you get the right thing, process and then die.
         term = Terminator(self.logger, "start", self.timeout)
-        term.daemon = True
         term.start()
+        while True:
+            ts = time.time()
+            self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
+            ocsEvent = eventSystem.receiveEvent(self.eventTopic)
+            ps = ocsEvent.getPropertySet()
+            imageID = ps.get("imageID")
+            visitID = ps.get("visitID")
+            exposureSequenceID = ps.get("exposureSequenceID")
+            self.logger.log(Log.INFO, "image id = %s" % imageID)
+            self.logger.log(Log.INFO, "sequence tag = %s" % visitID)
+            self.logger.log(Log.INFO, "exposure sequence id = %s" % exposureSequenceID)
+            # NOTE:  While should be done through a selector on the broker
+            # so we only get the visitID and exp seq ID we are looking
+            # for, DM Messages are not the ultimate way we'll be receiving
+            # this info. we'll be using the DDS OCS messages, so this is good
+            # for now.
+            if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
+                term.cancel()
+                self.logger.log(Log.INFO, "got expected info.  Getting image")
+                self.execute(imageID, visitID, exposureSequenceID, raft)
         while True:
             ts = time.time()
             self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))

@@ -38,7 +38,7 @@ from time import sleep
 
 class DistributorLookupHandler(threading.Thread):
     def __init__(self, dataTable, condition, sock):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="distributor")
         self.dataTable = dataTable
         self.condition = condition
         self.sock = sock
@@ -86,7 +86,7 @@ class DistributorLookupHandler(threading.Thread):
 
 class ArchiveConnectionHandler(threading.Thread):
     def __init__(self, dataTable, condition):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="archive")
         self.dataTable = dataTable
         self.condition = condition
 
@@ -108,12 +108,15 @@ class ArchiveConnectionHandler(threading.Thread):
             dist.start()
             connectCount += 1
             # TODO: should do cleanup here
-            print "connection count = ",connectCount
+            print "connection count = %d; threadCount = %d" %(connectCount,threading.activeCount())
+            threads = threading.enumerate()
+            for x in threads:
+                print x.name
 
 class EventHandler(threading.Thread):
 
     def __init__(self, logger, brokerName, eventTopic, dataTable, condition):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="event")
         self.logger = logger
         self.brokerName = brokerName
         self.eventTopic = eventTopic

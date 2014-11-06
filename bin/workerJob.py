@@ -84,7 +84,6 @@ class WorkerJob(object):
             # terminate this process if we haven't been able to connect within
             # self.timeout seconds
             term = Terminator(self.logger, "archive connection",  self.timeout)
-            term.daemon = True
             term.start()
             sock = self.makeArchiveConnection(self.archiveConfig)
             term.cancel()
@@ -105,7 +104,6 @@ class WorkerJob(object):
             # terminate this process if we haven't received a response within 
             # self.timeout seconds
             term = Terminator(self.logger, "archive response", self.timeout)
-            term.daemon = True
             term.start()
             # wait for a response from the Archive DMCS, which is the host and port
             resp = jsock.recvJSON()
@@ -211,7 +209,6 @@ class WorkerJob(object):
             # terminate this process if we haven't received Image
             # self.timeout seconds
             term = Terminator(self.logger, "execute", self.timeout)
-            term.daemon = True
             term.start()
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
             # we received something; cancel termination of this process

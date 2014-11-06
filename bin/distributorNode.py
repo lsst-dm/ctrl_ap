@@ -29,6 +29,7 @@ import time
 import argparse
 import socket
 import threading
+import traceback
 import lsst.ctrl.events as events
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.distributorHandler import DistributorHandler
@@ -51,6 +52,7 @@ class DistributorEventHandler(threading.Thread):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         while True:
             self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
+            self.logger.log(Log.INFO, "handler: thread count = %d" % threading.activeCount())
             archiveEvent = eventSystem.receiveEvent(self.eventTopic)
             
             ps = archiveEvent.getPropertySet()
@@ -103,6 +105,22 @@ class DistributorNode(Node):
         event = events.Event("distributor", root)
         eventSystem.publishEvent("distributor_event", event)
 
+    def dumpframes(self):
+        self.logger.log(Log.INFO,"*** STACKTRACE - START ***")
+        code = []
+        for threadId, stack in sys._current_frames().items():
+            code.append("\n# ThreadID: %s" % threadId)
+            for filename, lineno, name, line in traceback.extract_stack(stack):
+                code.append('File: "%s", line %d, in %s' % (filename,
+                                                            lineno, name))
+                if line:
+                    code.append("  %s" % (line.strip()))
+        
+        for line in code:
+            self.logger.log(Log.INFO, line)
+        self.logger.log(Log.INFO,"*** STACKTRACE - END ***")
+
+
     def activate(self):
         dataTable = {}
         condition = threading.Condition()
@@ -116,6 +134,7 @@ class DistributorNode(Node):
         st = Status()
         while True:
             self.logger.log(Log.INFO, "Waiting on connection")
+            self.logger.log(Log.INFO, "activate: thread count = %d" % threading.activeCount())
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             (remote,addrlist,ipaddrlist) = socket.gethostbyaddr(ipAddr)
             self.logger.log(Log.INFO, "connection accepted: %s:%d" % (remote, clientPort))
@@ -127,6 +146,7 @@ class DistributorNode(Node):
 
             dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()
+            self.logger.log(Log.INFO, "active thread count: %d" % threading.activeCount())
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
