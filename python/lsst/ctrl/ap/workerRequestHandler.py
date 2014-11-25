@@ -57,7 +57,8 @@ class WorkerRequestHandler(object):
         while True:
             size = getsizeof(self.dataTable)
             size += sum(map(getsizeof,self.dataTable.itervalues())) + sum(map(getsizeof,self.dataTable.iterkeys()));
-            print "size of datatable = %d" % size
+
+            print "datatable len = %d size of datatable = %d" % (len(self.dataTable), size)
             if key in self.dataTable:
                 info = self.dataTable[key]
                 print "getFileInfo: key = ",key
@@ -75,6 +76,7 @@ class WorkerRequestHandler(object):
                 # the distributor no longer has it (due to reboot, or 
                 # expiration.
                 print "XXX - key didn't exist"
+                self.condition.release()
                 return None
             self.condition.wait()
         self.condition.release()

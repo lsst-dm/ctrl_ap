@@ -37,8 +37,8 @@ import sys
 from time import sleep
 
 class DistributorLookupHandler(threading.Thread):
-    def __init__(self, dataTable, condition, sock):
-        threading.Thread.__init__(self, name="distributor")
+    def __init__(self, name, dataTable, condition, sock):
+        threading.Thread.__init__(self, name="distributor:%s" % name)
         self.dataTable = dataTable
         self.condition = condition
         self.sock = sock
@@ -77,6 +77,7 @@ class DistributorLookupHandler(threading.Thread):
             if key in self.dataTable:
                 data = self.dataTable[key]
                 break
+            print "couldn't find key = ",key
             # wait until the self.dataTable is updated, so we can
             # check again
             self.condition.wait()
@@ -104,7 +105,8 @@ class ArchiveConnectionHandler(threading.Thread):
             # spawn a thread to handle this connection
             clientInfo = {st.client:{st.host:ipAddr,st.port:clientPort}}
             st.publish(st.archiveDMCS, st.accept, clientInfo)
-            dist = DistributorLookupHandler(self.dataTable, self.condition, clientSock)
+            name = "%s:%s" % (str(ipAddr), str(clientPort))
+            dist = DistributorLookupHandler(name, self.dataTable, self.condition, clientSock)
             dist.start()
             connectCount += 1
             # TODO: should do cleanup here
