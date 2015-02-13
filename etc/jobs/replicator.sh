@@ -19,5 +19,9 @@ echo -n "last setup starts: ";date
 setup -r .
 echo -n "last setup ends: ";date
 echo -n "replicatorJob starts: ";date
+cd /nfs/workflow/srp/testing/ctrl_events
+setup -r .
+setup pex_config
+cd $WORKDIR/ap/ctrl_ap
 replicatorJob.py $*
 hostname

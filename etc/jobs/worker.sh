@@ -12,7 +12,8 @@ echo -n "stack init started: ";date
 . $LSSTSW/loadLSST.sh
 echo -n "stack init finished: ";date
 setup pex_config
-setup ctrl_events
+cd $WORKDIR/testing/ctrl_events
+setup -r .
 HERE=$PWD
 cd $WORKDIR/ap/ctrl_ap
 setup -r .
