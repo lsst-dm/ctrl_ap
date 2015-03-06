@@ -12,15 +12,13 @@ echo -n "init script starts: ";date
 . $LSSTSW/loadLSST.sh
 echo -n "init script ends: ";date
 #setup pex_config
-#setup ctrl_events
+setup ctrl_events
 HERE=$PWD
 cd $WORKDIR/ap/ctrl_ap
 echo -n "last setup starts: ";date
 setup -r .
 echo -n "last setup ends: ";date
 echo -n "replicatorJob starts: ";date
-cd /nfs/workflow/srp/testing/ctrl_events
-setup -r .
 setup pex_config
 cd $WORKDIR/ap/ctrl_ap
 replicatorJob.py $*

@@ -37,7 +37,7 @@ from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from lsst.ctrl.ap.heartbeat import Heartbeat
 from lsst.ctrl.ap.heartbeat import HeartbeatHandler
-from lsst.ctrl.ap.dmcsHostConfig import BaseConfig
+from lsst.ctrl.ap.baseConfig import BaseConfig
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 
 class BaseDMCS(object):
@@ -61,10 +61,10 @@ class BaseDMCS(object):
         self.isActive = [ False ]
 
     def loadConfig(self):
-        apCtrlPath = envString.resolve("$CTRL_AP_DIR")
+        pack = os.environ["CTRL_AP_DIR"]
+        configPath = os.path.join(pack, "etc", "config", "base.py")
         baseConfig = BaseConfig()
-        subDirPath = os.path.join(apCtrlPath, "etc", "config", "base.py")
-        baseConfig.load(subDirPath)
+        baseConfig.load(configPath)
         return baseConfig
 
     def establishInitialIdentity(self):
@@ -227,6 +227,7 @@ if __name__ == "__main__":
     for x in range(1,12):
         rHostList.append(("lsst-rep1.ncsa.illinois.edu", 8000))
         rHostList.append(("lsst-rep2.ncsa.illinois.edu", 8000))
+
         
     base = BaseDMCS(rHostList)
     base.handleEvents()
