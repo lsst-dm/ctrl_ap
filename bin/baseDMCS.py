@@ -42,12 +42,12 @@ from lsst.ctrl.ap.jsonSocket import JSONSocket
 
 class BaseDMCS(object):
 
-    def __init__(self, rHostList):
+    def __init__(self):
         # TODO:  these need to be placed in a configuration file
         # which is loaded, so they are not embedded in the code
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "ocs_event"
-        self.rHostList = rHostList
+
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "BaseDMCS")
         self.baseConfig = self.loadConfig()
@@ -105,6 +105,7 @@ class BaseDMCS(object):
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
             self.logger.log(Log.INFO, ocsEventType)
+            jm = jobManager.JobManager(self.baseConfig)
             if ocsEventType == "startIntegration":
                 visitID = ps.get("visitID")
                 exposureSequenceID = ps.get("exposureSequenceID")
@@ -112,8 +113,7 @@ class BaseDMCS(object):
                 st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
                 if self.isActive[0] == False:
                     continue
-                jm = jobManager.JobManager()
-                jm.submitAllReplicatorJobs(rHostList, visitID, exposureSequenceID)
+                jm.submitAllReplicatorJobs(visitID, exposureSequenceID)
             elif ocsEventType == "nextVisit":
                 visitID = ps.get("visitID")
                 exposures = ps.get("exposures")
@@ -123,8 +123,9 @@ class BaseDMCS(object):
                 st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
                 if self.isActive[0] == False:
                     continue
-                jm = jobManager.JobManager()
                 jm.submitWorkerJobs(visitID, exposures, boresight, filterID)
+            else:
+                jm = None
 
 class HeartbeatMonitor(threading.Thread):
     def __init__(self, baseConfig, identity, isActive):
@@ -222,12 +223,5 @@ class HeartbeatMonitor(threading.Thread):
 
 
 if __name__ == "__main__":
-    rHostList = []
-    # replicator connection locations
-    for x in range(1,12):
-        rHostList.append(("lsst-rep1.ncsa.illinois.edu", 8000))
-        rHostList.append(("lsst-rep2.ncsa.illinois.edu", 8000))
-
-        
-    base = BaseDMCS(rHostList)
+    base = BaseDMCS()
     base.handleEvents()

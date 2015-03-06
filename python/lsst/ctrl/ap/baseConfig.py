@@ -10,13 +10,9 @@ class WorkerConfig(pexConfig.Config):
     scheduler = pexConfig.Field("HTCondor scheduler host", dtype=str, default=None)
 
 
-class ReplicatorHostConfig(pexConfig.Config):
-    name = pexConfig.Field("host name", dtype=str, default=None)
-    ports = pexConfig.ListField("host ports", dtype=int, default=None)
-
 class ReplicatorConfig(pexConfig.Config):
     scheduler = pexConfig.Field("HTCondor scheduler host", dtype=str, default=None)
-    host = pexConfig.ConfigChoiceField("host", fake.FakeTypeMap(ReplicatorHostConfig))
+    startingPort = pexConfig.Field("Starting port number", dtype=int, default=8000)
 
 
 class BaseConfig(pexConfig.Config):
@@ -27,5 +23,3 @@ class BaseConfig(pexConfig.Config):
 
     replicator = pexConfig.ConfigField("replicator information", ReplicatorConfig)
     worker = pexConfig.ConfigField("worker information", WorkerConfig)
-
-    replicatorHostNames = pexConfig.ListField("aliases of replicator hosts", dtype=str)

@@ -30,13 +30,17 @@ from lsst.ctrl.ap.status import Status
 
 class JobManager(object):
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.temp = None
         self.ads = []
-        cRep = htcondor.Collector("lsst-rep.ncsa.illinois.edu")
-        scheddRep = cRep.locate(htcondor.DaemonTypes.Schedd, "lsst-rep.ncsa.illinois.edu")
-        cWork = htcondor.Collector("lsst-work.ncsa.illinois.edu")
-        scheddWork = cWork.locate(htcondor.DaemonTypes.Schedd, "lsst-work.ncsa.illinois.edu")
+
+        replicatorSchedulerHost = config.replicator.scheduler
+        cRep = htcondor.Collector(replicatorSchedulerHost)
+        scheddRep = cRep.locate(htcondor.DaemonTypes.Schedd, replicatorSchedulerHost)
+        workerSchedulerHost = config.worker.scheduler
+        cWork = htcondor.Collector(workerSchedulerHost)
+        scheddWork = cWork.locate(htcondor.DaemonTypes.Schedd, workerSchedulerHost)
         
         # for replicators
         self.repSchedd = htcondor.Schedd(scheddRep)
@@ -67,19 +71,20 @@ class JobManager(object):
         values = self.repSchedd.act(htcondor.JobAction.Remove, [name])
         return values
 
-    def submitAllReplicatorJobs(self, rPortList, visitID, exposureSequenceID):
+    def submitAllReplicatorJobs(self, visitID, exposureSequenceID):
         status = Status()
         status.publish(status.baseDMCS, status.submit, status.replicatorJobs)
         ad = self.getClassAd(self.replicatorJobPath)
+
+        startingPort = self.config.replicator.startingPort
+
         # 21 jobs
         raft = 1
         for x in range(0,25):
             if (x == 0) or (x == 4) or (x == 20) or (x == 24):
                 continue
-            # replicatorPort, raft, visitID, exposureSequenceID
-            entry = rPortList[raft-1]
-            rPort = entry[1]
-            ad["Arguments"] =  "-R %s --raft %s -I %s -x %s" % (str(rPort), self.encodeToRaft(x), visitID, exposureSequenceID)
+            # starting replicatorPort, raft, visitID, exposureSequenceID
+            ad["Arguments"] =  "-R %s --raft %s -I %s -x %s" % (str(startingPort), self.encodeToRaft(x), visitID, exposureSequenceID)
             ad["Out"] =  "rep.out.%s.%s" % (str(x), exposureSequenceID)
             ad["Err"] =  "rep.err.%s.%s" % (str(x), exposureSequenceID)
             ad["Log"] =  "rep.log.%s.%s" % (str(x), exposureSequenceID)
@@ -93,9 +98,7 @@ class JobManager(object):
 
         # one job
         ad = self.getClassAd(self.wavefrontJobPath)
-        entry = rPortList[21]
-        rPort = entry[1]
-        ad["Arguments"] = "-R %s -I %s -x %s" % (str(rPort), visitID, exposureSequenceID)
+        ad["Arguments"] = "-R %s -I %s -x %s" % (str(startingPort), visitID, exposureSequenceID)
         ad["KeepClaimIdle"] =  600
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list
