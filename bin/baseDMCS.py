@@ -43,14 +43,13 @@ from lsst.ctrl.ap.jsonSocket import JSONSocket
 class BaseDMCS(object):
 
     def __init__(self):
-        # TODO:  these need to be placed in a configuration file
-        # which is loaded, so they are not embedded in the code
-        self.brokerName = "lsst8.ncsa.illinois.edu"
-        self.eventTopic = "ocs_event"
+        self.baseConfig = self.loadConfig()
+
+        self.brokerName = self.baseConfig.broker.host
+        self.eventTopic = self.baseConfig.broker.topic
 
         logger = Log.getDefaultLog()
         self.logger = Log(logger, "BaseDMCS")
-        self.baseConfig = self.loadConfig()
         self.isConnected = False
         self.event = None
 

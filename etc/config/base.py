@@ -1,3 +1,6 @@
+root.broker.host = "lsst8.ncsa.illinois.edu"
+root.broker.topic = "ocs_event"
+
 root.main.host = "lsst-base.ncsa.illinois.edu"
 root.main.port = 9000
 

@@ -1,6 +1,10 @@
 import lsst.pex.config as pexConfig
 import fakeTypeMap as fake
 
+class BrokerConfig(pexConfig.Config):
+    host = pexConfig.Field("host", dtype=str, default=None)
+    topic = pexConfig.Field("topic", dtype=str, default=None)
+
 class HostConfig(pexConfig.Config):
     host = pexConfig.Field("host name", dtype=str, default=None)
     port = pexConfig.Field("host port", dtype=int, default=0)
@@ -18,6 +22,9 @@ class ReplicatorConfig(pexConfig.Config):
 class BaseConfig(pexConfig.Config):
     """ Base DMCS configuration information
     """
+
+    broker = pexConfig.ConfigField("event broker information", BrokerConfig)
+
     main = pexConfig.ConfigField("main base dmcs host information", HostConfig)
     failover = pexConfig.ConfigField("failover base dmcs host information", HostConfig)
 
