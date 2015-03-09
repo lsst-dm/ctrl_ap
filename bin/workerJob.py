@@ -37,7 +37,6 @@ from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 from lsst.ctrl.ap.dmcsHostConfig import ArchiveConfig
-from lsst.ctrl.ap import envString
 from lsst.ctrl.ap.terminator import Terminator
 
 class WorkerJob(object):
@@ -226,7 +225,7 @@ class WorkerJob(object):
         sys.exit(0)
 
 if __name__ == "__main__":
-    apCtrlPath = envString.resolve("$CTRL_AP_DIR")
+    apCtrlPath = os.getenv("CTRL_AP_DIR")
     archiveConfig = ArchiveConfig()
     subDirPath = os.path.join(apCtrlPath, "etc", "config", "archive.py")
     archiveConfig.load(subDirPath)

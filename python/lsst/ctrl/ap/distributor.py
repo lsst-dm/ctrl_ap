@@ -22,7 +22,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-class DistributorInfo(object):
+class Distributor(object):
     def __init__(self, addr, port, name=None):
         self.addr = addr
         self.port = port

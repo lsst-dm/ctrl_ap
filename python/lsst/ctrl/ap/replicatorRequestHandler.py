@@ -34,7 +34,7 @@ from lsst.pex.logging import Log
 from lsst.daf.base import PropertySet
 import lsst.ctrl.events as events
 from lsst.ctrl.ap.key import Key
-from lsst.ctrl.ap.distributorInfo import DistributorInfo
+from lsst.ctrl.ap.distributor import Distributor
 from lsst.ctrl.ap.status import Status
 
 class ReplicatorRequestHandler(object):
@@ -141,7 +141,7 @@ class ReplicatorRequestHandler(object):
         for sensor in sensors:
             props.set("sensor", sensor)
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
-            self.storeDistributorInfo(key, hostinfo[0], hostinfo[1])
+            self.storeDistributor(key, hostinfo[0], hostinfo[1])
 
             
             data = {}
@@ -173,17 +173,17 @@ class ReplicatorRequestHandler(object):
             self.dataTable[key] = distInfo
         else:
             notifyArchive = True
-            distInfo = DistributorInfo(inetaddr, port)
+            distInfo = Distributor(inetaddr, port)
             distInfo.setName(name)
             self.dataTable[key] = distInfo
         self.condition.notifyAll()
         self.condition.release()
         return notifyArchive
 
-    def storeDistributorInfo(self, key, inetaddr, port):
-        print "storeDistributorInfo: key = %s, inet = %s:%s " % (key, inetaddr, port)
+    def storeDistributor(self, key, inetaddr, port):
+        print "storeDistributor: key = %s, inet = %s:%s " % (key, inetaddr, port)
         self.condition.acquire()
-        self.dataTable[key] = DistributorInfo(inetaddr, port)
+        self.dataTable[key] = Distributor(inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
 

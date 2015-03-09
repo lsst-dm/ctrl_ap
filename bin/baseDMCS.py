@@ -30,7 +30,6 @@ import sys
 import threading
 import time
 import lsst.ctrl.events as events
-from lsst.ctrl.ap import envString
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
 from lsst.ctrl.ap.status import Status
@@ -60,7 +59,7 @@ class BaseDMCS(object):
         self.isActive = [ False ]
 
     def loadConfig(self):
-        pack = os.environ["CTRL_AP_DIR"]
+        pack = os.getenv("CTRL_AP_DIR")
         configPath = os.path.join(pack, "etc", "config", "base.py")
         baseConfig = BaseConfig()
         baseConfig.load(configPath)
