@@ -36,7 +36,8 @@ from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from lsst.ctrl.ap.heartbeat import Heartbeat
 from lsst.ctrl.ap.heartbeat import HeartbeatHandler
-from lsst.ctrl.ap.baseConfig import BaseConfig
+import lsst.ctrl.ap.heartbeat
+from lsst.ctrl.ap.config.baseConfig import BaseConfig
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 
 class BaseDMCS(object):

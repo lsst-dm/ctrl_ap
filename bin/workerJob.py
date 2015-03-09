@@ -36,7 +36,7 @@ from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
-from lsst.ctrl.ap.dmcsHostConfig import ArchiveConfig
+from lsst.ctrl.ap.config.archiveConfig import ArchiveConfig
 from lsst.ctrl.ap.terminator import Terminator
 
 class WorkerJob(object):

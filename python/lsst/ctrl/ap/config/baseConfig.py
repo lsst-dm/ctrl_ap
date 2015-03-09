@@ -1,14 +1,7 @@
 import lsst.pex.config as pexConfig
 import fakeTypeMap as fake
-
-class BrokerConfig(pexConfig.Config):
-    host = pexConfig.Field("host", dtype=str, default=None)
-    topic = pexConfig.Field("topic", dtype=str, default=None)
-
-class HostConfig(pexConfig.Config):
-    host = pexConfig.Field("host name", dtype=str, default=None)
-    port = pexConfig.Field("host port", dtype=int, default=0)
-    heartbeatPort = pexConfig.Field("heartbeat port", dtype=int, default=0)
+from lsst.ctrl.ap.config.brokerConfig import BrokerConfig
+from lsst.ctrl.ap.config.hostConfig import HostConfig
 
 class WorkerConfig(pexConfig.Config):
     scheduler = pexConfig.Field("HTCondor scheduler host", dtype=str, default=None)
