@@ -32,7 +32,7 @@ import socket
 import threading
 import subprocess
 import getpass
-from lsst.pex.logging import Log
+import lsst.log as log
 from lsst.ctrl.ap.exceptions import ReplicatorJobException
 from lsst.ctrl.ap.exceptions import DistributorException
 
@@ -43,7 +43,6 @@ class ReplicatorHandler(object):
         self.jobSock = jobSocket
         self.distHost = distHost
         self.distSock = distSock
-        self.logger = Log.getDefaultLog()
 
 
     # this thread receives messages from the replicator job and sends
@@ -57,8 +56,8 @@ class ReplicatorHandler(object):
             raise ReplicatorJobException("socket error")
         if s == "":
             raise ReplicatorJobException("null string received")
-        self.logger.log(Log.INFO, 'received from replicator job %s' % json.loads(s))
-        self.logger.log(Log.INFO, 'sending to distributor')
+        log.debug('received from replicator job %s' % json.loads(s))
+        log.debug('sending to distributor')
 
         # send the message straight to the distributor
         # don't need to re-encode it
@@ -66,7 +65,7 @@ class ReplicatorHandler(object):
             self.distSock.sendWithLength(s)
         except socket.error, err:
             raise DistributorException("error sending message")
-        self.logger.log(Log.INFO, 'sent!')
+        log.debug('sent!')
 
         # the next thing we'll get is a filename from the replicator job.
         # Now, keep in mind that that replicator job runs on the replicator
@@ -76,7 +75,7 @@ class ReplicatorHandler(object):
         msg["msgtype"] = "replicator"
         msg["request"] = "upload"
 
-        self.logger.log(Log.INFO, 'name from replicator job %s' % str(name))
+        log.debug('name from replicator job %s' % str(name))
 
 
         # send the named file to the distributor.
@@ -84,4 +83,4 @@ class ReplicatorHandler(object):
             self.distSock.sendFile(msg)
         except socket.error, err:
             raise DistributorException("error sending file")
-        print "file  %s was sent" % name
+        log.debug("file %s was sent", name)

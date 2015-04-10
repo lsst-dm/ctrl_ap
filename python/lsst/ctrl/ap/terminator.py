@@ -30,19 +30,18 @@ import time
 import socket
 import thread
 import threading
-from lsst.pex.logging import Log
+import lsst.log as log
 
 # terminate the process after a set period, unless we're told not to.
 # this thread will run to completion, and in the end determine whether
 # or not the process should exit.
 class Terminator(object):
-    def __init__(self, logger, id, timeout):
-        self.logger = logger
+    def __init__(self, id, timeout):
         self.id = id
         self.timeout = timeout
 
         self.timer = None
-        self.logger.log(Log.INFO, "terminator: %s: started" % self.id)
+        log.info("terminator: %s: started" % self.id)
 
     def start(self):
         self.timer = threading.Timer(self.timeout, self.die)
@@ -51,10 +50,10 @@ class Terminator(object):
 
     def cancel(self):
         self.timer.cancel()
-        self.logger.log(Log.INFO, "terminator: %s: cancelled" % self.id)
+        log.info("terminator: %s: cancelled" % self.id)
 
     def die(self):
-        self.logger.log(Log.INFO, "terminator: %s: finished, and terminating" % self.id)
+        log.info("terminator: %s: finished, and terminating" % self.id)
         ts = time.time()
-        self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('termination at: %Y-%m-%d %H:%M:%S'))
+        log.info(datetime.datetime.fromtimestamp(ts).strftime('termination at: %Y-%m-%d %H:%M:%S'))
         os.kill(os.getpid(), signal.SIGKILL)

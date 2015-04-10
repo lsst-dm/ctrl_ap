@@ -33,23 +33,25 @@ import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
 from lsst.ctrl.ap.status import Status
-from lsst.pex.logging import Log
 from lsst.ctrl.ap.heartbeat import Heartbeat
 from lsst.ctrl.ap.heartbeat import HeartbeatHandler
 import lsst.ctrl.ap.heartbeat
 from lsst.ctrl.ap.config.baseConfig import BaseConfig
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+import lsst.log as log
+from lsst.ctrl.ap.logConfigurator import LogConfigurator
 
 class BaseDMCS(object):
 
     def __init__(self):
+        configurator = LogConfigurator()
+        configurator.loadProperties()
+
         self.baseConfig = self.loadConfig()
 
         self.brokerName = self.baseConfig.broker.host
         self.eventTopic = self.baseConfig.broker.topic
 
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "BaseDMCS")
         self.isConnected = False
         self.event = None
 
@@ -58,6 +60,23 @@ class BaseDMCS(object):
         self.UNKNOWN = "unknown"
         self.identity = self.UNKNOWN
         self.isActive = [ False ]
+
+    def establishInitialIdentity(self):
+        thisHost = socket.gethostname()
+        if thisHost == self.baseConfig.main.host:
+            self.identity = self.MAIN
+        elif thisHost == self.baseConfig.failover.host:
+            self.identity = self.FAILOVER
+        else:
+            print "couldn't determine host type from config"
+            print "I think I'm: ",socket.gethostname()
+            print "main host is configured as: ",self.baseConfig.main.host
+            print "failover host is configured as: ",self.baseConfig.failover.host
+            sys.exit(1)
+
+    def handleEvents(self):
+        self.establishInitialIdentity()
+
 
     def loadConfig(self):
         pack = os.getenv("CTRL_AP_DIR")
@@ -82,7 +101,7 @@ class BaseDMCS(object):
     def handleEvents(self):
         self.establishInitialIdentity()
 
-        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem = events.EventSystem.getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         st = Status()
         st.publish(st.baseDMCS, st.start)
@@ -96,14 +115,14 @@ class BaseDMCS(object):
         hm.start()
 
         while True:
-            self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
+            log.info("listening on %s " , self.eventTopic)
             st.publish(st.baseDMCS, st.listen, {"topic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
 
             # if the current identity is FAILOVER, don't do anything.
             ps = ocsEvent.getPropertySet()
             ocsEventType = ps.get("ocs_event")
-            self.logger.log(Log.INFO, ocsEventType)
+            log.info(ocsEventType)
             jm = jobManager.JobManager(self.baseConfig)
             if ocsEventType == "startIntegration":
                 visitID = ps.get("visitID")

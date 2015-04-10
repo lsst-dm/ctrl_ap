@@ -26,7 +26,7 @@ import time
 import datetime
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
-from lsst.pex.logging import Log
+import lsst.log as log
 
 class OCS(object):
 
@@ -34,7 +34,6 @@ class OCS(object):
         self.commandTopic = commandTopic
         self.eventTopic = eventTopic
         self.brokerName = "lsst8.ncsa.illinois.edu"
-        self.logger = Log.getDefaultLog()
 
     def sendStartIntegration(self, visitID, exposureSequenceID):
         eventSystem = events.EventSystem().getDefaultEventSystem()

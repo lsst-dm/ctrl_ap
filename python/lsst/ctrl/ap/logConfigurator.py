@@ -22,16 +22,14 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import time
-import datetime
-import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
+import os
 import lsst.log as log
 
-class CondorRegister(object):
+class LogConfigurator(object):
 
-    def registerFullyOperational(self):
-        log.debug("register with fully operational pool")
-
-    def registerLocalOnly(self):
-        log.debug("register with local only pool")
+    def loadProperties(self, name = None):
+        configPath = name
+        if configPath is None:
+            pack = os.getenv("CTRL_AP_DIR")
+            configPath = os.path.join(pack, "etc", "config", "logging.py")
+        log.configure(configPath)

@@ -36,13 +36,13 @@ from lsst.ctrl.ap.distributorHandler import DistributorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
-from lsst.pex.logging import Log
+import lsst.log as log
+from lsst.ctrl.ap.logConfigurator import LogConfigurator
 from lsst.daf.base import PropertySet
 
 class DistributorEventHandler(threading.Thread):
-    def __init__(self, logger, broker, topic, dataTable, condition):
+    def __init__(self, broker, topic, dataTable, condition):
         threading.Thread.__init__(self)
-        self.logger = logger
         self.dataTable = dataTable
         self.condition = condition
         self.brokerName = broker
@@ -51,8 +51,8 @@ class DistributorEventHandler(threading.Thread):
     def run(self):
         eventSystem = events.EventSystem().getDefaultEventSystem()
         while True:
-            self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
-            self.logger.log(Log.INFO, "handler: thread count = %d" % threading.activeCount())
+            log.info("listening on %s " % self.eventTopic)
+            log.info("handler: thread count = %d" % threading.activeCount())
             archiveEvent = eventSystem.receiveEvent(self.eventTopic)
             
             ps = archiveEvent.getPropertySet()
@@ -87,12 +87,14 @@ class DistributorNode(Node):
         self.eventTopic = "archive_event"
 
         self.inboundPort = port
+
+        configurator = LogConfigurator()
+        configurator.loadProperties()
+
         st = Status()
         self.createIncomingSocket(self.inboundPort)
         server = {st.server:{st.host:socket.gethostname(),st.port:self.inboundPort}}
         st.publish(st.distributorNode, st.start, server)
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger,"DistributorNode")
 
         eventSystem = events.EventSystem().getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
@@ -106,7 +108,7 @@ class DistributorNode(Node):
         eventSystem.publishEvent("distributor_event", event)
 
     def dumpframes(self):
-        self.logger.log(Log.INFO,"*** STACKTRACE - START ***")
+        log.info("*** STACKTRACE - START ***")
         code = []
         for threadId, stack in sys._current_frames().items():
             code.append("\n# ThreadID: %s" % threadId)
@@ -117,8 +119,8 @@ class DistributorNode(Node):
                     code.append("  %s" % (line.strip()))
         
         for line in code:
-            self.logger.log(Log.INFO, line)
-        self.logger.log(Log.INFO,"*** STACKTRACE - END ***")
+            log.info(line)
+        log.info("*** STACKTRACE - END ***")
 
 
     def activate(self):
@@ -128,16 +130,16 @@ class DistributorNode(Node):
 
         # start handler for incoming requests from the archive
         # to replenish its information
-        eventHandler = DistributorEventHandler(self.logger, self.brokerName, self.eventTopic, dataTable, condition)
+        eventHandler = DistributorEventHandler(self.brokerName, self.eventTopic, dataTable, condition)
         eventHandler.start()
 
         st = Status()
         while True:
-            self.logger.log(Log.INFO, "Waiting on connection")
-            self.logger.log(Log.INFO, "activate: thread count = %d" % threading.activeCount())
+            log.info("Waiting on connection")
+            log.info("activate: thread count = %d" % threading.activeCount())
             (client, (ipAddr, clientPort)) = self.inSock.accept()
             (remote,addrlist,ipaddrlist) = socket.gethostbyaddr(ipAddr)
-            self.logger.log(Log.INFO, "connection accepted: %s:%d" % (remote, clientPort))
+            log.info("connection accepted: %s:%d" % (remote, clientPort))
             serverInfo = {st.host:socket.gethostname(), st.port:self.inboundPort}
             clientInfo = {st.host:remote,st.port:clientPort}
             connection = {"connection":{st.server:serverInfo, st.client:clientInfo}}
@@ -146,7 +148,7 @@ class DistributorNode(Node):
 
             dh = DistributorHandler(jclient, dataTable, condition)
             dh.start()
-            self.logger.log(Log.INFO, "active thread count: %d" % threading.activeCount())
+            log.info("active thread count: %d" % threading.activeCount())
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])

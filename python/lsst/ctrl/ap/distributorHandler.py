@@ -30,7 +30,7 @@ import json
 import socket
 import threading
 import lsst.ctrl.events as events
-from lsst.pex.logging import Log
+import lsst.log as log
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.replicatorRequestHandler import ReplicatorRequestHandler
 from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
@@ -42,9 +42,6 @@ class DistributorHandler(threading.Thread):
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "distributorHandler")
-
 
     def run(self):
         msg = self.jsock.recvJSON()

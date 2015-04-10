@@ -29,7 +29,6 @@ import argparse
 import json
 import socket
 import threading
-from lsst.pex.logging import Log
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 
@@ -43,39 +42,37 @@ except ImportError:
 
 class WorkerRequestHandler(object):
     def __init__(self, jsock, dataTable, condition):
-        print "wrh:  object created"
-        self.logger = Log.getDefaultLog()
+        log.debug("wrh:  object created")
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
 
 
     def getFileInfo(self, key):
-        print "getFileInfo: key = %s" % key
+        log.debug("getFileInfo: key = %s", key)
         name = None
         self.condition.acquire()
         while True:
             size = getsizeof(self.dataTable)
             size += sum(map(getsizeof,self.dataTable.itervalues())) + sum(map(getsizeof,self.dataTable.iterkeys()));
 
-            print "datatable len = %d size of datatable = %d" % (len(self.dataTable), size)
+            log.debug("datatable len = %d size of datatable = %d", len(self.dataTable), size)
             if key in self.dataTable:
                 info = self.dataTable[key]
-                print "getFileInfo: key = ",key
-                #print "getFileInfo: info = ", info
+                log.debug("getFileInfo: key = %s", key)
                 name = info.getName()
                 if name is not None: 
-                    print "getFileInfo name = ",name
+                    log.debug("getFileInfo name = %s",name)
                     break
                 else:
-                    print "name was none??"
+                    log.warn("name was none??")
             else: 
                 # worker contacted distributor and the key didn't exist,
                 # when it should have.  That means the distributor
                 # had previously given this info to the archive DMCS, but
                 # the distributor no longer has it (due to reboot, or 
                 # expiration.
-                print "XXX - key didn't exist"
+                log.warn("XXX - key didn't exist")
                 self.condition.release()
                 return None
             self.condition.wait()
@@ -83,29 +80,29 @@ class WorkerRequestHandler(object):
         return name
 
     def transmitFile(self, key, data):
-        print "transmitFile: key = ",key
+        log.debug("transmitFile: key = %s", key)
         name = self.getFileInfo(key)
         st = Status();
-        print "transmitFile requested"
+        log.debug("transmitFile requested")
         if name is None:
             # respond to the worker with a message that the file isn't here
             # TODO: tell the archive DMCS to remove that entry
             msg = {st.status:st.error, st.reason:st.fileNotFound}
             self.jsock.sendJSON(msg)
-            print "transmitFile NOT sent"
+            log.debug("transmitFile NOT sent")
             return
-        print "transmitFile: name = %s to %s "% (name, self.jsock.getsockname())
+        log.debug("transmitFile: name = %s to %s ", name, self.jsock.getsockname())
         msg = data.copy()
         msg["status"] = st.sendFile
         msg["filename"] = name
-        print "transmitFile: msg = ",msg
+        log.debug("transmitFile: msg = %s", msg)
         # TODO: tell worker we do have it, and then send file
         self.jsock.sendFile(msg)
         st.publish(st.distributorNode, st.sendFile, {"filename":name})
-        print "transmitFile: done"
+        log.debug("transmitFile: done")
 
     def serviceRequest(self, msg):
-        print "serviceRequest: ",msg
+        log.debug("serviceRequest: %s", msg)
         request = msg["request"]
         if request == "file":
             visitID = msg["visitID"]

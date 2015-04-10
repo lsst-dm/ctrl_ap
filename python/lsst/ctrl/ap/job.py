@@ -29,7 +29,7 @@ import sys
 import argparse
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
-from lsst.pex.logging import Log
+imprt lsst.log as log
 
 class Job(object):
 
@@ -41,7 +41,6 @@ class Job(object):
         self.raft = raft
         self.expectedVisitID = expectedVisitID
         self.expectedExpSeqID = expectedExpSeqID
-        self.logger = Log.getDefaultLog()
 
     def execute(self, imageID, visitID, exposureSequenceID):
         pass
@@ -51,22 +50,22 @@ class Job(object):
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         while True:
             ts = time.time()
-            self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
+            log.info(datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
             imageID = ps.get("imageID")
             # TODO:  for now, assume visit id, and exp. seq. id is also sent
             visitID = ps.get("visitID")
             exposureSequenceID = ps.get("exposureSequenceID")
-            self.logger.log(Log.INFO, "image id = %s" % imageID)
-            self.logger.log(Log.INFO, "sequence tag = %s" % visitID)
-            self.logger.log(Log.INFO, "exposure sequence id = %s" % exposureSequenceID)
+            log.debug("image id = %s" % imageID)
+            log.debug("sequence tag = %s" % visitID)
+            log.debug("exposure sequence id = %s" % exposureSequenceID)
             # NOTE:  While should be done through a selector on the broker
             # so we only get the visitID and exp seq ID we are looking
             # for, DM Messages are not the ultimate way we'll be receiving
             # this info. we'll be using the DDS OCS messages, so this is good
             # for now.
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
-                self.logger.log(Log.INFO, "got expected info.  Getting image")
+                log.debug("got expected info.  Getting image")
                 self.execute(imageID, visitID, exposureSequenceID)
                 sys.exit(0)

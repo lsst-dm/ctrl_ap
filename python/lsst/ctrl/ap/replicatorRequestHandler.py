@@ -30,7 +30,7 @@ import json
 import socket
 import threading
 import errno
-from lsst.pex.logging import Log
+import lsst.log as log
 from lsst.daf.base import PropertySet
 import lsst.ctrl.events as events
 from lsst.ctrl.ap.key import Key
@@ -39,8 +39,7 @@ from lsst.ctrl.ap.status import Status
 
 class ReplicatorRequestHandler(object):
     def __init__(self, jsock, dataTable, condition):
-        print "rrh: object created"
-        self.logger = Log.getDefaultLog()
+        log.debug("rrh: object created")
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
@@ -50,7 +49,7 @@ class ReplicatorRequestHandler(object):
         self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
 
     def serviceRequest(self, msg):
-        print "rrh: serviceRequest: msg = ",msg
+        log.debug("rrh: serviceRequest: msg = %s ", msg)
         msgType = msg["msgtype"]
         if msgType == "replicator job":
             self.handleReplicatorJob(msg)
@@ -58,17 +57,17 @@ class ReplicatorRequestHandler(object):
             self.handleWavefrontJob(msg)
             return
         else:
-            print "rrh: unknown msg: ",msg
+            log.warn("rrh: unknown msg: %s",msg)
 
     def handleReplicatorJob(self, msg):
-        self.logger.log(Log.INFO, "handling request from replicator job")
+        log.info("handling request from replicator job")
         st = Status()
         st.publish(st.distributorNode, st.infoReceived, msg)
 
         request = msg["request"]
         if request == "info post":
             self.sendToArchiveDMCS(msg) # XXX
-            self.logger.log(Log.INFO, 'received from replicator %s' % msg)
+            log.info('received from replicator %s', msg)
         elif request == "upload":
             name = msg["filename"]
             self.jsock.recvFile(name)
@@ -76,10 +75,10 @@ class ReplicatorRequestHandler(object):
             exposureSequenceID = msg["exposureSequenceID"]
             raft = msg["raft"]
             st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
-            #self.logger.log(Log.INFO, 'file received: %s' % name)
+            #log.info('file received: %s' % name)
             self.splitReplicatorFile(self.jsock, visitID, exposureSequenceID, raft, name)
         else:
-            print "unknown request; msg = ",msg
+            log.warn("unknown request; msg = %s",msg)
 
     def handleWavefrontJob(self, msg):
         d = msg.copy()
@@ -96,36 +95,36 @@ class ReplicatorRequestHandler(object):
         request = msg["request"]
         if request == "info post":
             self.sendToArchiveDMCS(msg) # XXX
-            self.logger.log(Log.INFO, 'received from replicator %s' % msg)
+            log.info('received from replicator %s', msg)
         elif request == "upload":
             name = msg["filename"]
             self.jsock.recvFile(name)
             visitID = msg["visitID"]
             exposureSequenceID = msg["exposureSequenceID"]
             st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID})
-            #self.logger.log(Log.INFO, 'file received: %s' % name)
+            #log.info('file received: %s' % name)
             self.splitWavefrontFile(self.jsock, visitID, exposureSequenceID, name)
         else:
-            print "unknown request; msg = ",msg
+            log.warn("unknown request; msg = %s", msg)
 
         #name = self.jsock.recvFile()
         #visitID = msg["visitID"]
         #exposureSequenceID = msg["exposureSequenceID"]
         #st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
-        #self.logger.log(Log.INFO, 'wavefront file received: %s' % name)
+        #log.info('wavefront file received: %s' % name)
         #self.splitWavefrontFile(self.jsock, visitID, exposureSequenceID, name)
 
     def sendToArchiveDMCS(self, msg):
         props = PropertySet()
-        print "sending the following to archive dmcs..."
+        log.debug("sending the following to archive dmcs...")
         for x in msg:
-            print x, msg[x]
+            log.debug("%s %s", x, msg[x])
             val = msg[x]
             if type(val) == int:
                 props.set(str(x), int(msg[x]))
             else:
                 props.set(str(x), str(msg[x]))
-        print "...done"
+        log.debug("...done")
         props.set("distributor_event", "info")
         hostinfo = self.jsock.getsockname()
         props.set("networkAddress", hostinfo[0])
@@ -153,7 +152,7 @@ class ReplicatorRequestHandler(object):
             self.distributorTransmitter.publishEvent(event)
 
     def storeFileInfo(self, key, inetaddr, port, name):
-        print "storeFileInfo: key = %s, name = %s " % (key, name)
+        log.debug("storeFileInfo: key = %s, name = %s ", key, name)
         distInfo = None
         notifyArchive = False
         self.condition.acquire()
@@ -181,7 +180,7 @@ class ReplicatorRequestHandler(object):
         return notifyArchive
 
     def storeDistributor(self, key, inetaddr, port):
-        print "storeDistributor: key = %s, inet = %s:%s " % (key, inetaddr, port)
+        log.debug("storeDistributor: key = %s, inet = %s:%s ", key, inetaddr, port)
         self.condition.acquire()
         self.dataTable[key] = Distributor(inetaddr, port)
         self.condition.notifyAll()
@@ -225,6 +224,7 @@ class ReplicatorRequestHandler(object):
                     else:
                         raise
                 f = open(target,'wb')
+                # TODO:  This needs to seek to the right place.
                 f.write(src.read(buflen))
                 f.close()
                 key = Key.create(visitID, exposureSequenceID, raft, sensor)

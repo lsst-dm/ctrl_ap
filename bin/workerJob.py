@@ -30,11 +30,11 @@ import argparse
 import json
 import socket
 import errno
+import lsst.log as log
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
-from lsst.pex.logging import Log
 from tempfile import NamedTemporaryFile
 from lsst.ctrl.ap.config.archiveConfig import ArchiveConfig
 from lsst.ctrl.ap.terminator import Terminator
@@ -54,12 +54,11 @@ class WorkerJob(object):
         self.ccd = ccd
         self.connectionAttemptInterval = 2 # seconds
 
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "workerJob")
-        self.logger.log(Log.INFO, "visitID = %s" % str(visitID))
-        self.logger.log(Log.INFO, "raft = %s" % str(raft))
-        self.logger.log(Log.INFO, "ccd = %s" % str(ccd))
-        self.logger.log(Log.INFO, "worker started")
+        log.configure()
+        log.info("visitID = %s" % str(visitID))
+        log.info("raft = %s" % str(raft))
+        log.info("ccd = %s" % str(ccd))
+        log.info("worker started")
 
         # We don't know  which slot or host we're
         # running in on condor before it's assigned.
@@ -82,14 +81,14 @@ class WorkerJob(object):
             st.publish(st.workerJob, st.connect, server)
             # terminate this process if we haven't been able to connect within
             # self.timeout seconds
-            term = Terminator(self.logger, "archive connection",  self.timeout)
+            term = Terminator("archive connection",  self.timeout)
             term.start()
             sock = self.makeArchiveConnection(self.archiveConfig)
             term.cancel()
     
             jsock = JSONSocket(sock)
     
-            self.logger.log(Log.INFO, "worker sending request to Archive for distributor info")
+            log.info("worker sending request to Archive for distributor info")
             # send a message to the Archive DMCS, requesting the host and port
             # of the correct distributor
             vals = {"msgtype":"worker job", "request":"distributor", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
@@ -98,21 +97,21 @@ class WorkerJob(object):
     
             data = {st.data:{"visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}}
             st.publish(st.workerJob, st.pub, data)
-            self.logger.log(Log.INFO, "waiting for response from ArchiveDMCS")
+            log.info("waiting for response from ArchiveDMCS")
 
             # terminate this process if we haven't received a response within 
             # self.timeout seconds
-            term = Terminator(self.logger, "archive response", self.timeout)
+            term = Terminator("archive response", self.timeout)
             term.start()
             # wait for a response from the Archive DMCS, which is the host and port
             resp = jsock.recvJSON()
             term.cancel()
-            self.logger.log(Log.INFO, "response received from ArchiveDMCS")
+            log.info("response received from ArchiveDMCS")
             
             st.publish(st.workerJob, st.infoReceived, data)
             return resp["inetaddr"],resp["port"]
         except Exception as exp:
-            self.logger.log(Log.INFO, "exception from distributor")
+            log.info("exception from distributor")
             print exp
             return None,None
 
@@ -133,25 +132,25 @@ class WorkerJob(object):
         try:
             sock.connect((host, port))
         except socket.gaierror, err:
-            self.logger.log(Log.INFO, "address problem?")
+            log.info("address problem?")
             sock = None
         except socket.error, err:
-            self.logger.log(Log.INFO, "connection problem: host %s" % host)
-            self.logger.log(Log.INFO, "connection problem: port %d" % port)
-            self.logger.log(Log.INFO, "connection problem: %s" % err)
+            log.info("connection problem: host %s" % host)
+            log.info("connection problem: port %d" % port)
+            log.info("connection problem: %s" % err)
             sock = None
         return sock
 
     def retrieveDistributorImage(self, host, port, exposure):
-        self.logger.log(Log.INFO, "retrieving image from distributor")
+        log.info("retrieving image from distributor")
         st = Status()
         while True:
             try:
                 connection = {st.server:{st.host:host, st.port:port}}
                 st.publish(st.workerJob, st.connect, connection)
-                self.logger.log(Log.INFO, "making connection")
+                log.info("making connection")
                 sock = self.makeConnection(host, port)
-                self.logger.log(Log.INFO, "connection made")
+                log.info("connection made")
                 jsock = JSONSocket(sock)
                 vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
                 jsock.sendJSON(vals)
@@ -161,28 +160,28 @@ class WorkerJob(object):
                 newName = os.path.join("/tmp",newName)
                 self.safemakedirs(os.path.dirname(newName))
                 #st.publish(st.workerJob, st.requestFile, newName)
-                self.logger.log(Log.INFO, "trying receive file sequence for %s "% newName)
+                log.info("trying receive file sequence for %s "% newName)
                 msg = jsock.recvJSON()
                 if msg == None:
-                    self.logger.log(Log.INFO, "distributor did not have file")
+                    log.info("distributor did not have file")
                     return None, None
                 if msg["status"] == st.fileNotFound:
-                    self.logger.log(Log.INFO, "distributor did not have file")
+                    log.info("distributor did not have file")
                     return None, None
                 
                 #for x in msg:
-                #    self.logger.log(Log.INFO, "%s - %s " % (x,msg[x]))
-                self.logger.log(Log.INFO, "now receiving file %s"  % newName)
+                #    log.info("%s - %s " % (x,msg[x]))
+                log.info("now receiving file %s"  % newName)
                 name = jsock.recvFile(newName)
-                self.logger.log(Log.INFO, "file received %s" % newName)
+                log.info("file received %s" % newName)
                 data["file"] = name;
                 st.publish(st.workerJob, st.fileReceived, data)
-                self.logger.log(Log.INFO, "file received = %s" % name)
+                log.info("file received = %s" % name)
                 return name, "telemetry"
             except Exception, err:
-                self.logger.log(Log.INFO, "exception %s " % err.message)
-                self.logger.log(Log.INFO, "trying to get file, recv was empty")
-                self.logger.log(Log.INFO, "trying again in %d seconds" % self.connectionAttemptInterval)
+                log.info("exception %s " % err.message)
+                log.info("trying to get file, recv was empty")
+                log.info("trying again in %d seconds" % self.connectionAttemptInterval)
                 jsock.close()
                 time.sleep(self.connectionAttemptInterval)
 
@@ -207,7 +206,7 @@ class WorkerJob(object):
                 distHost, distPort = self.requestDistributor(exposure)
             # terminate this process if we haven't received Image
             # self.timeout seconds
-            term = Terminator(self.logger, "execute", self.timeout)
+            term = Terminator("execute", self.timeout)
             term.start()
             image, telemetry = self.retrieveDistributorImage(distHost, int(distPort), exposure)
             # we received something; cancel termination of this process

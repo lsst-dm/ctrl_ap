@@ -34,7 +34,7 @@ from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.terminator import Terminator
-from lsst.pex.logging import Log
+import lsst.log as log
 from tempfile import NamedTemporaryFile
 
 class ReplicatorJob(object):
@@ -55,13 +55,12 @@ class ReplicatorJob(object):
         self.expectedVisitID = expectedVisitID
         self.expectedExpSeqID = expectedExpSeqID
 
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "replicatorJob")
+        log.configure()
         st = Status()
         vals = {"replicatorHost":socket.gethostname(), "replicatorPort":self.replicatorPort, "startupArgs":{"visitID":expectedVisitID, "exposureSequenceID":expectedExpSeqID, "raft":self.raft}}
         st.publish(st.replicatorJob, st.start, vals)
-        self.logger.log(Log.INFO,"visitID = %s"%str(expectedVisitID))
-        self.logger.log(Log.INFO,"expectedSequenceID = %s"%str(expectedExpSeqID))
+        log.info("visitID = %s"%str(expectedVisitID))
+        log.info("expectedSequenceID = %s"%str(expectedExpSeqID))
         
 
     def connectToReplicator(self):
@@ -70,32 +69,32 @@ class ReplicatorJob(object):
         st = Status()
         serv = {st.server:{st.host:host, st.port:self.replicatorPort}}
         st.publish(st.replicatorJob, st.connect, serv)
-        self.logger.log(Log.INFO, "connect to replicator @ %s:%d" % (host, self.replicatorPort))
+        log.info("connect to replicator @ %s:%d" % (host, self.replicatorPort))
         try:
             rSock.connect((host, self.replicatorPort))
         except socket.gaierror, err:
-            self.logger.log(Log.INFO, "address problem?  %s " % err)
+            log.info("address problem?  %s " % err)
             return False
         except socket.error, err:
-            self.logger.log(Log.INFO, "Connection problem: %s" % err)
-            self.logger.log(Log.INFO, "I'm on host: %s" % host)
+            log.info("Connection problem: %s" % err)
+            log.info("I'm on host: %s" % host)
             return False
         self.rSock = JSONSocket(rSock)
         return True
 
     def sendInfoToReplicator(self):
-        term = Terminator(self.logger, "info to replicator", self.timeout)
+        term = Terminator("info to replicator", self.timeout)
         term.start()
         
         while self.connectToReplicator() == False:
-            self.logger.log(Log.INFO, "retrying")
+            log.info("retrying")
             time.sleep(1)
             # handle not being able to connect to the distributor
             pass
         term.cancel()
         
 
-        self.logger.log(Log.INFO, "sending info to replicator node")
+        log.info("sending info to replicator node")
         vals = {"msgtype":"replicator job", "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
@@ -107,7 +106,7 @@ class ReplicatorJob(object):
         imageSize = 3200000000
         raftSize = imageSize/21
         ccdSize = raftSize/9
-        self.logger.log(Log.INFO, "info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
+        log.info("info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
         #time.sleep(2)
@@ -122,7 +121,7 @@ class ReplicatorJob(object):
         size = self.filesize*9 # nine self.filesize images into one file
         f.write(os.urandom(size))
         f.close()
-        self.logger.log(Log.INFO, "file created is named %s" % f.name)
+        log.info("file created is named %s" % f.name)
 
         st.publish(st.replicatorJob, st.fileReceived, {"fileinfo":{"filename":f.name, "size":size}})
 
@@ -137,11 +136,11 @@ class ReplicatorJob(object):
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         st = Status()
         # loop until you get the right thing, process and then die.
-        term = Terminator(self.logger, "execute", self.timeout)
+        term = Terminator("execute", self.timeout)
         term.start()
         while True:
             ts = time.time()
-            self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
+            log.info(datetime.datetime.fromtimestamp(ts).strftime('listening for events: %Y-%m-%d %H:%M:%S'))
             st.publish(st.replicatorJob, "waiting", {"eventTopic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
@@ -149,9 +148,9 @@ class ReplicatorJob(object):
             # TODO:  for now, assume visit id, and exp. seq. id is also sent
             visitID = ps.get("visitID")
             exposureSequenceID = ps.get("exposureSequenceID")
-            self.logger.log(Log.INFO, "image id = %s" % imageID)
-            self.logger.log(Log.INFO, "sequence tag = %s" % visitID)
-            self.logger.log(Log.INFO, "exposure sequence id = %s" % exposureSequenceID)
+            log.info("image id = %s" % imageID)
+            log.info("sequence tag = %s" % visitID)
+            log.info("exposure sequence id = %s" % exposureSequenceID)
             data = {"visitID":visitID, "exposureSequenceID":exposureSequenceID, "imageID":imageID}
             st.publish(st.replicatorJob, st.receivedMsg, {st.startReadout:data})
             # NOTE:  While should be done through a selector on the broker
@@ -161,16 +160,16 @@ class ReplicatorJob(object):
             # for now.
             if visitID == self.expectedVisitID and exposureSequenceID == self.expectedExpSeqID:
                 term.cancel()
-                self.logger.log(Log.INFO, "got expected info.  Getting image")
-                self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('start execute: %Y-%m-%d %H:%M:%S'))
+                log.info("got expected info.  Getting image")
+                log.info(datetime.datetime.fromtimestamp(ts).strftime('start execute: %Y-%m-%d %H:%M:%S'))
                 self.execute(imageID, visitID, exposureSequenceID)
-                self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('done execute: %Y-%m-%d %H:%M:%S'))
+                log.info(datetime.datetime.fromtimestamp(ts).strftime('done execute: %Y-%m-%d %H:%M:%S'))
                 st = Status()
                 st.publish(st.replicatorJob, st.finish, st.success)
-                self.logger.log(Log.INFO, datetime.datetime.fromtimestamp(ts).strftime('finished: %Y-%m-%d %H:%M:%S'))
+                log.info(datetime.datetime.fromtimestamp(ts).strftime('finished: %Y-%m-%d %H:%M:%S'))
                 sys.exit(0)
             else:
-                self.logger.log(Log.INFO, "did not get expected info!")
+                log.info("did not get expected info!")
 
 if __name__ == "__main__":
     basename = os.path.basename(sys.argv[0])
