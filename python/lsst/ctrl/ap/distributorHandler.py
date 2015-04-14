@@ -45,7 +45,7 @@ class DistributorHandler(threading.Thread):
 
     def run(self):
         msg = self.jsock.recvJSON()
-        print "dh: 1: msg =",msg
+        log.debug("dh: 1: msg = %s", msg)
         msgType = msg["msgtype"]
         if msgType == "replicator job" or msgType == "wavefront job":
             handler = ReplicatorRequestHandler(self.jsock, self.dataTable, self.condition)
@@ -54,7 +54,7 @@ class DistributorHandler(threading.Thread):
             heartbeat.start()
             while True:
                 msg = self.jsock.recvJSON()
-                print "dh: 2: msg =",msg
+                log.debug("dh: 2: msg = %s", msg)
                 handler.serviceRequest(msg)
         elif msgType == "worker job":
             handler = WorkerRequestHandler(self.jsock, self.dataTable,  self.condition)

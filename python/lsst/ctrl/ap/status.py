@@ -151,7 +151,7 @@ class Status(object):
         elif type(data) == dict:
             self.publishDict(component, status, data)
         else:
-            print "publish: unknown type"
+            log.warn("publish: unknown type")
 
 
 if __name__ == "__main__":

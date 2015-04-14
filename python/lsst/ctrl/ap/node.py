@@ -57,7 +57,6 @@ class Node(object):
         # publish status message
         st = Status()
         n = outSock.getsockname()
-        print "n = ",n
         name = socket.gethostname()
         serverInfo = {st.host:host, st.port:port}
 
