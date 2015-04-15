@@ -23,6 +23,7 @@
 #
 
 
+import inspect
 import os
 import select
 import socket
@@ -30,12 +31,10 @@ import sys
 import threading
 import time
 import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
 from lsst.ctrl.ap import jobManager
 from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.heartbeat import Heartbeat
 from lsst.ctrl.ap.heartbeat import HeartbeatHandler
-import lsst.ctrl.ap.heartbeat
 from lsst.ctrl.ap.config.baseConfig import BaseConfig
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 import lsst.log as log
@@ -61,26 +60,10 @@ class BaseDMCS(object):
         self.identity = self.UNKNOWN
         self.isActive = [ False ]
 
-    def establishInitialIdentity(self):
-        thisHost = socket.gethostname()
-        if thisHost == self.baseConfig.main.host:
-            self.identity = self.MAIN
-        elif thisHost == self.baseConfig.failover.host:
-            self.identity = self.FAILOVER
-        else:
-            print "couldn't determine host type from config"
-            print "I think I'm: ",socket.gethostname()
-            print "main host is configured as: ",self.baseConfig.main.host
-            print "failover host is configured as: ",self.baseConfig.failover.host
-            sys.exit(1)
-
-    def handleEvents(self):
-        self.establishInitialIdentity()
-
-
     def loadConfig(self):
-        pack = os.getenv("CTRL_AP_DIR")
-        configPath = os.path.join(pack, "etc", "config", "base.py")
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        parentdir = os.path.dirname(currentdir)
+        configPath = os.path.join(parentdir, "etc", "config", "base.py")
         baseConfig = BaseConfig()
         baseConfig.load(configPath)
         return baseConfig

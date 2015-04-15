@@ -31,10 +31,13 @@ import socket
 import threading
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
+import lsst.log as log
 
 from sys import getsizeof, stderr
 from itertools import chain
 from collections import deque
+
+
 try:
     from reprlib import repr
 except ImportError:

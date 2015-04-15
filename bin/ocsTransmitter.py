@@ -37,34 +37,6 @@ class OCSTransmitter(object):
         """
         self.ocs = ocs.OCS()
 
-    def parseArgs(self, basename):
-        """
-        Parse command line arguments
-        @param basename the base name of this command
-        @return: the parser options and arguments
-        """
-
-        parser = argparse.ArgumentParser(prog=basename)
-        #parser.add_argument("-s", "--startIntegration", action="store_true", help="startIntegration", required=False)
-        
-        subparsers = parser.add_subparsers(dest="cmd", help="send command from simulated OCS")
-        parser_a = subparsers.add_parser("startIntegration")
-        parser_a.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
-        parser_a.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
-
-        parser_b = subparsers.add_parser("startReadout")
-        parser_b.add_argument("-i", "--imageID", type=int, action="store", help="image id", required=True)
-        parser_b.add_argument("-I", "--visitID", type=int, action="store", help="visit id", required=True)
-        parser_b.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
-
-        parser_c = subparsers.add_parser("nextVisit")
-        parser_c.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
-        parser_c.add_argument("-n", "--exposures", type=int, action="store", help="number of exposures", required=True)
-        parser_c.add_argument("-b", "--boresight", type=str, action="store", help="boresight pointing", required=True)
-        parser_c.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)
-
-        return  parser.parse_args()
-
     def sendStartIntegration(self, visitID, exposureSequenceID):
         self.ocs.sendStartIntegration(visitID, exposureSequenceID)
 
@@ -79,7 +51,25 @@ if __name__ == "__main__":
 
     basename = os.path.basename(sys.argv[0])
 
-    args = ocsT.parseArgs(basename)
+    parser = argparse.ArgumentParser(prog=basename)
+    
+    subparsers = parser.add_subparsers(dest="cmd", help="send command from simulated OCS")
+    parser_a = subparsers.add_parser("startIntegration")
+    parser_a.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
+    parser_a.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
+
+    parser_b = subparsers.add_parser("startReadout")
+    parser_b.add_argument("-i", "--imageID", type=int, action="store", help="image id", required=True)
+    parser_b.add_argument("-I", "--visitID", type=int, action="store", help="visit id", required=True)
+    parser_b.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
+
+    parser_c = subparsers.add_parser("nextVisit")
+    parser_c.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
+    parser_c.add_argument("-n", "--exposures", type=int, action="store", help="number of exposures", required=True)
+    parser_c.add_argument("-b", "--boresight", type=str, action="store", help="boresight pointing", required=True)
+    parser_c.add_argument("-F", "--filterID", type=str, action="store", help="filter id", required=True)
+
+    args = parser.parse_args()
 
     st = Status()
     if args.cmd == "startIntegration":

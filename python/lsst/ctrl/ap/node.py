@@ -74,10 +74,6 @@ class Node(object):
             outSock = None
             return False
         self.outSock = JSONSocket(outSock)
-
-
-        # xxx - sending Status AFTER the connection is made has
-        # given out of order messages on the status receiver.
         return True
 
     def process(self):
