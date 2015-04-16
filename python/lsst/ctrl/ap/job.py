@@ -22,13 +22,10 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import time
 import datetime
-import os
 import sys
-import argparse
+import time
 import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
 import lsst.log as log
 
 class Job(object):

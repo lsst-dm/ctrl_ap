@@ -22,19 +22,11 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import os
-import sys
-import time
-import argparse
-import json
-import socket
 import threading
-import lsst.ctrl.events as events
-import lsst.log as log
-from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.replicatorRequestHandler import ReplicatorRequestHandler
 from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
 from lsst.ctrl.ap.heartbeat import Heartbeat
+import lsst.log as log
 
 class DistributorHandler(threading.Thread):
     def __init__(self, jsock, dataTable, condition):
