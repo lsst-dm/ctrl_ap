@@ -40,7 +40,7 @@ class Heartbeat(threading.Thread):
             try :
                 self.jsock.sendJSON(msg)
                 time.sleep(self.delay)
-            except Exception as exp:
+            except Exception:
                 log.warn("Heartbeat exception")
                 excepted = True
 

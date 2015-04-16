@@ -22,11 +22,8 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import time
-import datetime
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
-import lsst.log as log
 
 class OCS(object):
 
@@ -36,8 +33,6 @@ class OCS(object):
         self.brokerName = "lsst8.ncsa.illinois.edu"
 
     def sendStartIntegration(self, visitID, exposureSequenceID):
-        eventSystem = events.EventSystem().getDefaultEventSystem()
-
         props = PropertySet()
         props.set("ocs_event", "startIntegration")
         props.set("visitID", visitID)
@@ -48,11 +43,8 @@ class OCS(object):
 
         trans = events.EventTransmitter(self.brokerName, self.eventTopic)
         trans.publishEvent(event)
-        ts = time.time()
 
     def sendStartReadout(self, imageID, visitID, exposureSequenceID):
-        eventSystem = events.EventSystem().getDefaultEventSystem()
-
         props = PropertySet()
         props.set("imageID", imageID)
         props.set("visitID", visitID)
@@ -65,8 +57,6 @@ class OCS(object):
         trans.publishEvent(event)
 
     def sendNextVisit(self, visitID, exposures, boresight, filterID):
-        eventSystem = events.EventSystem().getDefaultEventSystem()
-
         props = PropertySet()
         props.set("ocs_event", "nextVisit")
         props.set("visitID", visitID)

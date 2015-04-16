@@ -27,15 +27,12 @@ import datetime
 import os
 import sys
 import argparse
-import json
 import socket
 import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.terminator import Terminator
 import lsst.log as log
-from tempfile import NamedTemporaryFile
 
 class ReplicatorJob(object):
 

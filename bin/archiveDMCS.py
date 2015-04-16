@@ -25,15 +25,12 @@
 
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
-from lsst.ctrl.ap import jobManager
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import threading
 import socket
-import signal
 import sys
-from time import sleep
 import lsst.log as log
 from lsst.ctrl.ap.logConfigurator import LogConfigurator
 
@@ -185,7 +182,6 @@ class EventHandler(threading.Thread):
         addr = ps.get("networkAddress")
         port = ps.get("networkPort")
         hostport = (addr, port)
-        st = Status()
 
         log.debug("attempting to remove %s", ps.toString())
         self.condition.acquire()

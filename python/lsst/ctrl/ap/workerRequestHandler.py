@@ -22,26 +22,12 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import os
-import sys
-import time
-import argparse
-import json
-import socket
-import threading
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import lsst.log as log
 
-from sys import getsizeof, stderr
-from itertools import chain
-from collections import deque
+from sys import getsizeof
 
-
-try:
-    from reprlib import repr
-except ImportError:
-    pass
 
 class WorkerRequestHandler(object):
     def __init__(self, jsock, dataTable, condition):

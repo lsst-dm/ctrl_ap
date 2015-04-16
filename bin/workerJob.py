@@ -23,19 +23,14 @@
 #
 
 import time
-import datetime
 import os
 import sys
 import argparse
-import json
 import socket
 import errno
 import lsst.log as log
-import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
-from tempfile import NamedTemporaryFile
 from lsst.ctrl.ap.config.archiveConfig import ArchiveConfig
 from lsst.ctrl.ap.terminator import Terminator
 

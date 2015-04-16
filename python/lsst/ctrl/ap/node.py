@@ -22,17 +22,11 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import argparse
-import datetime
-import os
 import sys
 import socket
-import time
-import lsst.ctrl.events as events
 from lsst.ctrl.ap.status import Status
-from lsst.daf.base import PropertySet
-import lsst.log as log
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+import lsst.log as log
 
 class Node(object):
 
@@ -56,8 +50,6 @@ class Node(object):
 
         # publish status message
         st = Status()
-        n = outSock.getsockname()
-        name = socket.gethostname()
         serverInfo = {st.host:host, st.port:port}
 
         connection = {st.server:serverInfo}

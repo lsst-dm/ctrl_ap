@@ -23,12 +23,11 @@
 #
 
 import os
-import sys
-import time
 import json
 import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+import lsst.log as log
 
 class Singleton(type):
     _instances = {}

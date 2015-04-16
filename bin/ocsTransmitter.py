@@ -25,7 +25,6 @@
 import sys
 import os.path
 import argparse
-import lsst.ctrl.events as events
 from lsst.ctrl.ap import ocs
 from lsst.ctrl.ap.status import Status
 

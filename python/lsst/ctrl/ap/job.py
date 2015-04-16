@@ -29,7 +29,7 @@ import sys
 import argparse
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
-imprt lsst.log as log
+import lsst.log as log
 
 class Job(object):
 

@@ -23,21 +23,14 @@
 #
 
 import time
-import datetime
 import os
 import sys
 import argparse
 import socket
-import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
-from lsst.ctrl.ap.job import Job
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.status import Status
-from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 import lsst.log as log
-from lsst.ctrl.ap.exceptions import ReplicatorJobException
-from lsst.ctrl.ap.exceptions import DistributorException
 
 import threading
 
@@ -58,8 +51,6 @@ class DistributorConnection(threading.Thread):
 
         # publish status message
         st = Status()
-        n = outSock.getsockname()
-        name = socket.gethostname()
         serverInfo = {st.host:host, st.port:port}
 
         connection = {st.server:serverInfo}
@@ -78,20 +69,6 @@ class DistributorConnection(threading.Thread):
             self.outSock = None
             return False
         return True
-
-    def sendOLD(self, msg):
-        print "dct: send: msg is ",msg
-        type = msg["msgtype"]
-        if type == "file":
-            filename = msg["filename"]
-            print "dct: sending"
-            self.outSock.sendFile(msg)
-        elif type == "replicator job" or type == "wavefront job":
-            print "dct: sending msg"
-            self.outSock.sendJSON(msg)
-            print "dct: done sending msg"
-        else:
-            print "unknown type: ",type
 
     def send(self, msg):
         print "dct: send: msg is ",msg
@@ -144,7 +121,7 @@ class DistributorConnection(threading.Thread):
                         print "about to try"
                         self.send(s)
                         print "end of try"
-                    except socket.error, err:
+                    except socket.error:
                         print "Distributor connection thread: heartbeatEvent set 2"
                         connectionOK = False
                         heartbeatEvent.set()

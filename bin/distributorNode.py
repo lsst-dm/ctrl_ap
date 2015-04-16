@@ -25,7 +25,6 @@
 
 import os
 import sys
-import time
 import argparse
 import socket
 import threading
@@ -57,9 +56,6 @@ class DistributorEventHandler(threading.Thread):
             
             ps = archiveEvent.getPropertySet()
             print"event received: ",ps.toString()
-
-            # todo: switch in event "request"
-            request = ps.get("request")
 
             # send events for contents of dataTable
             self.condition.acquire()

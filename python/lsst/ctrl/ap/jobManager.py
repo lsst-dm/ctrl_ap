@@ -140,9 +140,6 @@ class JobManager(object):
             sub, raft = self.calculateRaftInfoFromCcd(x)
             sRaft = self.encodeToRaft(raft)
             sCcd = "S:%d,%d" % (sub % 3, sub / 3)
-            # old
-            # ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s -H %s -P %d" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd, archiveHost, archivePort)
-            # new
             ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd)
             ad["Out"] =  "worker.Out.%s" % str(x)
             ad["Err"] =  "worker.Err.%s" % str(x)

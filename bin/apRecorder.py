@@ -26,9 +26,6 @@
 import sys
 import json
 import time
-import socket
-import threading
-from lsst.daf.base import PropertySet
 import lsst.ctrl.events as events
 from lsst.ctrl.ap.status import Status
 

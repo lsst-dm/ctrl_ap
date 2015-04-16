@@ -27,14 +27,11 @@ import datetime
 import os
 import sys
 import argparse
-import json
 import socket
 import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 import lsst.log as log
-from tempfile import NamedTemporaryFile
 from lsst.ctrl.ap.terminator import Terminator
 
 class WavefrontJob(object):
@@ -104,27 +101,27 @@ class WavefrontJob(object):
         data = {st.data:{"visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : raft}}
         st.publish(st.wavefrontJob, st.pub, data)
 
-    def execute(self, imageID, visitID, exposureSequenceID, raft):
-        log.info("info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
-
-        # artificial wait to simulate some processing going on.
-        time.sleep(2)
-        data = {"data":{"visitID":visitID,"exposureSequenceID":exposureSequenceID,"raft":raft}}
-        st = Status()
-        st.publish(st.wavefrontJob, st.read, data)
-
-        # write a random binary file to disk
-        tmp = "%s_%s_%s_%s" % (raft, imageID, visitID, exposureSequenceID)
-        tmp = os.path.join("/tmp",tmp)
-        f = open(tmp, "wb")
-        f.write(os.urandom(1024*200*4))
-        f.close()
-        log.info("file created is named %s" % f.name)
-
-        # send the replicator node the name of the file
-        vals = {"msgtype":"wavefront job", "request":"upload", "filename" : f.name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft}
-        self.rSock.sendJSON(vals)
-        st.publish(st.wavefrontJob, st.upload, f.name)
+#    def execute(self, imageID, visitID, exposureSequenceID, raft):
+#        log.info("info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
+#
+#        # artificial wait to simulate some processing going on.
+#        time.sleep(2)
+#        data = {"data":{"visitID":visitID,"exposureSequenceID":exposureSequenceID,"raft":raft}}
+#        st = Status()
+#        st.publish(st.wavefrontJob, st.read, data)
+#
+#        # write a random binary file to disk
+#        tmp = "%s_%s_%s_%s" % (raft, imageID, visitID, exposureSequenceID)
+#        tmp = os.path.join("/tmp",tmp)
+#        f = open(tmp, "wb")
+#        f.write(os.urandom(1024*200*4))
+#        f.close()
+#        log.info("file created is named %s" % f.name)
+#
+#        # send the replicator node the name of the file
+#        vals = {"msgtype":"wavefront job", "request":"upload", "filename" : f.name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft}
+#        self.rSock.sendJSON(vals)
+#        st.publish(st.wavefrontJob, st.upload, f.name)
 
 
 

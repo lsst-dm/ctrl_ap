@@ -23,15 +23,8 @@
 #
 
 
-import os
-import sys
-import time
-import argparse
 import json
 import socket
-import threading
-import subprocess
-import getpass
 import lsst.log as log
 from lsst.ctrl.ap.exceptions import ReplicatorJobException
 from lsst.ctrl.ap.exceptions import DistributorException
@@ -52,18 +45,18 @@ class ReplicatorHandler(object):
         # this contains information about the exposure #, visit id, and raft
         try:
             s = self.jobSock.recvall()
-        except socket.error, err:
+        except socket.error:
             raise ReplicatorJobException("socket error")
         if s == "":
             raise ReplicatorJobException("null string received")
-        log.debug('received from replicator job %s' % json.loads(s))
+        log.debug('received from replicator job %s' , json.loads(s))
         log.debug('sending to distributor')
 
         # send the message straight to the distributor
         # don't need to re-encode it
         try :
             self.distSock.sendWithLength(s)
-        except socket.error, err:
+        except socket.error:
             raise DistributorException("error sending message")
         log.debug('sent!')
 
@@ -71,16 +64,17 @@ class ReplicatorHandler(object):
         # Now, keep in mind that that replicator job runs on the replicator
         # node, so it's already on the machine (in this case on the filesystem).
         vals = self.jobSock.recvJSON()
+        name = vals["filename"]
         msg = vals.copy()
         msg["msgtype"] = "replicator"
         msg["request"] = "upload"
 
-        log.debug('name from replicator job %s' % str(name))
+        log.debug('name from replicator job %s' , str(name))
 
 
         # send the named file to the distributor.
         try:
             self.distSock.sendFile(msg)
-        except socket.error, err:
+        except socket.error:
             raise DistributorException("error sending file")
         log.debug("file %s was sent", name)

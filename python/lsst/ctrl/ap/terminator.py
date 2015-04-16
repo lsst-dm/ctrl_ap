@@ -25,10 +25,7 @@
 import datetime
 import os
 import signal
-import sys
 import time
-import socket
-import thread
 import threading
 import lsst.log as log
 

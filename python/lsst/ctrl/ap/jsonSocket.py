@@ -26,9 +26,8 @@
 import os
 import sys
 import json
-import yaml
-import socket
 import struct
+import lsst.log as log 
 
 class JSONSocket(object):
     def __init__(self, s):

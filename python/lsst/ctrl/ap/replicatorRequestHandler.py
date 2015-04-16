@@ -23,12 +23,6 @@
 #
 
 import os
-import sys
-import time
-import argparse
-import json
-import socket
-import threading
 import errno
 import lsst.log as log
 from lsst.daf.base import PropertySet
@@ -82,7 +76,6 @@ class ReplicatorRequestHandler(object):
 
     def handleWavefrontJob(self, msg):
         d = msg.copy()
-        synRaft = msg["raft"]
         st = Status()
         st.publish(st.distributorNode,st.infoReceived, d)
         # this used to send info to the archive DMCS.  Keeping this

@@ -31,7 +31,7 @@ import socket
 import threading
 
 class Handler(threading.Thread):
-    def __init__(self, sock)
+    def __init__(self, sock):
         super(Handler, self).__init__()
         self.sock = sock
 
