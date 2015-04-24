@@ -34,7 +34,7 @@ import sys
 import lsst.log as log
 from lsst.ctrl.ap.logConfigurator import LogConfigurator
 
-class DistributorLookupHandler(threading.Thread):
+class LookupMessageDispatcher(threading.Thread):
     def __init__(self, name, dataTable, condition, sock):
         threading.Thread.__init__(self, name="distributor:%s" % name)
         self.dataTable = dataTable
@@ -102,8 +102,8 @@ class ArchiveConnectionHandler(threading.Thread):
             clientInfo = {st.client:{st.host:ipAddr,st.port:clientPort}}
             st.publish(st.archiveDMCS, st.accept, clientInfo)
             name = "%s:%s" % (str(ipAddr), str(clientPort))
-            dist = DistributorLookupHandler(name, self.dataTable, self.condition, clientSock)
-            dist.start()
+            lmd = LookupMessageDispatcher(name, self.dataTable, self.condition, clientSock)
+            lmd.start()
             connectCount += 1
             # TODO: should do cleanup here
             log.debug("connection count = %d; threadCount = %d", connectCount,threading.activeCount())
