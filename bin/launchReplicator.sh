@@ -1,7 +1,7 @@
 #!/bin/bash
 # setup the main lsst stack in .bashrc before executing
 # and set _CTRL_AP_DIR and _HTCONDOR_DIR to the correct directories.
-. $LSSTSW/loadLSST.sh
+. $LSSTSW/loadLSST.bash
 setup ctrl_events
 setup -r $_CTRL_AP_DIR
 setup -r $_HTCONDOR_DIR

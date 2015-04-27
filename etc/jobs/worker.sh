@@ -6,10 +6,10 @@ export USER=srp
 source /etc/bashrc
 
 # LSST Personal software stack
-WORKDIR=/nfs/workflow/srp
-export LSSTSW=$WORKDIR/lsstsw
+WORKDIR=/nfs/workflow
+export LSSTSW=$WORKDIR/lsstsw_rc3
 echo -n "stack init started: ";date
-. $LSSTSW/loadLSST.sh
+. $LSSTSW/loadLSST.bash
 echo -n "stack init finished: ";date
 setup pex_config
 setup ctrl_events

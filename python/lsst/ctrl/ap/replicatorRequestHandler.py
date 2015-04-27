@@ -42,7 +42,7 @@ class ReplicatorRequestHandler(object):
         self.topic = "distributor_event"
         self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
 
-    def serviceRequest(self, msg):
+    def serviceRequestOLD(self, msg):
         log.debug("rrh: serviceRequest: msg = %s ", msg)
         msgType = msg["msgtype"]
         if msgType == "replicator job":
@@ -52,6 +52,36 @@ class ReplicatorRequestHandler(object):
             return
         else:
             log.warn("rrh: unknown msg: %s",msg)
+
+    def serviceRequest(self, msg):
+        log.debug("rrh: serviceRequest: msg = %s ", msg)
+        msgType = msg["msgtype"]
+        if msgType == "replicator job":
+            self.handleJob(msg, self.splitReplicatorFile)
+        elif msgType == "wavefront job":
+            self.handleJob(msg, self.splitWavefrontFile)
+        else:
+            log.warn("rrh: unknown msg: %s",msg)
+
+    def handleJob(self, msg, method):
+        log.info("handling request from replicator job")
+        st = Status()
+        st.publish(st.distributorNode, st.infoReceived, msg)
+
+        request = msg["request"]
+        if request == "info post":
+            self.sendToArchiveDMCS(msg) # XXX
+            log.info('received from replicator %s', msg)
+        elif request == "upload":
+            name = msg["filename"]
+            self.jsock.recvFile(name)
+            visitID = msg["visitID"]
+            exposureSequenceID = msg["exposureSequenceID"]
+            raft = msg["raft"]
+            st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
+            method(self.jsock, visitID, exposureSequenceID, raft, name)
+        else:
+            log.warn("unknown request; msg = %s",msg)
 
     def handleReplicatorJob(self, msg):
         log.info("handling request from replicator job")
@@ -75,9 +105,9 @@ class ReplicatorRequestHandler(object):
             log.warn("unknown request; msg = %s",msg)
 
     def handleWavefrontJob(self, msg):
-        d = msg.copy()
+        log.info("handling request from wavefront job")
         st = Status()
-        st.publish(st.distributorNode,st.infoReceived, d)
+        st.publish(st.distributorNode,st.infoReceived, msg)
         # this used to send info to the archive DMCS.  Keeping this
         # in place (but commented out) to handle additional work
         # that will be done by the distributor for this type of file. That
@@ -100,18 +130,13 @@ class ReplicatorRequestHandler(object):
         else:
             log.warn("unknown request; msg = %s", msg)
 
-        #name = self.jsock.recvFile()
-        #visitID = msg["visitID"]
-        #exposureSequenceID = msg["exposureSequenceID"]
-        #st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":synRaft})
-        #log.info('wavefront file received: %s' % name)
-        #self.splitWavefrontFile(self.jsock, visitID, exposureSequenceID, name)
-
     def sendToArchiveDMCS(self, msg):
         props = PropertySet()
         log.debug("sending the following to archive dmcs...")
         for x in msg:
-            log.debug("%s %s", x, msg[x])
+            print "x = ", x
+            log.debug("key = %s", str(x))
+            log.debug("val = %s",  str(msg[x]))
             val = msg[x]
             if type(val) == int:
                 props.set(str(x), int(msg[x]))
@@ -135,7 +160,6 @@ class ReplicatorRequestHandler(object):
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
             self.storeDistributor(key, hostinfo[0], hostinfo[1])
 
-            
             data = {}
             for x in props.paramNames():
                 data[x] = props.get(x)
@@ -145,7 +169,7 @@ class ReplicatorRequestHandler(object):
             self.distributorTransmitter.publishEvent(event)
 
     def storeFileInfo(self, key, inetaddr, port, name):
-        log.debug("storeFileInfo: key = %s, name = %s ", key, name)
+        log.debug("storeFileInfo: key = %s, name = %s ", str(key), name)
         distInfo = None
         notifyArchive = False
         self.condition.acquire()

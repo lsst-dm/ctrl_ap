@@ -28,9 +28,9 @@ from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
 from lsst.ctrl.ap.heartbeat import Heartbeat
 import lsst.log as log
 
-class DistributorHandler(threading.Thread):
+class JobMessageDispatcher(threading.Thread):
     def __init__(self, jsock, dataTable, condition):
-        super(DistributorHandler, self).__init__()
+        super(JobMessageDispatcher, self).__init__()
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition

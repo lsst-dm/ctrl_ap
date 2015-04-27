@@ -50,7 +50,7 @@ class JSONSocket(object):
     def sendFile(self, msg):
         name = msg["filename"]
         log.debug("sendFile: sending msg: %s",msg)
-        log.debug("sendFile: sending file: %s",name)
+        log.debug("sendFile: sending file: %s",str(name))
 
         chunksize = 4096
 

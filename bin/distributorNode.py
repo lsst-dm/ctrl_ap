@@ -31,7 +31,7 @@ import threading
 import traceback
 import lsst.ctrl.events as events
 from lsst.ctrl.ap.node import Node
-from lsst.ctrl.ap.distributorHandler import DistributorHandler
+from lsst.ctrl.ap.jobMessageDispatcher import JobMessageDispatcher
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
@@ -39,7 +39,7 @@ import lsst.log as log
 from lsst.ctrl.ap.logConfigurator import LogConfigurator
 from lsst.daf.base import PropertySet
 
-class DistributorEventHandler(threading.Thread):
+class DistributorDataReporter(threading.Thread):
     def __init__(self, broker, topic, dataTable, condition):
         threading.Thread.__init__(self)
         self.dataTable = dataTable
@@ -48,7 +48,7 @@ class DistributorEventHandler(threading.Thread):
         self.eventTopic = topic
 
     def run(self):
-        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem = events.EventSystem.getDefaultEventSystem()
         while True:
             log.info("listening on %s " % self.eventTopic)
             log.info("handler: thread count = %d" % threading.activeCount())
@@ -92,7 +92,7 @@ class DistributorNode(Node):
         server = {st.server:{st.host:socket.gethostname(),st.port:self.inboundPort}}
         st.publish(st.distributorNode, st.start, server)
 
-        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem = events.EventSystem.getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         eventSystem.createTransmitter(self.brokerName, "distributor_event")
         
@@ -103,22 +103,6 @@ class DistributorNode(Node):
         event = events.Event("distributor", root)
         eventSystem.publishEvent("distributor_event", event)
 
-    def dumpframes(self):
-        log.info("*** STACKTRACE - START ***")
-        code = []
-        for threadId, stack in sys._current_frames().items():
-            code.append("\n# ThreadID: %s" % threadId)
-            for filename, lineno, name, line in traceback.extract_stack(stack):
-                code.append('File: "%s", line %d, in %s' % (filename,
-                                                            lineno, name))
-                if line:
-                    code.append("  %s" % (line.strip()))
-        
-        for line in code:
-            log.info(line)
-        log.info("*** STACKTRACE - END ***")
-
-
     def activate(self):
         dataTable = {}
         condition = threading.Condition()
@@ -126,8 +110,8 @@ class DistributorNode(Node):
 
         # start handler for incoming requests from the archive
         # to replenish its information
-        eventHandler = DistributorEventHandler(self.brokerName, self.eventTopic, dataTable, condition)
-        eventHandler.start()
+        reporter = DistributorDataReporter(self.brokerName, self.eventTopic, dataTable, condition)
+        reporter.start()
 
         st = Status()
         while True:
@@ -142,8 +126,8 @@ class DistributorNode(Node):
             st.publish(st.distributorNode, st.accept, connection)
             jclient = JSONSocket(client)
 
-            dh = DistributorHandler(jclient, dataTable, condition)
-            dh.start()
+            messageDispatcher = JobMessageDispatcher(jclient, dataTable, condition)
+            messageDispatcher.start()
             log.info("active thread count: %d" % threading.activeCount())
 
 if __name__ == "__main__":

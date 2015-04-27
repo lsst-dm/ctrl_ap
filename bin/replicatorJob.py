@@ -129,7 +129,7 @@ class ReplicatorJob(object):
 
     def begin(self):
         self.sendInfoToReplicator()
-        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem = events.EventSystem.getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         st = Status()
         # loop until you get the right thing, process and then die.
