@@ -118,14 +118,17 @@ class ReplicatorJob(object):
         size = self.filesize*9 # nine self.filesize images into one file
         f.write(os.urandom(size))
         f.close()
-        log.info("file created is named %s" % f.name)
+        log.info("file created is named %s" , f.name)
 
         st.publish(st.replicatorJob, st.fileReceived, {"fileinfo":{"filename":f.name, "size":size}})
 
         # send the replicator node the name of the file
         vals = {"msgtype":"replicator job", "request":"upload", "filename" : f.name, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}
+        log.info("about to send information")
         self.rSock.sendJSON(vals)
+        log.info("done sending")
         st.publish(st.replicatorJob, st.upload, f.name)
+        log.info("done executing")
 
     def begin(self):
         self.sendInfoToReplicator()

@@ -73,7 +73,7 @@ class LookupMessageDispatcher(threading.Thread):
             if key in self.dataTable:
                 data = self.dataTable[key]
                 break
-            log.warn("couldn't find key = %s",key)
+            log.warn("couldn't find key = %s",str(key))
             # wait until the self.dataTable is updated, so we can
             # check again
             self.condition.wait()

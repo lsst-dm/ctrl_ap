@@ -169,7 +169,7 @@ class ReplicatorRequestHandler(object):
             self.distributorTransmitter.publishEvent(event)
 
     def storeFileInfo(self, key, inetaddr, port, name):
-        log.debug("storeFileInfo: key = %s, name = %s ", str(key), name)
+        log.debug("storeFileInfo: key = %s, name = %s ", str(key), str(name))
         distInfo = None
         notifyArchive = False
         self.condition.acquire()

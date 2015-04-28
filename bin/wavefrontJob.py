@@ -128,7 +128,7 @@ class WavefrontJob(object):
     def execute(self):
         raft = "wave"
         self.sendInfoToReplicator(raft)
-        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem = events.EventSystem.getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         # loop until you get the right thing, process and then die.
         term = Terminator("start", self.timeout)

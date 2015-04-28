@@ -14,7 +14,7 @@ echo -n "stack init finished: ";date
 setup pex_config
 setup ctrl_events
 HERE=$PWD
-cd $WORKDIR/ap/ctrl_ap
+cd $WORKDIR/srp/ap/ctrl_ap
 setup -r .
 
 echo -n "worker starts: ";date

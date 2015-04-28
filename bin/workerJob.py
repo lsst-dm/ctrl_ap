@@ -171,7 +171,6 @@ class WorkerJob(object):
                 log.info("file received %s" % newName)
                 data["file"] = name;
                 st.publish(st.workerJob, st.fileReceived, data)
-                log.info("file received = %s" % name)
                 return name, "telemetry"
             except Exception, err:
                 log.info("exception %s " % err.message)

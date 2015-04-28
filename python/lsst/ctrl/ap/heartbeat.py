@@ -56,7 +56,8 @@ class HeartbeatHandler(threading.Thread):
             try:
             # TODO: this has to be done via select and a timeout
                 msg = self.jsock.recvJSON()
-                log.debug(msg)
-            except:
+                log.debug("message received")
+            except Exception, e:
+                print "e = ",e
                 log.warn("HeartbeatHandler exception")
                 excepted = True

@@ -72,8 +72,10 @@ class BaseDMCS(object):
         thisHost = socket.gethostname()
         if thisHost == self.baseConfig.main.host:
             self.identity = self.MAIN
+            log.debug("I'm the main host")
         elif thisHost == self.baseConfig.failover.host:
             self.identity = self.FAILOVER
+            log.debug("I'm the failover host")
         else:
             print "couldn't determine host type from config"
             print "I think I'm: ",socket.gethostname()

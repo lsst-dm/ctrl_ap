@@ -38,7 +38,7 @@ class WorkerRequestHandler(object):
 
 
     def getFileInfo(self, key):
-        log.debug("getFileInfo: key = %s", key)
+        log.debug("getFileInfo: key = %s", str(key))
         name = None
         self.condition.acquire()
         while True:
@@ -48,10 +48,10 @@ class WorkerRequestHandler(object):
             log.debug("datatable len = %d size of datatable = %d", len(self.dataTable), size)
             if key in self.dataTable:
                 info = self.dataTable[key]
-                log.debug("getFileInfo: key = %s", key)
+                log.debug("getFileInfo: key = %s", str(key))
                 name = info.getName()
                 if name is not None: 
-                    log.debug("getFileInfo name = %s",name)
+                    log.debug("getFileInfo name = %s", str(name))
                     break
                 else:
                     log.warn("name was none??")
@@ -69,7 +69,7 @@ class WorkerRequestHandler(object):
         return name
 
     def transmitFile(self, key, data):
-        log.debug("transmitFile: key = %s", key)
+        log.debug("transmitFile: key = %s", str(key))
         name = self.getFileInfo(key)
         st = Status();
         log.debug("transmitFile requested")
@@ -80,7 +80,7 @@ class WorkerRequestHandler(object):
             self.jsock.sendJSON(msg)
             log.debug("transmitFile NOT sent")
             return
-        log.debug("transmitFile: name = %s to %s ", name, self.jsock.getsockname())
+        log.debug("transmitFile: name = %s to %s ", str(name), str(self.jsock.getsockname()))
         msg = data.copy()
         msg["status"] = st.sendFile
         msg["filename"] = name
@@ -91,7 +91,6 @@ class WorkerRequestHandler(object):
         log.debug("transmitFile: done")
 
     def serviceRequest(self, msg):
-        log.debug("serviceRequest: %s", msg)
         request = msg["request"]
         if request == "file":
             visitID = msg["visitID"]
