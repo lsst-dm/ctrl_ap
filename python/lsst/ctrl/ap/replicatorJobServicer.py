@@ -31,7 +31,7 @@ from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.distributor import Distributor
 from lsst.ctrl.ap.status import Status
 
-class ReplicatorRequestHandler(object):
+class ReplicatorJobServicer(object):
     def __init__(self, jsock, dataTable, condition):
         log.debug("rrh: object created")
         self.jsock = jsock
@@ -41,17 +41,6 @@ class ReplicatorRequestHandler(object):
         self.broker = "lsst8.ncsa.uiuc.edu"
         self.topic = "distributor_event"
         self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
-
-    def serviceRequestOLD(self, msg):
-        log.debug("rrh: serviceRequest: msg = %s ", msg)
-        msgType = msg["msgtype"]
-        if msgType == "replicator job":
-            self.handleReplicatorJob(msg)
-        elif msgType == "wavefront job":
-            self.handleWavefrontJob(msg)
-            return
-        else:
-            log.warn("rrh: unknown msg: %s",msg)
 
     def serviceRequest(self, msg):
         log.debug("rrh: serviceRequest: msg = %s ", msg)
@@ -79,56 +68,12 @@ class ReplicatorRequestHandler(object):
             exposureSequenceID = msg["exposureSequenceID"]
             raft = msg["raft"]
             st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
-            method(self.jsock, visitID, exposureSequenceID, raft, name)
+            if method == self.splitWavefrontFile:
+                method(self.jsock, visitID, exposureSequenceID, name)
+            else:
+                method(self.jsock, visitID, exposureSequenceID, raft, name)
         else:
             log.warn("unknown request; msg = %s",msg)
-
-    def handleReplicatorJob(self, msg):
-        log.info("handling request from replicator job")
-        st = Status()
-        st.publish(st.distributorNode, st.infoReceived, msg)
-
-        request = msg["request"]
-        if request == "info post":
-            self.sendToArchiveDMCS(msg) # XXX
-            log.info('received from replicator %s', msg)
-        elif request == "upload":
-            name = msg["filename"]
-            self.jsock.recvFile(name)
-            visitID = msg["visitID"]
-            exposureSequenceID = msg["exposureSequenceID"]
-            raft = msg["raft"]
-            st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft})
-            #log.info('file received: %s' % name)
-            self.splitReplicatorFile(self.jsock, visitID, exposureSequenceID, raft, name)
-        else:
-            log.warn("unknown request; msg = %s",msg)
-
-    def handleWavefrontJob(self, msg):
-        log.info("handling request from wavefront job")
-        st = Status()
-        st.publish(st.distributorNode,st.infoReceived, msg)
-        # this used to send info to the archive DMCS.  Keeping this
-        # in place (but commented out) to handle additional work
-        # that will be done by the distributor for this type of file. That
-        # work hasn't been implemented yet, so this is a placeholder.
-        #for raft in ["R:0,0", "R:0,4", "R:4,0", "R:4,4"]:
-        #    d["raft"] = raft
-        #    self.sendToArchiveDMCS(d)
-        request = msg["request"]
-        if request == "info post":
-            self.sendToArchiveDMCS(msg) # XXX
-            log.info('received from replicator %s', msg)
-        elif request == "upload":
-            name = msg["filename"]
-            self.jsock.recvFile(name)
-            visitID = msg["visitID"]
-            exposureSequenceID = msg["exposureSequenceID"]
-            st.publish(st.distributorNode, st.fileReceived, {"file":name, "visitID":visitID, "exposureSequenceID":exposureSequenceID})
-            #log.info('file received: %s' % name)
-            self.splitWavefrontFile(self.jsock, visitID, exposureSequenceID, name)
-        else:
-            log.warn("unknown request; msg = %s", msg)
 
     def sendToArchiveDMCS(self, msg):
         props = PropertySet()

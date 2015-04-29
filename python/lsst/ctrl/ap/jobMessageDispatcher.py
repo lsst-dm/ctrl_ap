@@ -23,8 +23,8 @@
 #
 
 import threading
-from lsst.ctrl.ap.replicatorRequestHandler import ReplicatorRequestHandler
-from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
+from lsst.ctrl.ap.replicatorJobServicer import ReplicatorJobServicer
+from lsst.ctrl.ap.workerJobServicer import WorkerJobServicer
 from lsst.ctrl.ap.heartbeat import Heartbeat
 import lsst.log as log
 
@@ -40,7 +40,7 @@ class JobMessageDispatcher(threading.Thread):
         log.debug("dh: 1: msg = %s", msg)
         msgType = msg["msgtype"]
         if msgType == "replicator job" or msgType == "wavefront job":
-            handler = ReplicatorRequestHandler(self.jsock, self.dataTable, self.condition)
+            handler = ReplicatorJobServicer(self.jsock, self.dataTable, self.condition)
             handler.serviceRequest(msg)
             heartbeat = Heartbeat(self.jsock, 1)
             heartbeat.start()
@@ -49,5 +49,5 @@ class JobMessageDispatcher(threading.Thread):
                 log.debug("dh: 2: msg = %s", msg)
                 handler.serviceRequest(msg)
         elif msgType == "worker job":
-            handler = WorkerRequestHandler(self.jsock, self.dataTable,  self.condition)
+            handler = WorkerJobServicer(self.jsock, self.dataTable,  self.condition)
             handler.serviceRequest(msg)

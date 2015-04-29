@@ -29,7 +29,7 @@ import lsst.log as log
 from sys import getsizeof
 
 
-class WorkerRequestHandler(object):
+class WorkerJobServicer(object):
     def __init__(self, jsock, dataTable, condition):
         log.debug("wrh:  object created")
         self.jsock = jsock
