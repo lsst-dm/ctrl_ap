@@ -23,29 +23,21 @@
 #
 
 import time
-import datetime
 import os
 import sys
 import argparse
 import socket
-import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
-from lsst.ctrl.ap.job import Job
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.status import Status
-from lsst.ctrl.ap.replicatorHandler import ReplicatorHandler
 from lsst.ctrl.ap.jsonSocket import JSONSocket
-from lsst.pex.logging import Log
-from lsst.ctrl.ap.exceptions import ReplicatorJobException
-from lsst.ctrl.ap.exceptions import DistributorException
+import lsst.log as log
 
 import threading
 
 class DistributorConnection(threading.Thread):
 
-    def __init__(self, logger, distributor, port, condition, msgList):
+    def __init__(self, distributor, port, condition, msgList):
         super(DistributorConnection, self).__init__()
-        self.logger = logger
         self.distributor = distributor
         self.port = port
         self.msgList = msgList
@@ -59,40 +51,24 @@ class DistributorConnection(threading.Thread):
 
         # publish status message
         st = Status()
-        n = outSock.getsockname()
-        name = socket.gethostname()
         serverInfo = {st.host:host, st.port:port}
 
         connection = {st.server:serverInfo}
         st.publish(st.replicatorNode, st.connect, connection)
 
-        self.logger.log(Log.INFO, "connecting to node %s:%d" % (host, port))
+        log.info("connecting to node %s:%d" % (host, port))
         try:
             outSock.connect((host, port))
             self.outSock = JSONSocket(outSock)
         except socket.gaierror, err:
-            self.logger.log(Log.INFO, "address problem?  %s " % err)
+            log.info("address problem?  %s " % err)
             self.outSock = None
             return False
         except socket.error, err:
-            self.logger.log(Log.INFO, "Connection problem: %s" % err)
+            log.info("Connection problem: %s" % err)
             self.outSock = None
             return False
         return True
-
-    def sendOLD(self, msg):
-        print "dct: send: msg is ",msg
-        type = msg["msgtype"]
-        if type == "file":
-            filename = msg["filename"]
-            print "dct: sending"
-            self.outSock.sendFile(msg)
-        elif type == "replicator job" or type == "wavefront job":
-            print "dct: sending msg"
-            self.outSock.sendJSON(msg)
-            print "dct: done sending msg"
-        else:
-            print "unknown type: ",type
 
     def send(self, msg):
         print "dct: send: msg is ",msg
@@ -145,7 +121,7 @@ class DistributorConnection(threading.Thread):
                         print "about to try"
                         self.send(s)
                         print "end of try"
-                    except socket.error, err:
+                    except socket.error:
                         print "Distributor connection thread: heartbeatEvent set 2"
                         connectionOK = False
                         heartbeatEvent.set()
@@ -227,8 +203,7 @@ class ReplicatorNode(Node):
         self.createIncomingSocket(repPort)
         self.distHost = distHost
         self.distPort = distPort
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "ReplicatorNode")
+        log.configure()
         self.sleepInterval = 5 # seconds
         st = Status()
         st.publish(st.replicatorNode, st.start, {"server":{"host":socket.gethostname(), "port":repPort}, "distributor":{"host":self.distHost, "port":self.distPort}})
@@ -240,7 +215,7 @@ class ReplicatorNode(Node):
         condition = threading.Condition()
         msgList = list()
         
-        dc = DistributorConnection(self.logger, args.distributor, args.port, condition, msgList)
+        dc = DistributorConnection(args.distributor, args.port, condition, msgList)
         dc.start()
 
         print "replicator loop begun"

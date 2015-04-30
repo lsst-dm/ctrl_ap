@@ -23,12 +23,13 @@
 #
 import threading
 import time
+import lsst.log as log
 class Heartbeat(threading.Thread):
     def __init__(self, jsock, delay):
         super(Heartbeat, self).__init__()
         self.jsock = jsock
         self.delay = delay
-        print "start Heartbeat"
+        log.debug("start Heartbeat")
 
     def run(self):
 
@@ -39,16 +40,15 @@ class Heartbeat(threading.Thread):
             try :
                 self.jsock.sendJSON(msg)
                 time.sleep(self.delay)
-            except Exception as exp:
-                print "Heartbeat exception"
-                print exp
+            except Exception:
+                log.warn("Heartbeat exception")
                 excepted = True
 
 class HeartbeatHandler(threading.Thread):
     def __init__(self, jsock):
         super(HeartbeatHandler, self).__init__()
         self.jsock = jsock
-        print "start HeartbeatHandler"
+        log.debug("start HeartbeatHandler")
 
     def run(self):
         excepted = False
@@ -56,7 +56,8 @@ class HeartbeatHandler(threading.Thread):
             try:
             # TODO: this has to be done via select and a timeout
                 msg = self.jsock.recvJSON()
-                print msg
-            except:
-                print "HeartbeatHandler exception"
+                log.debug("message received")
+            except Exception, e:
+                print "e = ",e
+                log.warn("HeartbeatHandler exception")
                 excepted = True

@@ -22,43 +22,32 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import os
-import sys
-import time
-import argparse
-import json
-import socket
 import threading
-import lsst.ctrl.events as events
-from lsst.pex.logging import Log
-from lsst.daf.base import PropertySet
-from lsst.ctrl.ap.replicatorRequestHandler import ReplicatorRequestHandler
-from lsst.ctrl.ap.workerRequestHandler import WorkerRequestHandler
+from lsst.ctrl.ap.replicatorJobServicer import ReplicatorJobServicer
+from lsst.ctrl.ap.workerJobServicer import WorkerJobServicer
 from lsst.ctrl.ap.heartbeat import Heartbeat
+import lsst.log as log
 
-class DistributorHandler(threading.Thread):
+class JobMessageDispatcher(threading.Thread):
     def __init__(self, jsock, dataTable, condition):
-        super(DistributorHandler, self).__init__()
+        super(JobMessageDispatcher, self).__init__()
         self.jsock = jsock
         self.dataTable = dataTable
         self.condition = condition
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "distributorHandler")
-
 
     def run(self):
         msg = self.jsock.recvJSON()
-        print "dh: 1: msg =",msg
+        log.debug("dh: 1: msg = %s", msg)
         msgType = msg["msgtype"]
         if msgType == "replicator job" or msgType == "wavefront job":
-            handler = ReplicatorRequestHandler(self.jsock, self.dataTable, self.condition)
+            handler = ReplicatorJobServicer(self.jsock, self.dataTable, self.condition)
             handler.serviceRequest(msg)
             heartbeat = Heartbeat(self.jsock, 1)
             heartbeat.start()
             while True:
                 msg = self.jsock.recvJSON()
-                print "dh: 2: msg =",msg
+                log.debug("dh: 2: msg = %s", msg)
                 handler.serviceRequest(msg)
         elif msgType == "worker job":
-            handler = WorkerRequestHandler(self.jsock, self.dataTable,  self.condition)
+            handler = WorkerJobServicer(self.jsock, self.dataTable,  self.condition)
             handler.serviceRequest(msg)

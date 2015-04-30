@@ -22,34 +22,27 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import argparse
-import datetime
-import os
 import sys
 import socket
-import time
-import lsst.ctrl.events as events
 from lsst.ctrl.ap.status import Status
-from lsst.daf.base import PropertySet
-from lsst.pex.logging import Log
 from lsst.ctrl.ap.jsonSocket import JSONSocket
+import lsst.log as log
 
 class Node(object):
 
     def __init__(self):
         self.inSock = None
         self.outSock = None
-        self.logger = Log.getDefaultLog()
 
 
     def createIncomingSocket(self, port):
         host = socket.gethostname()
         inSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.logger.log(Log.INFO, "%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))
+        log.debug("%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))
         inSock.bind((host, port))
         inSock.listen(5)
-        self.logger.log(Log.INFO, "done creating socket")
+        log.debug("done creating socket")
         self.inSock = JSONSocket(inSock)
 
     def connectToNode(self, component, host, port):
@@ -57,29 +50,22 @@ class Node(object):
 
         # publish status message
         st = Status()
-        n = outSock.getsockname()
-        print "n = ",n
-        name = socket.gethostname()
         serverInfo = {st.host:host, st.port:port}
 
         connection = {st.server:serverInfo}
         st.publish(component, st.connect, connection)
 
-        self.logger.log(Log.INFO, "connecting to node %s:%d" % (host, port))
+        log.debug("connecting to node %s:%d" % (host, port))
         try:
             outSock.connect((host, port))
         except socket.gaierror, err:
-            self.logger.log(Log.INFO, "address problem?  %s " % err)
+            log.warn("address problem?  %s " % err)
             sys.exit(1)
         except socket.error, err:
-            self.logger.log(Log.INFO, "Connection problem: %s" % err)
+            log.warn("Connection problem: %s" % err)
             outSock = None
             return False
         self.outSock = JSONSocket(outSock)
-
-
-        # xxx - sending Status AFTER the connection is made has
-        # given out of order messages on the status receiver.
         return True
 
     def process(self):

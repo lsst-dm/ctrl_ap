@@ -25,7 +25,7 @@
 import os
 import htcondor
 import classad
-from lsst.pex.logging import Log
+import lsst.log as log
 from lsst.ctrl.ap.status import Status
 
 class JobManager(object):
@@ -54,7 +54,6 @@ class JobManager(object):
         self.wavefrontJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefront.submit.ad")
         self.workerJobPath = os.path.join(ap_dir,"etc/htcondor/submit/worker.submit.ad")
         self.wavefrontSensorJobPath = os.path.join(ap_dir,"etc/htcondor/submit/wavefrontSensor.submit.ad")
-        self.logger = Log.getDefaultLog()
 
     def getClassAd(self, fileName):
         return classad.parse(open(fileName))
@@ -93,7 +92,7 @@ class JobManager(object):
             #ad["WhenToTransferOutput"] =  "ON_EXIT"
 
             cluster = self.repSchedd.submit(ad,1)
-            #self.logger.log(Log.INFO, "done with this submit")
+            log.debug("done with this submit")
             raft += 1
 
         # one job
@@ -128,7 +127,7 @@ class JobManager(object):
         return x-1, raft
 
     def submitWorkerJobs(self, visitID, numExposures, boresightPointing, filterId):
-        print "submit worker jobs called"
+        log.debug("submit worker jobs called")
         status = Status()
         status.publish(status.baseDMCS, status.submit, status.workerJobs)
         ad = self.getClassAd(self.workerJobPath)
@@ -141,9 +140,6 @@ class JobManager(object):
             sub, raft = self.calculateRaftInfoFromCcd(x)
             sRaft = self.encodeToRaft(raft)
             sCcd = "S:%d,%d" % (sub % 3, sub / 3)
-            # old
-            # ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s -H %s -P %d" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd, archiveHost, archivePort)
-            # new
             ad["Arguments"] = "--visitID %s --exposures %s --boresight %s --filterID %s --raft %s --ccd %s" % (visitID, numExposures, boresightPointing, filterId, sRaft, sCcd)
             ad["Out"] =  "worker.Out.%s" % str(x)
             ad["Err"] =  "worker.Err.%s" % str(x)

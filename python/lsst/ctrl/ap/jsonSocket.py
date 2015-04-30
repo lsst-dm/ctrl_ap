@@ -26,9 +26,8 @@
 import os
 import sys
 import json
-import yaml
-import socket
 import struct
+import lsst.log as log 
 
 class JSONSocket(object):
     def __init__(self, s):
@@ -36,7 +35,6 @@ class JSONSocket(object):
 
     def sendJSON(self, obj):
         s = json.dumps(obj)
-        #print "sendJSON: s =",s
         self.sendWithLength(s)
 
     def getsockname(self):
@@ -46,18 +44,12 @@ class JSONSocket(object):
         s = self.recvall()
         if s == '':
             raise Exception("recv returned empty string")
-        #print "recvJSON: '%s'" % s
-        #print "type = ",type(s)
-        #print "length = ",len(s)
-        #print ' '.join(format(ord(x), 'x') for x in s)
         x = json.loads(s)
-        #print "recvJSON: '%s'" % s
         return x
 
     def sendFile(self, msg):
         name = msg["filename"]
-        print "sendFile: sending msg: ",msg
-        print "sendFile: sending file: ",name
+        log.debug("sendFile: sending file: %s",str(name))
 
         chunksize = 4096
 
@@ -86,7 +78,6 @@ class JSONSocket(object):
             name = str(vals["filename"])
         else:
             name = receiveTo
-        #print "jsonSocket: recvFile, name = ",name
         return self.recvFile(name)
 
     def recvFile(self, name):
@@ -124,15 +115,12 @@ class JSONSocket(object):
                 recvSize = recvSize-n
                 f.write(s)
         f.close()
-        #print "jsonSocket: recvFile - done"
         return name
 
     def accept(self):
         return self.sock.accept()
 
     def sendWithLength(self, s):
-        #print "sendWithLength type = ",type(s)
-        #print "sendWithLength len = ",len(s)
         self.sock.sendall(struct.pack('!I',len(s)))
         self.sock.sendall(s)
 

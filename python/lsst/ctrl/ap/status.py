@@ -23,12 +23,11 @@
 #
 
 import os
-import sys
-import time
 import json
 import socket
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
+import lsst.log as log
 
 class Singleton(type):
     _instances = {}
@@ -151,7 +150,7 @@ class Status(object):
         elif type(data) == dict:
             self.publishDict(component, status, data)
         else:
-            print "publish: unknown type"
+            log.warn("publish: unknown type")
 
 
 if __name__ == "__main__":

@@ -23,19 +23,14 @@
 #
 
 import time
-import datetime
 import os
 import sys
 import argparse
-import json
 import socket
 import errno
-import lsst.ctrl.events as events
-from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
-from lsst.pex.logging import Log
-from tempfile import NamedTemporaryFile
+import lsst.log as log
 
 class WavefrontSensorJob(object):
 
@@ -49,9 +44,8 @@ class WavefrontSensorJob(object):
         self.raft = raft
         self.ccd = ccd
 
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "wavefrontSensorJob")
-        self.logger.log(Log.INFO, "wavefront sensor worker started")
+        log.configure()
+        log.info("wavefront sensor worker started")
 
 
         # We don't know  which slot or host we're
@@ -73,7 +67,7 @@ class WavefrontSensorJob(object):
 
         jsock = JSONSocket(sock)
 
-        self.logger.log(Log.INFO, "worker sending request to Archive for distributor info")
+        log.info("worker sending request to Archive for distributor info")
         # send a message to the Archive DMCS, requesting the host and port
         # of the correct distributor
         vals = {"msgtype":"worker job", "request":"distributor", "visitID":self.visitID, "raft":self.raft, "ccd":self.ccd, "exposureSequenceID":exposureSequenceID}
@@ -87,7 +81,7 @@ class WavefrontSensorJob(object):
 
         # wait for a response from the Archive DMCS, which is the host and port
         resp = jsock.recvJSON()
-        self.logger.log(Log.INFO, "worker from response received")
+        log.info("worker from response received")
 
         st.publish(st.wavefrontSensorJob, st.infoReceived, data)
         return resp["inetaddr"],resp["port"]
@@ -97,15 +91,15 @@ class WavefrontSensorJob(object):
         try:
             sock.connect((host, port))
         except socket.gaierror, err:
-            self.logger.log(Log.INFO, "address problem?")
+            log.info("address problem?")
             return None
         except socket.error, err:
-            self.logger.log(Log.INFO, "connection problem: %s" % err)
+            log.info("connection problem: %s" % err)
             return None
         return sock
 
     def retrieveDistributorImage(self, host, port, exposure):
-        self.logger.log(Log.INFO, "retriving image from distributor")
+        log.info("retriving image from distributor")
         st = Status()
         connection = {st.server:{st.host:host, st.port:port}}
         st.publish(st.wavefrontSensorJob, st.connect, connection)
@@ -123,7 +117,7 @@ class WavefrontSensorJob(object):
         name = jsock.recvFile(newName)
         data["file"] = name
         st.publish(st.wavefrontSensorJob, st.fileReceived, data)
-        self.logger.log(Log.INFO, "file received = %s" % name)
+        log.info("file received = %s" % name)
         return name, "telemetry"
 
     # when this goes to python 3.2, we can use exist_ok, but

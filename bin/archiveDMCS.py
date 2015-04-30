@@ -25,18 +25,16 @@
 
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
-from lsst.ctrl.ap import jobManager
-from lsst.pex.logging import Log
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import threading
 import socket
-import signal
 import sys
-from time import sleep
+import lsst.log as log
+from lsst.ctrl.ap.logConfigurator import LogConfigurator
 
-class DistributorLookupHandler(threading.Thread):
+class LookupMessageDispatcher(threading.Thread):
     def __init__(self, name, dataTable, condition, sock):
         threading.Thread.__init__(self, name="distributor:%s" % name)
         self.dataTable = dataTable
@@ -65,10 +63,8 @@ class DistributorLookupHandler(threading.Thread):
         visitID = request["visitID"]
         raft = request["raft"]
         ccd = request["ccd"]
-        #key = "%s:%s:%s" % (exposureSequenceID,visitID,raft)
         key = Key.create(visitID, exposureSequenceID, raft, ccd)
-        # 
-        #print "about to acquire condition"
+        
         st = Status()
         request = {st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":ccd}}
         st.publish(st.archiveDMCS, st.lookup, request)
@@ -77,7 +73,7 @@ class DistributorLookupHandler(threading.Thread):
             if key in self.dataTable:
                 data = self.dataTable[key]
                 break
-            print "couldn't find key = ",key
+            log.warn("couldn't find key = %s",str(key))
             # wait until the self.dataTable is updated, so we can
             # check again
             self.condition.wait()
@@ -106,20 +102,19 @@ class ArchiveConnectionHandler(threading.Thread):
             clientInfo = {st.client:{st.host:ipAddr,st.port:clientPort}}
             st.publish(st.archiveDMCS, st.accept, clientInfo)
             name = "%s:%s" % (str(ipAddr), str(clientPort))
-            dist = DistributorLookupHandler(name, self.dataTable, self.condition, clientSock)
-            dist.start()
+            lmd = LookupMessageDispatcher(name, self.dataTable, self.condition, clientSock)
+            lmd.start()
             connectCount += 1
             # TODO: should do cleanup here
-            print "connection count = %d; threadCount = %d" %(connectCount,threading.activeCount())
+            log.debug("connection count = %d; threadCount = %d", connectCount,threading.activeCount())
             threads = threading.enumerate()
             for x in threads:
-                print x.name
+                log.debug(x.name)
 
 class EventHandler(threading.Thread):
 
-    def __init__(self, logger, brokerName, eventTopic, dataTable, condition):
+    def __init__(self, brokerName, eventTopic, dataTable, condition):
         threading.Thread.__init__(self, name="event")
-        self.logger = logger
         self.brokerName = brokerName
         self.eventTopic = eventTopic
         self.dataTable = dataTable
@@ -128,7 +123,7 @@ class EventHandler(threading.Thread):
     def requestDistributors(self):
         topic = "archive_event"
 
-        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem = events.EventSystem.getDefaultEventSystem()
         eventSystem.createTransmitter(self.brokerName, topic)
 
         root = PropertySet()
@@ -174,12 +169,12 @@ class EventHandler(threading.Thread):
         inetaddr = ps.get("networkAddress")
         port = ps.get("networkPort")
 
-        #print "attempting to add ",ps.toString()
+        log.debug("attempting to add %s", ps.toString())
         self.condition.acquire()
         self.dataTable[key] = (inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
-        #print "added"
+        log.debug("added")
 
     # remove entries from data table, given ip addr and port  specified
     # in property set
@@ -187,43 +182,41 @@ class EventHandler(threading.Thread):
         addr = ps.get("networkAddress")
         port = ps.get("networkPort")
         hostport = (addr, port)
-        st = Status()
 
-        #print "attempting to remove ",ps.toString()
+        log.debug("attempting to remove %s", ps.toString())
         self.condition.acquire()
         removeThese = []
         for ent in self.dataTable:
             if dataTable[ent] == hostport:
-                #print "removing ",ent
+                log.debug("removing %s",ent)
                 removeThese.append(ent)
         if len(removeThese) == 0:
-            #print "Didn't remove anything"
+            log.warn("Didn't remove anything")
             pass
         else:
             for x in removeThese:
                 self.dataTable.pop(x)
         self.condition.notifyAll()
         self.condition.release()
-        #print "removed"
 
     def run(self):
-        eventSystem = events.EventSystem().getDefaultEventSystem()
+        eventSystem = events.EventSystem.getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         self.requestDistributors()
         st = Status()
-        self.logger.log(Log.INFO, "listening on %s " % self.eventTopic)
+        log.info("listening on %s " % self.eventTopic)
         while True:
             st.publish(st.archiveDMCS, st.listen, {"topic":self.eventTopic})
             ocsEvent = eventSystem.receiveEvent(self.eventTopic)
             ps = ocsEvent.getPropertySet()
-            #print "ps = ",ps.toString()
+        
             ocsEventType = ps.get("distributor_event")
             if ocsEventType == "info":
                 self.insert(ps)
             elif ocsEventType == "started":
                 self.remove(ps)
             else:
-                print "ocsEventType unknown: ",ocsEventType
+                log.warn("ocsEventType unknown: %s",ocsEventType)
                 sys.exit(0)
 
 class ArchiveDMCS(object):
@@ -232,8 +225,10 @@ class ArchiveDMCS(object):
         # which is loaded, so they are not embedded in the code
         self.brokerName = "lsst8.ncsa.illinois.edu"
         self.eventTopic = "distributor_event"
-        logger = Log.getDefaultLog()
-        self.logger = Log(logger, "ArchiveDMCS")
+
+        configurator = LogConfigurator()
+        configurator.loadProperties()
+
         st = Status()
         st.publish(st.archiveDMCS, st.start)
 
@@ -247,7 +242,7 @@ if __name__ == "__main__":
     socks.setDaemon(True)
     socks.start()
 
-    eve = EventHandler(archive.logger, archive.brokerName, archive.eventTopic, dataTable, condition)
+    eve = EventHandler(archive.brokerName, archive.eventTopic, dataTable, condition)
     eve.setDaemon(True)
     eve.start()
 
