@@ -68,5 +68,19 @@ class Node(object):
         self.outSock = JSONSocket(outSock)
         return True
 
+    def accept(self):
+        (sock, (ipAddr, clientPort)) = self.inSock.accept()
+        return JSONSocket(sock)
+
+    def recvMessage(self):
+        return self.inSock.recvJSON()
+
+    def closeSockets(self):
+        if self.inSock is not None:
+            self.inSock.close()
+
+        if self.outSock is not None:
+            self.outSock.close()
+
     def process(self):
         pass 

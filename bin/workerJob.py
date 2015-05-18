@@ -235,5 +235,6 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
+    print "args.timeout", args.timeout
     job = WorkerJob(archiveConfig, args.timeout, args.visitID, args.exposures, args.boresight, args.filterID, args.raft, args.ccd)
     job.execute()

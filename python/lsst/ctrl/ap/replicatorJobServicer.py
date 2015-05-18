@@ -30,6 +30,7 @@ import lsst.ctrl.events as events
 from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.distributor import Distributor
 from lsst.ctrl.ap.status import Status
+from lsst.ctrl.ap.imageSplitter import ImageSplitter
 
 class ReplicatorJobServicer(object):
     def __init__(self, jsock, dataTable, condition):
@@ -114,7 +115,7 @@ class ReplicatorJobServicer(object):
             self.distributorTransmitter.publishEvent(event)
 
     def storeFileInfo(self, key, inetaddr, port, name):
-        log.debug("storeFileInfo: key = %s, name = %s ", str(key), str(name))
+        log.debug("storeFileInfo: key = %s, name = %s", str(key), str(name))
         distInfo = None
         notifyArchive = False
         self.condition.acquire()
@@ -154,13 +155,66 @@ class ReplicatorJobServicer(object):
         for s in sensors:
             sensors[x] = raft+" "+s
             x += 1
-        self.splitFile(jsock, visitID, exposureSequenceID, filename, sensors)
+        self.splitFile(jsock, visitID, exposureSequenceID, filename, sensors, 3, 3)
 
     def splitWavefrontFile(self, jsock, visitID, exposureSequenceID, filename):
         sensors = ["R:0,0 S:2,2", "R:0,4 S:2,0", "R:4,0 S:0,2", "R:4,4 S:0,0"]
-        self.splitFile(jsock, visitID, exposureSequenceID, filename, sensors)
+        self.splitFile(jsock, visitID, exposureSequenceID, filename, sensors, 2, 2)
 
-    def splitFile(self, jsock, visitID, exposureSequenceID, filename, sensors):
+    def splitFile(self, jsock, visitID, exposureSequenceID, filename, sensors, rows, columns):
+        statinfo = os.stat(filename)
+        filesize = statinfo.st_size
+        buflen = filesize/len(sensors)
+
+        hostinfo = self.jsock.getsockname()
+        inetaddr =  hostinfo[0]
+        port = hostinfo[1]
+
+        targets = []
+        for sensorInfo in sensors:
+            raft = sensorInfo.split(" ")[0]
+            sensor = sensorInfo.split(" ")[1]
+            target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
+            targetDir = os.path.dirname(target)
+            # try and create the directory tree.  there's a race condition
+            # where directories could be created during the makedirs
+            # call (by another process on the same machine), but that's
+            # ok, so if they do exist, we can ignore the exception that
+            # would be thrown.
+            try:
+                os.makedirs(targetDir)
+            except OSError as exc:
+                if exc.errno == errno.EEXIST and os.path.isdir(targetDir):
+                    pass
+                else:
+                    raise
+            targets.append(target)
+
+        splitter = ImageSplitter(filename)
+        splitter.splitToNames(targets, rows, columns, "png")
+
+        x = 0
+        for sensorInfo in sensors:
+            raft = sensorInfo.split(" ")[0]
+            sensor = sensorInfo.split(" ")[1]
+            key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            notifyArchive = self.storeFileInfo(key,inetaddr, port, targets[x])
+            # If there wasn't a previous entry for this file, we need
+            # to notify the archive of it's existence so the worker job
+            # can find it.
+            if notifyArchive:
+                vals = {
+                    "request":"info post",
+                    "msgtype": "replicator job",
+                    "exposureSequenceID": exposureSequenceID,
+                    "raft": str(raft),
+                    "sensor": str(sensor),
+                    "visitID": str(visitID)
+                }
+                self.sendToArchiveDMCS(vals)
+            x += 1
+
+    def splitFileOLD(self, jsock, visitID, exposureSequenceID, filename, sensors):
         statinfo = os.stat(filename)
         filesize = statinfo.st_size
         buflen = filesize/len(sensors)

@@ -73,12 +73,12 @@ class LookupMessageDispatcher(threading.Thread):
             if key in self.dataTable:
                 data = self.dataTable[key]
                 break
-            log.warn("couldn't find key = %s",str(key))
             # wait until the self.dataTable is updated, so we can
             # check again
             self.condition.wait()
         self.condition.release()
         st.publish(st.archiveDMCS, st.retrieved, request)
+        log.debug("found key = %s; threadCount = %d",str(key), threading.activeCount())
         return data
 
 class ArchiveConnectionHandler(threading.Thread):
@@ -106,10 +106,10 @@ class ArchiveConnectionHandler(threading.Thread):
             lmd.start()
             connectCount += 1
             # TODO: should do cleanup here
-            log.debug("connection count = %d; threadCount = %d", connectCount,threading.activeCount())
+            log.debug("connection count = %d; threadCount = %d", connectCount, threading.activeCount())
             threads = threading.enumerate()
-            for x in threads:
-                log.debug(x.name)
+            #for x in threads:
+            #    log.debug(x.name)
 
 class EventHandler(threading.Thread):
 
@@ -169,12 +169,10 @@ class EventHandler(threading.Thread):
         inetaddr = ps.get("networkAddress")
         port = ps.get("networkPort")
 
-        log.debug("attempting to add %s", ps.toString())
         self.condition.acquire()
         self.dataTable[key] = (inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
-        log.debug("added")
 
     # remove entries from data table, given ip addr and port  specified
     # in property set

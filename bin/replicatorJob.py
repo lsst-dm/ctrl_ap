@@ -39,6 +39,9 @@ class ReplicatorJob(object):
     def __init__(self, timeout, rPort, raft, expectedVisitID, expectedExpSeqID):
         jobnum = os.getenv("_CONDOR_SLOT","slot0")
         self.replicatorPort = rPort+int(jobnum[4:])
+        # TODO: this needs to be placed in a configuration file
+        self.fileNodeHost = "lsst-ocs.ncsa.illinois.edu"
+        self.fileNodePort = 9393
         
         self.filesize = 1024
 
@@ -59,35 +62,46 @@ class ReplicatorJob(object):
         log.info("visitID = %s"%str(expectedVisitID))
         log.info("expectedSequenceID = %s"%str(expectedExpSeqID))
         
-
     def connectToReplicator(self):
-        rSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host = socket.gethostname()
+        return self.connectToServer(host, self.replicatorPort)
+
+    def connectToFileNode(self):
+        return self.connectToServer(self.fileNodeHost, self.fileNodePort)
+
+    def connectToServer(self, host, port):
+        remoteSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         st = Status()
         serv = {st.server:{st.host:host, st.port:self.replicatorPort}}
         st.publish(st.replicatorJob, st.connect, serv)
-        log.info("connect to replicator @ %s:%d" % (host, self.replicatorPort))
+        log.info("connect to server @ %s:%d" % (host, self.replicatorPort))
         try:
-            rSock.connect((host, self.replicatorPort))
+            remoteSocket.connect((host, port))
         except socket.gaierror, err:
             log.info("address problem?  %s " % err)
-            return False
+            return None
         except socket.error, err:
             log.info("Connection problem: %s" % err)
             log.info("I'm on host: %s" % host)
-            return False
-        self.rSock = JSONSocket(rSock)
-        return True
+            return None
+        log.info("connection complete")
+        jsock = JSONSocket(remoteSocket)
+        if jsock is None:
+            log.info("jsock is None")
+        else:
+            log.info("jsock is not None")
+        return jsock
 
     def sendInfoToReplicator(self):
         term = Terminator("info to replicator", self.timeout)
         term.start()
+
+        self.rSock = self.connectToReplicator()
         
-        while self.connectToReplicator() == False:
+        while self.rSock == None:
             log.info("retrying")
             time.sleep(1)
-            # handle not being able to connect to the distributor
-            pass
+            self.rSock = self.connectToReplicator()
         term.cancel()
         
 
@@ -111,24 +125,31 @@ class ReplicatorJob(object):
         st = Status()
         st.publish(st.replicatorJob, st.read, data)
 
-        # write a random binary file to disk
-        tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
-        tmp = os.path.join("/tmp",tmp)
-        f = open(tmp, "wb")
-        size = self.filesize*9 # nine self.filesize images into one file
-        f.write(os.urandom(size))
-        f.close()
-        log.info("file created is named %s" , f.name)
 
-        st.publish(st.replicatorJob, st.fileReceived, {"fileinfo":{"filename":f.name, "size":size}})
+        fileName = self.getFileFromOCS(self.raft, imageID, visitID, exposureSequenceID)
+        statinfo = os.stat(fileName)
+
+        size = statinfo.st_size
+
+        st.publish(st.replicatorJob, st.fileReceived, {"fileinfo":{"filename":fileName, "size":size}})
 
         # send the replicator node the name of the file
-        vals = {"msgtype":"replicator job", "request":"upload", "filename" : f.name, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}
+        vals = {"msgtype":"replicator job", "request":"upload", "filename" : fileName, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}
         log.info("about to send information")
         self.rSock.sendJSON(vals)
         log.info("done sending")
-        st.publish(st.replicatorJob, st.upload, f.name)
+        st.publish(st.replicatorJob, st.upload, fileName)
         log.info("done executing")
+
+    def getFileFromOCS(self, raft, imageID, visitID, exposureSequenceID):
+        jsock = self.connectToFileNode()
+        request = { "raft" : raft, "imageID" :imageID, "visitID": visitID, "exposureSequenceID" : exposureSequenceID }
+        jsock.sendJSON(request)
+        tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
+        tmp = os.path.join("/tmp",tmp)
+        msg = jsock.recvJSON()
+        name = jsock.recvFile(tmp)
+        return name
 
     def begin(self):
         self.sendInfoToReplicator()
