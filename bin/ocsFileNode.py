@@ -26,27 +26,35 @@ import os
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
+import threading
 
-class OCSFileNode(Node):
-    def __init__(self):
+class FileDispatcher(threading.Thread):
+    def __init__(self, jsock):
+        super(FileDispatcher, self).__init__()
+        self.jsock = jsock
         imagePath = os.path.join(os.environ["CTRL_AP_DIR"], "etc", "images")
         self.filename = os.path.join(imagePath, "96x96.png")
 
-    def begin(self):
-        request = {}
+    def run(self):
         st = Status()
+        request = {}
+
+        msg = self.jsock.recvJSON()
+
+        request["status"] = st.sendFile
+        request["filename"] = self.filename 
+        self.jsock.sendFile(request)
+        self.jsock.close()
+
+class OCSFileNode(Node):
+
+    def begin(self):
 
         self.createIncomingSocket(9393)
         while True:
             jsock = self.accept()
-            msg = jsock.recvJSON()
-            print msg
-            # to do: send correct raft based on request
-            request["status"] = st.sendFile
-            request["filename"] = self.filename 
-            jsock.sendFile(request)
-            jsock.close()
-            jsock = None
+            dispatcher = FileDispatcher(jsock)
+            dispatcher.start()
 
 if __name__ == "__main__":
     ocs = OCSFileNode()
