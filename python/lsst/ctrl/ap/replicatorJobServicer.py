@@ -170,6 +170,7 @@ class ReplicatorJobServicer(object):
         inetaddr =  hostinfo[0]
         port = hostinfo[1]
 
+        # build a list of file targets
         targets = []
         for sensorInfo in sensors:
             raft = sensorInfo.split(" ")[0]
@@ -180,7 +181,7 @@ class ReplicatorJobServicer(object):
             # where directories could be created during the makedirs
             # call (by another process on the same machine), but that's
             # ok, so if they do exist, we can ignore the exception that
-            # would be thrown.
+            # would be thrown. This behavior changes in a future version of Python.
             try:
                 os.makedirs(targetDir)
             except OSError as exc:
@@ -213,48 +214,3 @@ class ReplicatorJobServicer(object):
                 }
                 self.sendToArchiveDMCS(vals)
             x += 1
-
-    def splitFileOLD(self, jsock, visitID, exposureSequenceID, filename, sensors):
-        statinfo = os.stat(filename)
-        filesize = statinfo.st_size
-        buflen = filesize/len(sensors)
-        hostinfo = self.jsock.getsockname()
-        inetaddr =  hostinfo[0]
-        port = hostinfo[1]
-        with open(filename, 'rb') as src:
-            for sensorInfo in sensors:
-                raft = sensorInfo.split(" ")[0]
-                sensor = sensorInfo.split(" ")[1]
-                target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
-                targetDir = os.path.dirname(target)
-                # try and create the directory tree.  there's a race condition
-                # where directories could be created during the makedirs
-                # call (by another process on the same machine), but that's
-                # ok, so if they do exist, we can ignore the exception that
-                # would be thrown.
-                try:
-                    os.makedirs(targetDir)
-                except OSError as exc:
-                    if exc.errno == errno.EEXIST and os.path.isdir(targetDir):
-                        pass
-                    else:
-                        raise
-                f = open(target,'wb')
-                # TODO:  This needs to seek to the right place.
-                f.write(src.read(buflen))
-                f.close()
-                key = Key.create(visitID, exposureSequenceID, raft, sensor)
-                notifyArchive = self.storeFileInfo(key,inetaddr, port, target)
-                # If there wasn't a previous entry for this file, we need
-                # to notify the archive of it's existence so the worker job
-                # can find it.
-                if notifyArchive:
-                    vals = {
-                        "request":"info post",
-                        "msgtype": "replicator job",
-                        "exposureSequenceID": exposureSequenceID,
-                        "raft": str(raft),
-                        "sensor": str(sensor),
-                        "visitID": str(visitID)
-                    }
-                    self.sendToArchiveDMCS(vals)
