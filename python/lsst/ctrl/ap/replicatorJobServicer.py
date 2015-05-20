@@ -77,6 +77,10 @@ class ReplicatorJobServicer(object):
             log.warn("unknown request; msg = %s",msg)
 
     def sendToArchiveDMCS(self, msg):
+        props = self.convertToPropertySet(msg)
+        self.storeAndPublish(props)
+
+    def convertToPropertySet(self, msg):
         props = PropertySet()
         log.debug("sending the following to archive dmcs...")
         for x in msg:
@@ -93,7 +97,9 @@ class ReplicatorJobServicer(object):
         hostinfo = self.jsock.getsockname()
         props.set("networkAddress", hostinfo[0])
         props.set("networkPort", hostinfo[1])
+        return props
 
+    def storeAndPublish(self, props):
         # store this info locally, in case the archive asks for it again, later
 
         visitID = props.get("visitID")
@@ -104,15 +110,21 @@ class ReplicatorJobServicer(object):
         for sensor in sensors:
             props.set("sensor", sensor)
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
-            self.storeDistributor(key, hostinfo[0], hostinfo[1])
+            hostName = props.get("networkAddress")
+            hostPort = props.get("networkPort")
+            self.storeDistributor(key, hostName, hostPort)
 
-            data = {}
-            for x in props.paramNames():
-                data[x] = props.get(x)
-            st.publish(st.distributorNode, st.sendMsg, data)
+            self.emitStatus(props)
 
             event = events.Event("distributor", props)
             self.distributorTransmitter.publishEvent(event)
+
+    def emitStatus(self, props):
+        st = Status()
+        data = {}
+        for x in props.paramNames():
+            data[x] = props.get(x)
+        st.publish(st.distributorNode, st.sendMsg, data)
 
     def storeFileInfo(self, key, inetaddr, port, name):
         log.debug("storeFileInfo: key = %s, name = %s", str(key), str(name))

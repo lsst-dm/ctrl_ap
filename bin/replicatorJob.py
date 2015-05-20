@@ -43,8 +43,6 @@ class ReplicatorJob(object):
         self.fileNodeHost = "lsst-ocs.ncsa.illinois.edu"
         self.fileNodePort = 9393
         
-        self.filesize = 1024
-
         self.timeout = timeout
         self.rSock = None
         # TODO:  these need to be placed in a configuration file
@@ -114,9 +112,6 @@ class ReplicatorJob(object):
         st.publish(st.replicatorJob, st.inform, data)
 
     def execute(self, imageID, visitID, exposureSequenceID):
-        imageSize = 3200000000
-        raftSize = imageSize/21
-        ccdSize = raftSize/9
         log.info("info for image id = %s, visitID = %s, exposureSequenceID = %s" % (imageID, visitID, exposureSequenceID))
 
         # artificial wait to simulate some processing going on.
