@@ -104,7 +104,12 @@ class ReplicatorJob(object):
         
 
         log.info("sending info to replicator node")
-        vals = {"msgtype":"replicator job", "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
+        msgtype = ""
+        if self.raft == "wave":
+            msgtype = "wavefront job"
+        else:
+            msgtype = "replicator job"
+        vals = {"msgtype":msgtype, "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
         st = Status()
@@ -129,7 +134,12 @@ class ReplicatorJob(object):
         st.publish(st.replicatorJob, st.fileReceived, {"fileinfo":{"filename":fileName, "size":size}})
 
         # send the replicator node the name of the file
-        vals = {"msgtype":"replicator job", "request":"upload", "filename" : fileName, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}
+        msgtype = ""
+        if self.raft == "wave":
+            msgtype = "wavefront job"
+        else:
+            msgtype = "replicator job"
+        vals = {"msgtype":msgtype, "request":"upload", "filename" : fileName, "visitID": visitID, "exposureSequenceID":exposureSequenceID, "raft":self.raft}
         log.info("about to send information")
         self.rSock.sendJSON(vals)
         log.info("done sending")
