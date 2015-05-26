@@ -42,6 +42,8 @@ class ReplicatorJobServicer(object):
         self.broker = "lsst8.ncsa.uiuc.edu"
         self.topic = "distributor_event"
         self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
+        self.regularSensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
+        self.wavefrontJobSensors = ["R:0,0 S:2,2", "R:0,4 S:2,0", "R:4,0 S:0,2", "R:4,4 S:0,0"]
 
     def serviceRequest(self, msg):
         log.debug("rrh: serviceRequest: msg = %s ", msg)
@@ -60,7 +62,7 @@ class ReplicatorJobServicer(object):
 
         request = msg["request"]
         if request == "info post":
-            self.sendToArchiveDMCS(msg) # XXX
+            self.sendToArchiveDMCS(msg)
             log.info('received from replicator %s', msg)
         elif request == "upload":
             name = msg["filename"]
@@ -77,43 +79,49 @@ class ReplicatorJobServicer(object):
             log.warn("unknown request; msg = %s",msg)
 
     def sendToArchiveDMCS(self, msg):
-        props = self.convertToPropertySet(msg)
-        self.storeAndPublish(props)
 
-    def convertToPropertySet(self, msg):
+        msgtype = msg["msgtype"]
+        sensors = None
+        if msgtype == "replicator job":
+            raft = msg["raft"]
+            sensors = self.prependRaft(raft)
+        elif msgtype == "wavefront job":
+            sensors = self.wavefrontJobSensors
+        else:
+            log.warn("sendToArchiveDMCS: unknow msgtype: %s",msgtype)
+
+        props = self.convertToPropertySet(msg)
+        props.set("distributor_event", "info")
+        hostinfo = self.jsock.getsockname()
+        props.set("networkAddress", hostinfo[0])
+        props.set("networkPort", hostinfo[1])
+        self.storeAndPublish(props, sensors)
+
+    def convertToPropertySet(self, msg): # fix this
         props = PropertySet()
-        log.debug("sending the following to archive dmcs...")
         for x in msg:
-            print "x = ", x
-            log.debug("key = %s", str(x))
-            log.debug("val = %s",  str(msg[x]))
             val = msg[x]
             if type(val) == int:
                 props.set(str(x), int(msg[x]))
             else:
                 props.set(str(x), str(msg[x]))
         log.debug("...done")
-        props.set("distributor_event", "info")
-        hostinfo = self.jsock.getsockname()
-        props.set("networkAddress", hostinfo[0])
-        props.set("networkPort", hostinfo[1])
         return props
 
-    def storeAndPublish(self, props):
+    def storeAndPublish(self, props, sensors):
         # store this info locally, in case the archive asks for it again, later
 
         visitID = props.get("visitID")
         exposureSequenceID = props.get("exposureSequenceID")
-        raft = props.get("raft")
-        sensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
+        hostName = props.get("networkAddress")
+        hostPort = props.get("networkPort")
         st = Status()
-        for sensor in sensors:
-            props.set("sensor", sensor)
+        for sensorInfo in sensors:
+            raft, sensor = sensorInfo.split(" ")
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
-            hostName = props.get("networkAddress")
-            hostPort = props.get("networkPort")
             self.storeDistributor(key, hostName, hostPort)
 
+            props.set("sensor", sensor)
             self.emitStatus(props)
 
             event = events.Event("distributor", props)
@@ -155,18 +163,19 @@ class ReplicatorJobServicer(object):
         return notifyArchive
 
     def storeDistributor(self, key, inetaddr, port):
-        log.debug("storeDistributor: key = %s, inet = %s:%s ", key, inetaddr, port)
         self.condition.acquire()
         self.dataTable[key] = Distributor(inetaddr, port)
         self.condition.notifyAll()
         self.condition.release()
 
+    def prependRaft(self, raft):
+        sensors = []
+        for s in self.regularSensors:
+            sensors.append(raft+" "+s)
+        return sensors
+
     def splitReplicatorFile(self, jsock, visitID, exposureSequenceID, raft, filename):
-        sensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
-        x = 0
-        for s in sensors:
-            sensors[x] = raft+" "+s
-            x += 1
+        sensors = self.prependRaft(raft)
         self.splitFile(jsock, visitID, exposureSequenceID, filename, sensors, 3, 3)
 
     def splitWavefrontFile(self, jsock, visitID, exposureSequenceID, filename):
@@ -178,15 +187,10 @@ class ReplicatorJobServicer(object):
         filesize = statinfo.st_size
         buflen = filesize/len(sensors)
 
-        hostinfo = self.jsock.getsockname()
-        inetaddr =  hostinfo[0]
-        port = hostinfo[1]
-
         # build a list of file targets
         targets = []
         for sensorInfo in sensors:
-            raft = sensorInfo.split(" ")[0]
-            sensor = sensorInfo.split(" ")[1]
+            raft, sensor = sensorInfo.split(" ")
             target = "/tmp/lsst/%s/%s/%s_%s" % (visitID, exposureSequenceID, raft, sensor)
             targetDir = os.path.dirname(target)
             # try and create the directory tree.  there's a race condition
@@ -206,23 +210,32 @@ class ReplicatorJobServicer(object):
         splitter = ImageSplitter(filename)
         splitter.splitToNames(targets, rows, columns, "png")
 
+        hostinfo = self.jsock.getsockname()
+        hostName =  hostinfo[0]
+        hostPort =  hostinfo[1]
+
         x = 0
         for sensorInfo in sensors:
-            raft = sensorInfo.split(" ")[0]
-            sensor = sensorInfo.split(" ")[1]
+            raft, sensor = sensorInfo.split(" ")
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
-            notifyArchive = self.storeFileInfo(key,inetaddr, port, targets[x])
+            notifyArchive = self.storeFileInfo(key, hostName, hostPort, targets[x])
             # If there wasn't a previous entry for this file, we need
             # to notify the archive of it's existence so the worker job
             # can find it.
             if notifyArchive:
-                vals = {
+                msg = {
                     "request":"info post",
                     "msgtype": "replicator job",
                     "exposureSequenceID": exposureSequenceID,
                     "raft": str(raft),
                     "sensor": str(sensor),
-                    "visitID": str(visitID)
+                    "visitID": str(visitID),
+                    "networkAddress" : hostName,
+                    "networkPort" : hostPort
                 }
-                self.sendToArchiveDMCS(vals)
+                props = self.convertToPropertySet(msg)
+                self.emitStatus(props)
+
+                event = events.Event("distributor", props)
+                self.distributorTransmitter.publishEvent(event)
             x += 1
