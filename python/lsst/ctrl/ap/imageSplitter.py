@@ -23,8 +23,6 @@ class ImageSplitter(object):
         tile_width = width/columns
         tile_height = height/rows
 
-        tiles = len(sensors)
-
         x = 0
         y = 0
         images = []

@@ -1,5 +1,6 @@
 #!/bin/sh
 echo -n "script starts: ";date
+echo "args are", $*
 export HOME=/usr/local/home/srp
 export SHELL=/bin/sh
 export USER=srp
@@ -20,3 +21,4 @@ setup -r .
 echo -n "worker starts: ";date
 workerJob.py $*
 hostname
+echo -n "worker completes: ";date

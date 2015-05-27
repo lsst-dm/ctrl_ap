@@ -95,9 +95,12 @@ class JobManager(object):
             log.debug("done with this submit")
             raft += 1
 
-        # one job
-        ad = self.getClassAd(self.wavefrontJobPath)
-        ad["Arguments"] = "-R %s -I %s -x %s" % (str(startingPort), visitID, exposureSequenceID)
+        # one job for wavefront
+    
+        ad["Arguments"] = "-R %s --raft wave -I %s -x %s" % (str(startingPort), visitID, exposureSequenceID)
+        ad["Out"] =  "rep.out.%s.%s" % ("wave", exposureSequenceID)
+        ad["Err"] =  "rep.err.%s.%s" % ("wave", exposureSequenceID)
+        ad["Log"] =  "rep.log.%s.%s" % ("wave", exposureSequenceID)
         ad["KeepClaimIdle"] =  600
         cluster = self.repSchedd.submit(ad,1)
         # TODO: should probably return clusters in a list

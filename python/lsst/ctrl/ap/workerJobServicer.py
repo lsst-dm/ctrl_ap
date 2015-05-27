@@ -88,7 +88,7 @@ class WorkerJobServicer(object):
         # TODO: tell worker we do have it, and then send file
         self.jsock.sendFile(msg)
         st.publish(st.distributorNode, st.sendFile, {"filename":name})
-        log.debug("transmitFile: done")
+        log.debug("transmitFile: done; msg = %s", msg)
 
     def serviceRequest(self, msg):
         request = msg["request"]
@@ -101,5 +101,7 @@ class WorkerJobServicer(object):
             data = { "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}
             st.publish(st.distributorNode, st.requestFile, data)
             key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            log.debug("transmitting file")
             self.transmitFile(key, data)
+            log.debug("file transmitted.  returning")
             return
