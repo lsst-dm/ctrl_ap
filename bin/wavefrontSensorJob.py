@@ -30,6 +30,8 @@ import socket
 import errno
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
+from lsst.ctrl.ap.fileTransfer import FileTransfer
+from lsst.ctrl.ap.socketFileTransfer import SocketFileTransfer
 import lsst.log as log
 
 class WavefrontSensorJob(object):
@@ -106,6 +108,7 @@ class WavefrontSensorJob(object):
         print "host = %s, port = %d" % (host, port)
         sock = self.makeConnection(host, port)
         jsock = JSONSocket(sock)
+        fileTransfer = FileTransfer(SocketFileTransfer(socket))
         vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
         jsock.sendJSON(vals)
         data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
@@ -114,7 +117,7 @@ class WavefrontSensorJob(object):
         newName = "lsst/%s/%s/%s_%s" % (self.visitID, exposure, self.raft, self.ccd)
         newName = os.path.join("/tmp",newName)
         self.safemakedirs(os.path.dirname(newName))
-        name = jsock.recvFile(newName)
+        name = fileTransfer.receive(newName)
         data["file"] = name
         st.publish(st.wavefrontSensorJob, st.fileReceived, data)
         log.info("file received = %s" % name)
