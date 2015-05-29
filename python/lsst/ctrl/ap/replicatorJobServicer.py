@@ -31,6 +31,8 @@ from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.distributor import Distributor
 from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.imageSplitter import ImageSplitter
+from lsst.ctrl.ap.fileTransfer import FileTransfer
+from lsst.ctrl.ap.socketFileTransfer import SocketFileTransfer
 
 class ReplicatorJobServicer(object):
     def __init__(self, jsock, dataTable, condition):
@@ -44,6 +46,7 @@ class ReplicatorJobServicer(object):
         self.distributorTransmitter = events.EventTransmitter(self.broker, self.topic)
         self.regularSensors = ["S:0,0","S:1,0","S:2,0", "S:0,1","S:1,1","S:2,1", "S:0,2","S:1,2","S:2,2"]
         self.wavefrontJobSensors = ["R:0,0 S:2,2", "R:0,4 S:2,0", "R:4,0 S:0,2", "R:4,4 S:0,0"]
+        self.fileTransfer = FileTransfer(SocketFileTransfer(jsock))
 
     def serviceRequest(self, msg):
         log.debug("rrh: serviceRequest: msg = %s ", msg)
@@ -66,7 +69,7 @@ class ReplicatorJobServicer(object):
             log.info('received from replicator %s', msg)
         elif request == "upload":
             name = msg["filename"]
-            self.jsock.recvFile(name)
+            self.fileTransfer.receive(name)
             visitID = msg["visitID"]
             exposureSequenceID = msg["exposureSequenceID"]
             raft = msg["raft"]

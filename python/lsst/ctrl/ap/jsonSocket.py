@@ -97,15 +97,6 @@ class JSONSocket(object):
         self.sock.sendall(val)
         f.close()
 
-    # TODO: this is getting refactored, and is temporary
-    def recvFile2(self, receiveTo=None):
-        vals = self.recvJSON()
-        if receiveTo is None:
-            name = str(vals["filename"])
-        else:
-            name = receiveTo
-        return self.recvFile(name)
-
     def recvFile(self, name):
         total = 0
         size = sys.maxint
@@ -149,6 +140,9 @@ class JSONSocket(object):
     def sendWithLength(self, s):
         self.sock.sendall(struct.pack('!I',len(s)))
         self.sock.sendall(s)
+
+    def recv(self, size):
+        return self.sock.recv(size)
 
     def recvall(self):
         # receive data which is returned in a buffer

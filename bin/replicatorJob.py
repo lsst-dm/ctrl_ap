@@ -32,6 +32,8 @@ import lsst.ctrl.events as events
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.terminator import Terminator
+from lsst.ctrl.ap.fileTransfer import FileTransfer
+from lsst.ctrl.ap.socketFileTransfer import SocketFileTransfer
 import lsst.log as log
 
 class ReplicatorJob(object):
@@ -148,12 +150,20 @@ class ReplicatorJob(object):
 
     def getFileFromOCS(self, raft, imageID, visitID, exposureSequenceID):
         jsock = self.connectToFileNode()
+        transfer = FileTransfer(SocketFileTransfer(jsock))
+
+        # send request to the OCS for the image
         request = { "raft" : raft, "imageID" :imageID, "visitID": visitID, "exposureSequenceID" : exposureSequenceID }
         jsock.sendJSON(request)
         tmp = "%s_%s_%s_%s" % (self.raft, imageID, visitID, exposureSequenceID)
         tmp = os.path.join("/tmp",tmp)
+
+        # receive response from OCS about what we're getting
+        # (ignored for now)
         msg = jsock.recvJSON()
-        name = jsock.recvFile(tmp)
+
+        # receive file
+        name = transfer.receive(tmp)
         return name
 
     def begin(self):
@@ -161,6 +171,7 @@ class ReplicatorJob(object):
         eventSystem = events.EventSystem.getDefaultEventSystem()
         eventSystem.createReceiver(self.brokerName, self.eventTopic)
         st = Status()
+
         # loop until you get the right thing, process and then die.
         term = Terminator("execute", self.timeout)
         term.start()

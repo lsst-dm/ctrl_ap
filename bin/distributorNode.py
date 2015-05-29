@@ -118,6 +118,8 @@ class DistributorNode(Node):
             log.info("Waiting on connection")
             log.info("activate: thread count = %d" % threading.activeCount())
             (client, (ipAddr, clientPort)) = self.inSock.accept()
+            log.info("accepted: ipAddr = %s",str(ipAddr))
+            log.info("accepted: clientPort = %s",str(clientPort))
             (remote,addrlist,ipaddrlist) = socket.gethostbyaddr(ipAddr)
             log.info("connection accepted: %s:%d" % (remote, clientPort))
             serverInfo = {st.host:socket.gethostname(), st.port:self.inboundPort}

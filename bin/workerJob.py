@@ -33,6 +33,8 @@ from lsst.ctrl.ap.jsonSocket import JSONSocket
 from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.config.archiveConfig import ArchiveConfig
 from lsst.ctrl.ap.terminator import Terminator
+from lsst.ctrl.ap.fileTransfer import FileTransfer
+from lsst.ctrl.ap.socketFileTransfer import SocketFileTransfer
 
 class WorkerJob(object):
 
@@ -147,6 +149,7 @@ class WorkerJob(object):
                 sock = self.makeConnection(host, port)
                 log.info("connection made")
                 jsock = JSONSocket(sock)
+                transfer = FileTransfer(SocketFileTransfer(jsock))
                 vals = {"msgtype":"worker job", "request":"file", "visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
                 jsock.sendJSON(vals)
                 data = {"visitID":self.visitID, "raft":self.raft, "exposureSequenceID":exposure, "sensor":self.ccd}
@@ -167,7 +170,7 @@ class WorkerJob(object):
                 #for x in msg:
                 #    log.info("%s - %s " % (x,msg[x]))
                 log.info("now receiving file %s"  % newName)
-                name = jsock.recvFile(newName)
+                name = transfer.receive(newName)
                 log.info("file received %s" % newName)
                 data["file"] = name;
                 st.publish(st.workerJob, st.fileReceived, data)
