@@ -22,7 +22,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import lsst.log as log
 
@@ -100,7 +99,7 @@ class WorkerJobServicer(object):
             st = Status()
             data = { "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}
             st.publish(st.distributorNode, st.requestFile, data)
-            key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            key = (visitID, exposureSequenceID, raft, sensor)
             log.debug("transmitting file")
             self.transmitFile(key, data)
             log.debug("file transmitted.  returning")

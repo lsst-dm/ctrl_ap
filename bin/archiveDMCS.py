@@ -26,13 +26,29 @@
 import lsst.ctrl.events as events
 from lsst.daf.base import PropertySet
 from lsst.ctrl.ap.jsonSocket import JSONSocket
-from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import threading
 import socket
 import sys
 import lsst.log as log
 from lsst.ctrl.ap.logConfigurator import LogConfigurator
+
+class CacheNotifier(object):
+    def __init__(self, condition, timeout=5):
+        self.timeout = timeout
+        self.condition = condition
+
+    def start(self):
+        timer = threading.Timer(self.timeout, self.notify)
+        timer.daemon = True
+        timer.start()
+
+    def notify(self):
+        self.condition.acquire()
+        self.condition.notifyAll()
+        self.condition.release()
+        self.start()
+        
 
 class LookupMessageDispatcher(threading.Thread):
     def __init__(self, name, dataTable, condition, sock):
@@ -49,7 +65,13 @@ class LookupMessageDispatcher(threading.Thread):
             
         inetaddr = None
         port = None
-        data = self.lookupData(request)
+        data = None
+        try :
+            data = self.lookupData(request)
+        except socket.error, err:
+            print "error: returning now"
+            return
+        
         if data is not None:
             inetaddr = data[0]
             port = data[1]
@@ -63,22 +85,31 @@ class LookupMessageDispatcher(threading.Thread):
         visitID = request["visitID"]
         raft = request["raft"]
         ccd = request["ccd"]
-        key = Key.create(visitID, exposureSequenceID, raft, ccd)
+        key = (visitID, exposureSequenceID, raft, ccd)
         
         st = Status()
         request = {st.data:{"visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":ccd}}
         st.publish(st.archiveDMCS, st.lookup, request)
+
         self.condition.acquire()
         while True:
+            err = self.sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+            if err != 0:
+                self.condition.release()
+                raise socket.error(err, "socket error")
+            else:
+                print "socket passed, looking for key: %s" % str(key)
+            
             if key in self.dataTable:
                 data = self.dataTable[key]
                 break
+            #print self.dataTable
             # wait until the self.dataTable is updated, so we can
             # check again
             self.condition.wait()
         self.condition.release()
         st.publish(st.archiveDMCS, st.retrieved, request)
-        log.debug("found key = %s; threadCount = %d",str(key), threading.activeCount())
+        log.debug("found key = %s; threadCount = %d"%(str(key), threading.activeCount()))
         return data
 
 class ArchiveConnectionHandler(threading.Thread):
@@ -88,6 +119,13 @@ class ArchiveConnectionHandler(threading.Thread):
         self.condition = condition
 
     def run(self):
+        # tcp keep alive activates after 1 second
+        idle = 1
+        # keep alive ping every 5 seconds
+        interval = 2
+        # close connection after 3 failed pings
+        fails = 3
+
         serverSock = socket.socket()
         serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         host = socket.gethostname()
@@ -96,8 +134,15 @@ class ArchiveConnectionHandler(threading.Thread):
         serverSock.listen(5)
         st = Status()
         connectCount = 0
+        cn = CacheNotifier(self.condition)
+        cn.start()
         while True:
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
+
+            clientSock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            clientSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+            clientSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+            clientSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, fails)
             # spawn a thread to handle this connection
             clientInfo = {st.client:{st.host:ipAddr,st.port:clientPort}}
             st.publish(st.archiveDMCS, st.accept, clientInfo)
@@ -107,7 +152,7 @@ class ArchiveConnectionHandler(threading.Thread):
             connectCount += 1
             # TODO: should do cleanup here
             log.debug("connection count = %d; threadCount = %d", connectCount, threading.activeCount())
-            threads = threading.enumerate()
+            #threads = threading.enumerate()
             #for x in threads:
             #    log.debug(x.name)
 
@@ -144,7 +189,7 @@ class EventHandler(threading.Thread):
     # create the key used for entries in the data table
     def createKey(self, ps):
         exposureSequenceID, visitID, raft, sensor = self.getImageInfo(ps)
-        key = Key.create(visitID, exposureSequenceID, raft, sensor)
+        key = (visitID, exposureSequenceID, raft, sensor)
         return key
 
     # create a dictionary containing information about a data table entry
@@ -209,6 +254,7 @@ class EventHandler(threading.Thread):
             ps = ocsEvent.getPropertySet()
         
             ocsEventType = ps.get("distributor_event")
+            
             if ocsEventType == "info":
                 self.insert(ps)
             elif ocsEventType == "started":

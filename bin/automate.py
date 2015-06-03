@@ -90,7 +90,7 @@ class AutomatedOCS(object):
                 time.sleep(sleepInterval)
                 self.sendStartReadout(verbose, _imageID, _visitID, expo)
                 _imageID = _imageID+1
-            _visitID = _visitID+1
+            _visitID = _visitID[0]+str(int(visitID[1:])+1)
 
 if __name__ == "__main__":
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-F", "--filterID", type=str, action="store", help="image filter id", default="u")
 
-    parser.add_argument("-I", "--visitID", type=int, action="store", help="visit id", default=1000)
+    parser.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
 
     parser.add_argument("-i", "--imageID", type=int, action="store", help="image id", default=10000)
 

@@ -134,6 +134,13 @@ class JSONSocket(object):
         f.close()
         return name
 
+    def accept(self, level, optname, buflen=None):
+        # note: we don't use buflen
+        if buflen is None:
+            return self.sock.getsockopt(level, optname)
+        else:
+            return self.sock.getsockopt(level, optname, buflen)
+
     def accept(self):
         return self.sock.accept()
 

@@ -33,7 +33,6 @@ import lsst.ctrl.events as events
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.jobMessageDispatcher import JobMessageDispatcher
 from lsst.ctrl.ap.jsonSocket import JSONSocket
-from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import lsst.log as log
 from lsst.ctrl.ap.logConfigurator import LogConfigurator
@@ -62,7 +61,7 @@ class DistributorDataReporter(threading.Thread):
             print "dataTable = ",self.dataTable
             for key in self.dataTable:
                 root = PropertySet()
-                distInfo = Key.split(key)
+                distInfo = list(key)
                 root.add("distributor_event", "info")
                 root.add("visitID", distInfo[0])
                 root.add("exposureSequenceID", distInfo[1])

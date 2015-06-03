@@ -113,6 +113,7 @@ class BaseDMCS(object):
                 visitID = ps.get("visitID")
                 exposureSequenceID = ps.get("exposureSequenceID")
                 data = {"visitID":visitID, "exposureSequenceID":exposureSequenceID}
+                print "startIntegration: ",data
                 st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
                 if self.isActive[0] == False:
                     continue
@@ -123,6 +124,7 @@ class BaseDMCS(object):
                 boresight = ps.get("boresight")
                 filterID = ps.get("filterID")
                 data = {"visitID":visitID, "exposures":exposures, "boresight":boresight, "filterID":filterID}
+                print "nextVisit: ", data
                 st.publish(st.baseDMCS, st.receivedMsg, {ocsEventType:data})
                 if self.isActive[0] == False:
                     continue
