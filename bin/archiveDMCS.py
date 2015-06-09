@@ -32,23 +32,7 @@ import socket
 import sys
 import lsst.log as log
 from lsst.ctrl.ap.logConfigurator import LogConfigurator
-
-class CacheNotifier(object):
-    def __init__(self, condition, timeout=5):
-        self.timeout = timeout
-        self.condition = condition
-
-    def start(self):
-        timer = threading.Timer(self.timeout, self.notify)
-        timer.daemon = True
-        timer.start()
-
-    def notify(self):
-        self.condition.acquire()
-        self.condition.notifyAll()
-        self.condition.release()
-        self.start()
-        
+from lsst.ctrl.ap.conditionNotifier import ConditionNotifier
 
 class LookupMessageDispatcher(threading.Thread):
     def __init__(self, name, dataTable, condition, sock):
@@ -67,9 +51,9 @@ class LookupMessageDispatcher(threading.Thread):
         port = None
         data = None
         try :
-            data = self.lookupData(request)
+            data = self.lookup(request)
         except socket.error, err:
-            print "error: returning now"
+            # the other end failed;  bail out
             return
         
         if data is not None:
@@ -80,7 +64,7 @@ class LookupMessageDispatcher(threading.Thread):
         jsock.sendJSON(vals)
         self.sock.close()
 
-    def lookupData(self, request):
+    def lookup(self, request):
         exposureSequenceID = request["exposureSequenceID"]
         visitID = request["visitID"]
         raft = request["raft"]
@@ -134,7 +118,7 @@ class ArchiveConnectionHandler(threading.Thread):
         serverSock.listen(5)
         st = Status()
         connectCount = 0
-        cn = CacheNotifier(self.condition)
+        cn = ConditionNotifier(self.condition)
         cn.start()
         while True:
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()

@@ -148,6 +148,9 @@ class JSONSocket(object):
         self.sock.sendall(struct.pack('!I',len(s)))
         self.sock.sendall(s)
 
+    def getsockopt(self, t, flag):
+        return self.sock.getsockopt(t, flag)
+
     def recv(self, size):
         return self.sock.recv(size)
 
