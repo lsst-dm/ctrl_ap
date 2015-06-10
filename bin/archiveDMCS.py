@@ -123,17 +123,23 @@ class ArchiveConnectionHandler(threading.Thread):
         while True:
             (clientSock, (ipAddr, clientPort)) = serverSock.accept()
 
+            # set options so the client socket so connection will be closed after failed keep alive
+            # messages
             clientSock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             clientSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
             clientSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
             clientSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, fails)
-            # spawn a thread to handle this connection
+
+            # send accept status message
             clientInfo = {st.client:{st.host:ipAddr,st.port:clientPort}}
             st.publish(st.archiveDMCS, st.accept, clientInfo)
+
+            # spawn a thread to handle this connection
             name = "%s:%s" % (str(ipAddr), str(clientPort))
             lmd = LookupMessageDispatcher(name, self.dataTable, self.condition, clientSock)
             lmd.start()
             connectCount += 1
+
             # TODO: should do cleanup here
             log.debug("connection count = %d; threadCount = %d", connectCount, threading.activeCount())
             #threads = threading.enumerate()

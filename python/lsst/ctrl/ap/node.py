@@ -45,42 +45,6 @@ class Node(object):
         log.debug("done creating socket")
         self.inSock = JSONSocket(inSock)
 
-    def connectToNode(self, component, host, port):
-        outSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        # publish status message
-        st = Status()
-        serverInfo = {st.host:host, st.port:port}
-
-        connection = {st.server:serverInfo}
-        st.publish(component, st.connect, connection)
-
-        log.debug("connecting to node %s:%d" % (host, port))
-        try:
-            outSock.connect((host, port))
-        except socket.gaierror, err:
-            log.warn("address problem?  %s " % err)
-            sys.exit(1)
-        except socket.error, err:
-            log.warn("Connection problem: %s" % err)
-            outSock = None
-            return False
-        self.outSock = JSONSocket(outSock)
-        return True
-
     def accept(self):
         (sock, (ipAddr, clientPort)) = self.inSock.accept()
         return JSONSocket(sock)
-
-    def recvMessage(self):
-        return self.inSock.recvJSON()
-
-    def closeSockets(self):
-        if self.inSock is not None:
-            self.inSock.close()
-
-        if self.outSock is not None:
-            self.outSock.close()
-
-    def process(self):
-        pass 
