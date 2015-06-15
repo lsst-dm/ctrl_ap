@@ -23,10 +23,9 @@
 #
 
 import os
+import threading
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.jsonSocket import JSONSocket
-from lsst.ctrl.ap.status import Status
-import threading
 
 class FileDispatcher(threading.Thread):
     def __init__(self, jsock):
@@ -36,15 +35,18 @@ class FileDispatcher(threading.Thread):
         self.filename = os.path.join(imagePath, "96x96.png")
 
     def run(self):
-        st = Status()
         request = {}
 
+        # receive request for a file from replicator job
         msg = self.jsock.recvJSON()
 
-        request["status"] = st.sendFile
+        request["status"] = "send file"
         request["filename"] = self.filename 
+
+        # send the replicator job the file
         self.jsock.sendFile(request)
         self.jsock.close()
+        return
 
 class OCSFileNode(Node):
 

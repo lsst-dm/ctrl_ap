@@ -24,7 +24,6 @@
 
 import sys
 import socket
-from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.jsonSocket import JSONSocket
 import lsst.log as log
 
