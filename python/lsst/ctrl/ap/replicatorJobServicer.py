@@ -27,7 +27,6 @@ import errno
 import lsst.log as log
 from lsst.daf.base import PropertySet
 import lsst.ctrl.events as events
-from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.distributor import Distributor
 from lsst.ctrl.ap.status import Status
 from lsst.ctrl.ap.imageSplitter import ImageSplitter
@@ -121,7 +120,7 @@ class ReplicatorJobServicer(object):
         st = Status()
         for sensorInfo in sensors:
             raft, sensor = sensorInfo.split(" ")
-            key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            key = (visitID, exposureSequenceID, raft, sensor)
             self.storeDistributor(key, hostName, hostPort)
 
             props.set("sensor", sensor)
@@ -220,7 +219,7 @@ class ReplicatorJobServicer(object):
         x = 0
         for sensorInfo in sensors:
             raft, sensor = sensorInfo.split(" ")
-            key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            key = (visitID, exposureSequenceID, raft, sensor)
             notifyArchive = self.storeFileInfo(key, hostName, hostPort, targets[x])
             # If there wasn't a previous entry for this file, we need
             # to notify the archive of it's existence so the worker job

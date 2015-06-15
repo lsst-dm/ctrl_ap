@@ -27,6 +27,7 @@ from lsst.ctrl.ap.replicatorJobServicer import ReplicatorJobServicer
 from lsst.ctrl.ap.workerJobServicer import WorkerJobServicer
 from lsst.ctrl.ap.heartbeat import Heartbeat
 import lsst.log as log
+from lsst.ctrl.ap.conditionNotifier import ConditionNotifier
 
 class JobMessageDispatcher(threading.Thread):
     def __init__(self, jsock, dataTable, condition):

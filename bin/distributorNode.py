@@ -33,11 +33,11 @@ import lsst.ctrl.events as events
 from lsst.ctrl.ap.node import Node
 from lsst.ctrl.ap.jobMessageDispatcher import JobMessageDispatcher
 from lsst.ctrl.ap.jsonSocket import JSONSocket
-from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import lsst.log as log
 from lsst.ctrl.ap.logConfigurator import LogConfigurator
 from lsst.daf.base import PropertySet
+from lsst.ctrl.ap.conditionNotifier import ConditionNotifier
 
 class DistributorDataReporter(threading.Thread):
     def __init__(self, broker, topic, dataTable, condition):
@@ -62,7 +62,7 @@ class DistributorDataReporter(threading.Thread):
             print "dataTable = ",self.dataTable
             for key in self.dataTable:
                 root = PropertySet()
-                distInfo = Key.split(key)
+                distInfo = list(key)
                 root.add("distributor_event", "info")
                 root.add("visitID", distInfo[0])
                 root.add("exposureSequenceID", distInfo[1])
@@ -104,6 +104,12 @@ class DistributorNode(Node):
         eventSystem.publishEvent("distributor_event", event)
 
     def activate(self):
+        # tcp keep alive activates after 1 second
+        idle = 1
+        # keep alive ping every 5 seconds
+        interval = 2
+        # close connection after 3 failed pings
+        fails = 3
         dataTable = {}
         condition = threading.Condition()
 
@@ -113,11 +119,18 @@ class DistributorNode(Node):
         reporter = DistributorDataReporter(self.brokerName, self.eventTopic, dataTable, condition)
         reporter.start()
 
+        cn = ConditionNotifier(condition)
+        cn.start()
+
         st = Status()
         while True:
             log.info("Waiting on connection")
             log.info("activate: thread count = %d" % threading.activeCount())
             (client, (ipAddr, clientPort)) = self.inSock.accept()
+            client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            client.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+            client.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+            client.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, fails)
             log.info("accepted: ipAddr = %s",str(ipAddr))
             log.info("accepted: clientPort = %s",str(clientPort))
             (remote,addrlist,ipaddrlist) = socket.gethostbyaddr(ipAddr)

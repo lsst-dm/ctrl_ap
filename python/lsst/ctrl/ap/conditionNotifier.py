@@ -22,28 +22,21 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import sys
-import socket
-from lsst.ctrl.ap.jsonSocket import JSONSocket
-import lsst.log as log
 
-class Node(object):
+import threading
 
-    def __init__(self):
-        self.inSock = None
-        self.outSock = None
+class ConditionNotifier(object):
+    def __init__(self, condition, timeout=5):
+        self.timeout = timeout
+        self.condition = condition
 
+    def start(self):
+        timer = threading.Timer(self.timeout, self.notify)
+        timer.daemon = True
+        timer.start()
 
-    def createIncomingSocket(self, port):
-        host = socket.gethostname()
-        inSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        inSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        log.debug("%s: creating incoming socket %s:%d" % (socket.gethostname(), host, port))
-        inSock.bind((host, port))
-        inSock.listen(5)
-        log.debug("done creating socket")
-        self.inSock = JSONSocket(inSock)
-
-    def accept(self):
-        (sock, (ipAddr, clientPort)) = self.inSock.accept()
-        return JSONSocket(sock)
+    def notify(self):
+        self.condition.acquire()
+        self.condition.notifyAll()
+        self.condition.release()
+        self.start()

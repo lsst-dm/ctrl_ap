@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     parser_b = subparsers.add_parser("startReadout")
     parser_b.add_argument("-i", "--imageID", type=int, action="store", help="image id", required=True)
-    parser_b.add_argument("-I", "--visitID", type=int, action="store", help="visit id", required=True)
+    parser_b.add_argument("-I", "--visitID", type=str, action="store", help="visit id", required=True)
     parser_b.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
 
     parser_c = subparsers.add_parser("nextVisit")

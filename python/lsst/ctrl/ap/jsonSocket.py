@@ -134,12 +134,22 @@ class JSONSocket(object):
         f.close()
         return name
 
+    #def accept(self, level, optname, buflen=None):
+    #    # note: we don't use buflen
+    #    if buflen is None:
+    #        return self.sock.getsockopt(level, optname)
+    #    else:
+    #        return self.sock.getsockopt(level, optname, buflen)
+
     def accept(self):
         return self.sock.accept()
 
     def sendWithLength(self, s):
         self.sock.sendall(struct.pack('!I',len(s)))
         self.sock.sendall(s)
+
+    def getsockopt(self, t, flag):
+        return self.sock.getsockopt(t, flag)
 
     def recv(self, size):
         return self.sock.recv(size)

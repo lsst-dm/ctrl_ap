@@ -22,9 +22,9 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from lsst.ctrl.ap.key import Key
 from lsst.ctrl.ap.status import Status
 import lsst.log as log
+import socket
 
 from sys import getsizeof
 
@@ -42,6 +42,13 @@ class WorkerJobServicer(object):
         name = None
         self.condition.acquire()
         while True:
+            err = self.jsock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+            if err != 0:
+                self.condition.release()
+                raise socket.error(err, "socket error")
+            else:
+                print "socket passed, looking for key: %s" % str(key)
+
             size = getsizeof(self.dataTable)
             size += sum(map(getsizeof,self.dataTable.itervalues())) + sum(map(getsizeof,self.dataTable.iterkeys()));
 
@@ -70,7 +77,12 @@ class WorkerJobServicer(object):
 
     def transmitFile(self, key, data):
         log.debug("transmitFile: key = %s", str(key))
-        name = self.getFileInfo(key)
+        name = None
+        try:
+            name = self.getFileInfo(key)
+        except socket.error, err:
+            # bail out because the other side is gone
+            return
         st = Status();
         log.debug("transmitFile requested")
         if name is None:
@@ -100,8 +112,8 @@ class WorkerJobServicer(object):
             st = Status()
             data = { "visitID":visitID, "exposureSequenceID":exposureSequenceID, "raft":raft, "sensor":sensor}
             st.publish(st.distributorNode, st.requestFile, data)
-            key = Key.create(visitID, exposureSequenceID, raft, sensor)
+            key = (visitID, exposureSequenceID, raft, sensor)
             log.debug("transmitting file")
             self.transmitFile(key, data)
-            log.debug("file transmitted.  returning")
+            log.debug("service request finished.  returning")
             return

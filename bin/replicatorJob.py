@@ -111,11 +111,11 @@ class ReplicatorJob(object):
             msgtype = "wavefront job"
         else:
             msgtype = "replicator job"
-        vals = {"msgtype":msgtype, "request":"info post", "visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
+        vals = {"msgtype":msgtype, "request":"info post", "visitID" : self.expectedVisitID, "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}
         # send this info to the distributor, via the replicator
         self.rSock.sendJSON(vals)
         st = Status()
-        data = {st.data:{"visitID" : int(self.expectedVisitID), "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}}
+        data = {st.data:{"visitID" : self.expectedVisitID, "exposureSequenceID": int(self.expectedExpSeqID), "raft" : self.raft}}
         st.publish(st.replicatorJob, st.inform, data)
 
     def execute(self, imageID, visitID, exposureSequenceID):
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=basename)
     parser.add_argument("-R", "--replicatorPort", type=int, action="store", help="base replicator port (plus slot #) to connect to", required=True)
     parser.add_argument("-r", "--raft", type=str, action="store", help="raft", required=True)
-    parser.add_argument("-I", "--visitID", type=int, action="store", help="visitID", required=True)
+    parser.add_argument("-I", "--visitID", type=str, action="store", help="visitID", required=True)
     parser.add_argument("-x", "--exposureSequenceID", type=int, action="store", help="exposure sequence id", required=True)
     parser.add_argument("-t", "--timeout", type=int, action="store", help="ccd #", default=120, required=False)
 

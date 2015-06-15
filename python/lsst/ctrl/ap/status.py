@@ -112,8 +112,6 @@ class Status(object):
 
 
     def __init__(self):
-        #self.broker = broker
-        #self.topic = topic
         self.eventSystem = events.EventSystem.getDefaultEventSystem()
         self.eventSystem.createTransmitter(self.broker, self.topic)
         self.process = "%s/%d"% (socket.gethostname(), os.getpid())

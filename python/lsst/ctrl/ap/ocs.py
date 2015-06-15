@@ -35,8 +35,9 @@ class OCS(object):
     def sendStartIntegration(self, visitID, exposureSequenceID):
         props = PropertySet()
         props.set("ocs_event", "startIntegration")
-        props.set("visitID", visitID)
+        props.setString("visitID", visitID)
         props.set("exposureSequenceID", exposureSequenceID)
+        print props.toString()
 
         runId = "ocs"
         event = events.Event(runId, props)
@@ -47,7 +48,7 @@ class OCS(object):
     def sendStartReadout(self, imageID, visitID, exposureSequenceID):
         props = PropertySet()
         props.set("imageID", imageID)
-        props.set("visitID", visitID)
+        props.setString("visitID", visitID)
         props.set("exposureSequenceID", exposureSequenceID)
 
         runId = "ocs"
@@ -63,6 +64,7 @@ class OCS(object):
         props.set("exposures", exposures)
         props.set("boresight", boresight)
         props.set("filterID", filterID)
+        print props.toString()
         
         runId = "ocs"
         event = events.Event(runId, props)
